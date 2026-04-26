@@ -136,65 +136,6 @@ const MenuPage = () => {
       {/* Container for the rest of the page */}
       <div className="pb-28 max-w-[1600px] mx-auto w-full">
 
-        {/* MOOD-BASED TASTE EXPLORER SECTION */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 z-10 relative mt-16 px-8 lg:px-12">
-            
-            {/* MOOD CARD 1: THE SPARK */}
-            <motion.div 
-              whileHover={{ y: -10, scale: 1.01 }}
-              onClick={() => {
-                const cat = categories.find(c => c.mood === 'spark');
-                if (cat) setActiveCategory(cat._id);
-                document.getElementById('discover').scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="group relative h-[320px] rounded-[40px] overflow-hidden cursor-pointer border border-white/10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-primary/10 to-transparent z-10"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2070')] bg-cover bg-center group-hover:scale-110 transition-transform duration-1000"></div>
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 z-10"></div>
-              
-              <div className="absolute inset-0 p-10 flex flex-col justify-end z-20">
-                <div className="flex items-center gap-3 mb-4">
-                   <div className="p-3 bg-primary/20 backdrop-blur-md rounded-2xl border border-primary/30">
-                     <Coffee className="w-6 h-6 text-primary" />
-                   </div>
-                   <span className="text-primary text-xs font-black uppercase tracking-[0.3em] drop-shadow-lg">Morning Energy</span>
-                </div>
-                <h3 className="text-5xl font-serif font-black text-white mb-2 leading-tight">I need <br/> a Spark.</h3>
-                <p className="text-white/60 text-sm font-medium flex items-center gap-2 group-hover:text-white transition-colors">
-                  Explore Caffeinated & Breakfast Picks <ArrowRight className="w-4 h-4" />
-                </p>
-              </div>
-            </motion.div>
-
-            {/* MOOD CARD 2: THE INDULGENCE */}
-            <motion.div 
-               whileHover={{ y: -10, scale: 1.01 }}
-               onClick={() => {
-                 const cat = categories.find(c => c.mood === 'indulge');
-                 if (cat) setActiveCategory(cat._id);
-                 document.getElementById('discover').scrollIntoView({ behavior: 'smooth' });
-               }}
-               className="group relative h-[320px] rounded-[40px] overflow-hidden cursor-pointer border border-white/10"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent z-10"></div>
-              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551024601-bec78aea704b?q=80&w=1964')] bg-cover bg-center group-hover:scale-110 transition-transform duration-1000"></div>
-              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500 z-10"></div>
-              
-              <div className="absolute inset-0 p-10 flex flex-col justify-end z-20">
-                <div className="flex items-center gap-3 mb-4">
-                   <div className="p-3 bg-purple-500/20 backdrop-blur-md rounded-2xl border border-purple-500/30">
-                     <Moon className="w-6 h-6 text-purple-400" />
-                   </div>
-                   <span className="text-purple-400 text-xs font-black uppercase tracking-[0.3em] drop-shadow-lg">Evening Vibes</span>
-                </div>
-                <h3 className="text-5xl font-serif font-black text-white mb-2 leading-tight">I want <br/> to Indulge.</h3>
-                <p className="text-white/60 text-sm font-medium flex items-center gap-2 group-hover:text-white transition-colors">
-                  Explore Sweets, Treats & Desserts <ArrowRight className="w-4 h-4" />
-                </p>
-              </div>
-            </motion.div>
-        </div>
 
         {/* TIER 1: TRENDING NOW (CINEMATIC SPOTLIGHT) */}
         {items.some(i => i.isPopular) && (

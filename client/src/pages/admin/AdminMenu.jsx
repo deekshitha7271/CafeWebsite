@@ -12,7 +12,7 @@ const AdminMenu = () => {
   const [isItemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   
-  const [catForm, setCatForm] = useState({ name: '', icon: '', mood: 'none' });
+  const [catForm, setCatForm] = useState({ name: '', icon: '' });
   const [itemForm, setItemForm] = useState({ 
     name: '', price: '', originalPrice: '', categoryId: '', image: '', description: '', isAvailable: true, isPopular: false, tags: [], includedItems: [] 
   });
@@ -38,7 +38,7 @@ const AdminMenu = () => {
     e.preventDefault();
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/categories`, catForm);
-      setCatForm({ name: '', icon: '', mood: 'none' });
+      setCatForm({ name: '', icon: '' });
       setCategoryModalOpen(false);
       fetchData();
     } catch (error) { console.error('Error saving category:', error); }
@@ -98,11 +98,6 @@ const AdminMenu = () => {
                 )}
               </span> 
               {cat.name}
-              {cat.mood !== 'none' && (
-                <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded ml-2 ${cat.mood === 'spark' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
-                  Mood: {cat.mood}
-                </span>
-              )}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {items.filter(i => i.categoryId && (i.categoryId._id === cat._id || i.categoryId === cat._id)).map(item => (
@@ -246,14 +241,6 @@ const AdminMenu = () => {
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Category Symbol (URL or Emoji)</label>
                   <input value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors text-sm" placeholder="https://... or ☕" />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Mood Assignment</label>
-                  <select value={catForm.mood} onChange={e => setCatForm({...catForm, mood: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors">
-                    <option value="none">None (Standard Category)</option>
-                    <option value="spark">Spark (Mornings / Energy)</option>
-                    <option value="indulge">Indulge (Evening / Treats)</option>
-                  </select>
                 </div>
                 <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-white/10">
                   <button type="button" onClick={() => setCategoryModalOpen(false)} className="px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest bg-surface border border-white/10 hover:bg-surface-light text-text-muted transition-colors">Discard</button>
