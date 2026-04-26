@@ -51,9 +51,17 @@
   h1, h2, h3 {
     @apply font-serif tracking-wide;
   }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-@layer utilities {
+@layer components {
   .hero-text-glow {
     text-shadow: 0 0 50px rgba(245, 158, 11, 0.5);
   }

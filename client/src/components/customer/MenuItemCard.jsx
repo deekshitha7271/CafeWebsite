@@ -86,7 +86,7 @@ const MenuItemCard = ({ item }) => {
           </div>
         )}
         
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-auto pt-6 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-sans font-black text-xl text-primary drop-shadow-sm tracking-tight">
                 ₹{item.price.toFixed(2)}

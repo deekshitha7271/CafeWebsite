@@ -11,6 +11,7 @@ const AdminMenu = () => {
   const [isCategoryModalOpen, setCategoryModalOpen] = useState(false);
   const [isItemModalOpen, setItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
   
   const [catForm, setCatForm] = useState({ name: '', icon: '' });
   const [itemForm, setItemForm] = useState({ 
@@ -37,12 +38,25 @@ const AdminMenu = () => {
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/categories`, catForm);
+      if (editingCategory) {
+        await axios.put(`${import.meta.env.VITE_API_URL}/categories/${editingCategory._id}`, catForm);
+      } else {
+        await axios.post(`${import.meta.env.VITE_API_URL}/categories`, catForm);
+      }
+      setEditingCategory(null);
       setCatForm({ name: '', icon: '' });
       setCategoryModalOpen(false);
       fetchData();
     } catch (error) { console.error('Error saving category:', error); }
   };
+
+  const deleteCategory = async (id) => {
+    if(!window.confirm('WARNING: Deleting a category will untrack all items in it. Proceed?')) return;
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/categories/${id}`);
+      fetchData();
+    } catch(err) { console.error(err); }
+  }
 
   const handleItemSubmit = async (e) => {
     e.preventDefault();
@@ -88,7 +102,7 @@ const AdminMenu = () => {
 
       <div className="space-y-16">
         {categories.map(cat => (
-          <div key={cat._id} className="bg-surface/20 p-8 rounded-3xl border border-white/5">
+          <div key={cat._id} className="bg-surface/20 p-8 rounded-3xl border border-white/5 group/cat">
             <h3 className="text-3xl font-serif font-bold mb-8 flex items-center gap-4 text-white">
               <span className="bg-surface-dark p-3 rounded-2xl border border-white/5 shadow-inner w-16 h-16 flex items-center justify-center overflow-hidden">
                 {cat.icon?.startsWith('http') ? (
@@ -98,6 +112,10 @@ const AdminMenu = () => {
                 )}
               </span> 
               {cat.name}
+              <div className="ml-auto flex gap-4 opacity-0 group-hover/cat:opacity-100 transition-opacity">
+                 <button onClick={() => { setEditingCategory(cat); setCatForm({ name: cat.name, icon: cat.icon }); setCategoryModalOpen(true); }} className="text-white hover:text-primary transition-colors"><Edit2 className="w-4 h-4" /></button>
+                 <button onClick={() => deleteCategory(cat._id)} className="text-white hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+              </div>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {items.filter(i => i.categoryId && (i.categoryId._id === cat._id || i.categoryId === cat._id)).map(item => (
@@ -160,7 +178,7 @@ const AdminMenu = () => {
                 <h2 className="text-3xl font-serif font-bold text-white">{editingItem ? 'Edit Culinary Item' : 'New Culinary Item'}</h2>
               </div>
               
-              <form onSubmit={handleItemSubmit} className="p-8 pt-6 space-y-5 overflow-y-auto custom-scrollbar">
+              <form data-lenis-prevent onSubmit={handleItemSubmit} className="p-8 pt-6 space-y-5 overflow-y-auto hide-scrollbar flex-1">
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
@@ -231,9 +249,9 @@ const AdminMenu = () => {
                className="bg-surface-dark max-w-sm w-full rounded-3xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]"
              >
               <div className="p-8 pb-4 border-b border-white/10">
-                <h2 className="text-3xl font-serif font-bold text-white uppercase tracking-tight">New Category</h2>
+                <h2 className="text-3xl font-serif font-bold text-white uppercase tracking-tight">{editingCategory ? 'Edit Category' : 'New Category'}</h2>
               </div>
-              <form onSubmit={handleCategorySubmit} className="p-8 pt-6 space-y-5 overflow-y-auto">
+              <form data-lenis-prevent onSubmit={handleCategorySubmit} className="p-8 pt-6 space-y-5 overflow-y-auto hide-scrollbar flex-1">
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Category Name</label>
                   <input required value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors" placeholder="e.g. Hot Drinks" />
