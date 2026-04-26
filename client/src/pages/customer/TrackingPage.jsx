@@ -60,7 +60,8 @@ const TrackingPage = () => {
       window.location.href = res.data.url;
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Failed to initiate payment. Please try again.');
+      const errorMsg = error.response?.data?.details || error.message || 'Unknown error';
+      alert(`❌ Payment Failed: ${errorMsg}`);
     } finally {
       setLoadingPayment(false);
     }
