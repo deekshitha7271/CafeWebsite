@@ -1,21 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { TrendingUp, Users, DollarSign, Activity } from 'lucide-react';
+import { TrendingUp, Users, Wallet, Activity } from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
+  const socket = useSocket();
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/analytics`);
+      setStats(res.data);
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchAnalytics = async () => {
-      try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/analytics`);
-        setStats(res.data);
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
+    fetchAnalytics();
+
+    if (socket) {
+      socket.on('order:new', fetchAnalytics);
+      socket.on('order:update', fetchAnalytics);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('order:new');
+        socket.off('order:update');
       }
     };
-    fetchAnalytics();
-  }, []);
+  }, [socket]);
 
   return (
     <div>
@@ -28,7 +43,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {[
           { label: 'Total Orders', value: stats?.totalOrdersToday || 0, icon: Activity, color: 'text-primary' },
-          { label: 'Revenue', value: '$' + (stats?.revenue || '0.00'), icon: DollarSign, color: 'text-emerald-400' },
+          { label: 'Revenue', value: '₹' + (stats?.revenue || '0.00'), icon: Wallet, color: 'text-emerald-400' },
           { label: 'Active Tables', value: stats?.activeTables || 0, icon: Users, color: 'text-blue-400' },
           { label: 'Growth', value: '+12%', icon: TrendingUp, color: 'text-purple-400' },
         ].map((stat, i) => {

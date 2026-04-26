@@ -8,8 +8,12 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     // using Vite proxy or environment var
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const newSocket = io(SOCKET_URL);
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5173';
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
     setSocket(newSocket);
 
     return () => newSocket.close();

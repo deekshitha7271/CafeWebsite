@@ -6,7 +6,7 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row text-text font-sans">
       {/* Sidebar */}
-      <aside className="w-full md:w-72 bg-surface border-r border-white/5 order-2 md:order-1 fixed bottom-0 md:relative z-20 shadow-2xl">
+      <aside className="w-full md:w-72 bg-surface border-r border-white/5 order-2 md:order-1 fixed bottom-0 md:sticky md:top-0 md:h-screen z-20 shadow-2xl flex flex-col">
         <div className="p-8 hidden md:block border-b border-white/5">
           <div className="flex items-center gap-3">
             <div className="bg-primary/20 p-2 rounded-xl">

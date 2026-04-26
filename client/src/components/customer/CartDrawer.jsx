@@ -15,6 +15,12 @@ const CartDrawer = () => {
 
   const handleCashOrder = async () => {
     if (state.items.length === 0) return;
+    
+    if (!state.table) {
+      alert("⚠️ Table Assignment Missing! Please scan a Table QR code to place an order.");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/orders/cash`, {
@@ -35,6 +41,7 @@ const CartDrawer = () => {
       navigate(`/track/${response.data._id}`);
     } catch (error) {
       console.error('Cash order error:', error);
+      alert("❌ Failed to place order. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -163,7 +170,17 @@ const CartDrawer = () => {
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
               <div className="flex justify-between items-end mb-6 text-sm">
-                <span className="text-text-muted font-black tracking-widest uppercase text-xs">Total Amount</span>
+                <div className="flex flex-col gap-1">
+                   <span className="text-text-muted font-black tracking-widest uppercase text-xs">Total Amount</span>
+                   {!state.table && (
+                     <button 
+                        onClick={() => dispatch({ type: 'SET_TABLE', payload: 1 })}
+                        className="text-[9px] text-primary underline underline-offset-4 font-bold tracking-widest opacity-60 hover:opacity-100 transition-opacity"
+                     >
+                        Assign to Table 01 (Test)
+                     </button>
+                   )}
+                </div>
                 <span className="text-3xl font-black text-white drop-shadow-lg">₹{cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex flex-col gap-3">

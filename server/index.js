@@ -95,11 +95,21 @@ app.get('/api/menu', async (req, res) => {
 
 app.get('/api/analytics', async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const stats = await Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalRevenue: { $sum: { $convert: { input: "$total", to: "double", onError: 0, onNull: 0 } } }
+        }
+      }
+    ]);
+
+    const revenue = stats.length > 0 ? stats[0].totalRevenue : 0;
+    const totalOrdersToday = stats.length > 0 ? stats[0].totalOrders : 0;
     
-    const totalOrders = await Order.countDocuments({ timestamp: { $gte: today } });
-    
+    console.log(`📊 Analytics Heartbeat: Orders: ${totalOrdersToday}, Revenue: ₹${revenue}`);
+
     // Most ordered items aggregation
     const popularItems = await Order.aggregate([
       { $match: { timestamp: { $gte: today } } },
@@ -109,7 +119,11 @@ app.get('/api/analytics', async (req, res) => {
       { $limit: 5 }
     ]);
     
-    res.json({ totalOrdersToday: totalOrders, popularItems });
+    res.json({ 
+      totalOrdersToday, 
+      revenue: parseFloat(revenue || 0).toFixed(2),
+      popularItems 
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch analytics' });
   }

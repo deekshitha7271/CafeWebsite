@@ -23,9 +23,15 @@ const AdminOrders = () => {
   useEffect(() => {
     fetchOrders();
 
+    // Fail-safe polling every 30 seconds
+    const interval = setInterval(fetchOrders, 30000);
+
     if (socket) {
       socket.on('order:new', (newOrder) => {
-        setOrders(prev => [newOrder, ...prev]);
+        setOrders(prev => {
+          if (prev.some(o => o._id === newOrder._id)) return prev;
+          return [newOrder, ...prev];
+        });
       });
       
       socket.on('order:update', (updatedOrder) => {
@@ -34,6 +40,7 @@ const AdminOrders = () => {
     }
 
     return () => {
+      clearInterval(interval);
       if (socket) {
         socket.off('order:new');
         socket.off('order:update');
@@ -47,9 +54,13 @@ const AdminOrders = () => {
       if (newStatus) updateData.orderStatus = newStatus;
       if (newPaymentStatus) updateData.paymentStatus = newPaymentStatus;
 
+      // Optimistic Update
+      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, ...updateData } : o));
+
       await axios.put(`${import.meta.env.VITE_API_URL}/orders/${orderId}/status`, updateData);
     } catch (error) {
       console.error('Failed to update status:', error);
+      fetchOrders(); // Rollback on error
     }
   };
 
@@ -103,8 +114,9 @@ const AdminOrders = () => {
         ))}
       </div>
 
-      {isActive && (
-        <div className="flex flex-col gap-3 mt-6">
+      {/* Actions Section */}
+      <div className="flex flex-col gap-3 mt-6">
+        {isActive && (
           <div className="flex gap-4">
             {order.orderStatus === 'placed' && (
               <button 
@@ -123,17 +135,17 @@ const AdminOrders = () => {
               </button>
             )}
           </div>
-          
-          {order.paymentStatus === 'pending' && (
-            <button 
-              onClick={() => updateStatus(order._id, null, 'paid')}
-              className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              Confirm Cash Payment Received
-            </button>
-          )}
-        </div>
-      )}
+        )}
+        
+        {order.paymentStatus === 'pending' && (
+          <button 
+            onClick={() => updateStatus(order._id, null, 'paid')}
+            className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
+          >
+            Confirm Cash Payment Received
+          </button>
+        )}
+      </div>
     </motion.div>
   );
 

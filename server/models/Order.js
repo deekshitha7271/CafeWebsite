@@ -12,7 +12,7 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema],
   total: { type: Number, required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
-  orderStatus: { type: String, enum: ['placed', 'preparing', 'ready'], default: 'placed' },
+  orderStatus: { type: String, enum: ['placed', 'preparing', 'ready', 'completed'], default: 'placed' },
   stripeSessionId: { type: String },
   timestamp: { type: Date, default: Date.now }
 });

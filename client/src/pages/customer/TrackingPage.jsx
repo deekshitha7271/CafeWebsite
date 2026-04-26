@@ -10,6 +10,7 @@ const STATUS_STEPS = [
   { id: 'placed', label: 'Order Received', icon: Coffee },
   { id: 'preparing', label: 'Preparing', icon: ChefHat },
   { id: 'ready', label: 'Ready to Serve', icon: Check },
+  { id: 'completed', label: 'Enjoying Meal', icon: Check },
 ];
 
 const TrackingPage = () => {
@@ -48,6 +49,15 @@ const TrackingPage = () => {
       }
     };
   }, [orderId, socket]);
+
+  const handleOrderReceived = async () => {
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/orders/${orderId}/status`, { orderStatus: 'completed' });
+      setOrder(prev => ({ ...prev, orderStatus: 'completed' }));
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -123,17 +133,52 @@ const TrackingPage = () => {
               {order.items.map(item => (
                 <div key={item._id} className="flex justify-between items-center text-sm border-b border-white/5 pb-2">
                   <span className="text-text-muted"><span className="text-primary font-bold mr-2 uppercase">{item.quantity}X</span> {item.name}</span>
-                  <span className="font-bold text-white">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="font-bold text-white">₹{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             <div className="mt-8 pt-4 border-t border-white/10 flex justify-between items-center">
               <span className="font-serif text-2xl text-text-muted">Total</span>
-              <span className="font-bold text-3xl text-primary">${order.total.toFixed(2)}</span>
+              <span className="font-bold text-3xl text-primary">₹{order.total.toFixed(2)}</span>
             </div>
             {order.paymentStatus === 'paid' && (
               <div className="mt-6 inline-block bg-primary/20 text-primary px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest border border-primary/30">
                 Payment Completed
+              </div>
+            )}
+
+            {order.orderStatus === 'ready' && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleOrderReceived}
+                className="mt-8 w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest shadow-[0_10px_25px_rgba(245,158,11,0.3)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] transition-all"
+              >
+                I've Received my Order!
+              </motion.button>
+            )}
+
+            {order.orderStatus === 'completed' && (
+              <div className="mt-8 space-y-4">
+                <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
+                  <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
+                  <p className="text-emerald-400/60 text-xs uppercase tracking-widest font-black">Thank you for visiting</p>
+                </div>
+                
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => window.location.href = '/'}
+                    className="flex-1 bg-surface-light border border-white/10 hover:border-white/30 text-white font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all"
+                  >
+                    Order Again?
+                  </button>
+                  <button 
+                    onClick={() => { localStorage.removeItem('lastOrderId'); window.location.href = '/'; }}
+                    className="flex-1 bg-surface border border-white/10 hover:bg-surface-dark text-text-muted font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all hover:text-white"
+                  >
+                    I'm Done
+                  </button>
+                </div>
               </div>
             )}
           </div>
