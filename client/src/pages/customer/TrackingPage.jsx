@@ -276,18 +276,33 @@ const TrackingPage = () => {
                 
                 <div className="flex gap-4">
                   <button 
+                    disabled={order.paymentStatus !== 'paid'}
                     onClick={() => window.location.href = '/'}
-                    className="flex-1 bg-surface-light border border-white/10 hover:border-white/30 text-white font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all"
+                    className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${
+                      order.paymentStatus === 'paid' 
+                      ? 'bg-surface-light border border-white/10 hover:border-white/30 text-white' 
+                      : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
+                    }`}
                   >
                     Order Again?
                   </button>
                   <button 
+                    disabled={order.paymentStatus !== 'paid'}
                     onClick={() => { localStorage.removeItem('lastOrderId'); window.location.href = '/'; }}
-                    className="flex-1 bg-surface border border-white/10 hover:bg-surface-dark text-text-muted font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all hover:text-white"
+                    className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${
+                      order.paymentStatus === 'paid' 
+                      ? 'bg-surface border border-white/10 hover:bg-surface-dark text-text-muted hover:text-white' 
+                      : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
+                    }`}
                   >
                     I'm Done
                   </button>
                 </div>
+                {order.paymentStatus !== 'paid' && (
+                  <p className="text-center text-[10px] text-orange-400/60 font-black uppercase tracking-[0.2em] animate-pulse pt-2">
+                    Please settle your bill to finalize order
+                  </p>
+                )}
               </div>
             )}
             </div>
