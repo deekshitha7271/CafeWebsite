@@ -95,12 +95,16 @@ app.get('/api/menu', async (req, res) => {
 
 app.get('/api/analytics', async (req, res) => {
   try {
+    const today = new Date();
+    today.setHours(today.getHours() - 24);
+    
     const stats = await Order.aggregate([
+      { $match: { timestamp: { $gte: today } } },
       {
         $group: {
           _id: null,
           totalOrders: { $sum: 1 },
-          totalRevenue: { $sum: { $convert: { input: "$total", to: "double", onError: 0, onNull: 0 } } }
+          totalRevenue: { $sum: { $ifNull: ["$total", 0] } }
         }
       }
     ]);
@@ -125,7 +129,8 @@ app.get('/api/analytics', async (req, res) => {
       popularItems 
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch analytics' });
+    console.error('Analytics Error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
   }
 });
 
