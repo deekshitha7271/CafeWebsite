@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #F59E0B;
+  --color-primary-light: #FBBF24;
+  --color-primary-dark: #D97706;
+  
+  --color-surface: #2E160C;
+  --color-surface-light: #4A2511;
+  --color-surface-dark: #1A0D07;
+  
+  --color-background: #140A05;
+  
+  --color-text: #FDF8F5;
+  --color-text-muted: #DABFAC;
+
+  --color-accent-tan: #EACCA4;
+  --color-accent-brown: #3E1E0D;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+}
+
+@layer base {
+  body {
+    @apply text-text antialiased selection:bg-primary/30 min-h-screen font-sans;
+    background: radial-gradient(circle at 50% 0%, #30170A 0%, #140A05 100%);
+    background-attachment: fixed;
+  }
+
+  html.lenis {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+  
+  h1, h2, h3 {
+    @apply font-serif tracking-wide;
+  }
+}
+
+@layer utilities {
+  .hero-text-glow {
+    text-shadow: 0 0 50px rgba(245, 158, 11, 0.5);
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Structural Premium Cards */
+  .premium-card {
+    @apply bg-surface-dark/90 backdrop-blur-2xl border border-white/5 rounded-2xl shadow-2xl relative overflow-hidden transition-all duration-300;
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.8);
+  }
+  
+  .premium-card-tan {
+    @apply bg-accent-tan text-accent-brown rounded-3xl p-6 relative overflow-hidden shadow-2xl transition-all duration-300;
+    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.6);
+  }
+  
+  /* Absolute Luxury Glass Objects */
+  .glass-panel {
+    @apply bg-surface-dark/60 backdrop-blur-[20px] shadow-2xl;
+    /* Soft border on the top and left to simulate glass edge reflection */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+    border-right: 1px solid rgba(0, 0, 0, 0.5);
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+}
