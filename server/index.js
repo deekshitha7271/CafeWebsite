@@ -28,9 +28,6 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// 2. Fix the Express 5 wildcard crash
-app.options('/(.*)', cors());
-
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
