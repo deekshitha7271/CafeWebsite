@@ -14,25 +14,7 @@ const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:30
 
 console.log("🔒 Trusted Origins:", allowedOrigins);
 
-const io = new Server(server, {
-  cors: {
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.warn("🚫 CORS BLOCKED origin:", origin);
-        callback(null, false); // For debugging, change this to false but don't crash
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
-  }
-});
-
-// Webhook requires raw body. We'll set it up in payment routes.
-app.use('/api/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
-
+// 1. Move CORS to the TOP
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -46,8 +28,27 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Explicitly handle preflight requests for all routes
-app.options('*', cors());
+// 2. Fix the Express 5 wildcard crash
+app.options('/(.*)', cors());
+
+const io = new Server(server, {
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn("🚫 CORS BLOCKED origin:", origin);
+        callback(null, false);
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  }
+});
+
+// Webhook requires raw body. We'll set it up in payment routes.
+app.use('/api/webhook', express.raw({ type: 'application/json' }));
+app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
