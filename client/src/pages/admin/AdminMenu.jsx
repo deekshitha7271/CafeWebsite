@@ -90,7 +90,13 @@ const AdminMenu = () => {
         {categories.map(cat => (
           <div key={cat._id} className="bg-surface/20 p-8 rounded-3xl border border-white/5">
             <h3 className="text-3xl font-serif font-bold mb-8 flex items-center gap-4 text-white">
-              <span className="bg-surface-dark p-3 rounded-2xl border border-white/5 shadow-inner">{cat.icon}</span> 
+              <span className="bg-surface-dark p-3 rounded-2xl border border-white/5 shadow-inner w-16 h-16 flex items-center justify-center overflow-hidden">
+                {cat.icon?.startsWith('http') ? (
+                  <img src={cat.icon} alt={cat.name} className="w-full h-full object-cover" />
+                ) : (
+                  cat.icon
+                )}
+              </span> 
               {cat.name}
               {cat.mood !== 'none' && (
                 <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded ml-2 ${cat.mood === 'spark' ? 'bg-primary/20 text-primary' : 'bg-purple-500/20 text-purple-400'}`}>
@@ -179,7 +185,7 @@ const AdminMenu = () => {
                   <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Category Assignment</label>
                   <select required value={itemForm.categoryId} onChange={e => setItemForm({...itemForm, categoryId: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors appearance-none">
                     <option value="">Select Category...</option>
-                    {categories.map(c => <option key={c._id} value={c._id}>{c.icon} {c.name}</option>)}
+                    {categories.map(c => <option key={c._id} value={c._id}>{(c.icon?.startsWith('http') ? '📸' : c.icon)} {c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -238,8 +244,8 @@ const AdminMenu = () => {
                   <input required value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors" placeholder="e.g. Hot Drinks" />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Category Icon (Emoji)</label>
-                  <input value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors text-2xl" placeholder="☕" />
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Category Symbol (URL or Emoji)</label>
+                  <input value={catForm.icon} onChange={e => setCatForm({...catForm, icon: e.target.value})} className="w-full bg-surface border border-white/10 rounded-xl p-3 text-white focus:border-primary outline-none transition-colors text-sm" placeholder="https://... or ☕" />
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase font-bold tracking-widest text-primary mb-2">Mood Assignment</label>

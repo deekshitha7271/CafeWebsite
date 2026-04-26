@@ -273,6 +273,13 @@ const MenuPage = () => {
                             : 'text-text-muted hover:text-white'
                         }`}
                       >
+                         <span className={`w-5 h-5 flex items-center justify-center overflow-hidden rounded-full ${activeCategory === cat._id ? 'bg-background/20' : 'bg-white/5'}`}>
+                            {cat.icon?.startsWith('http') ? (
+                              <img src={cat.icon} alt={cat.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-sm">{cat.icon}</span>
+                            )}
+                         </span>
                         {cat.name}
                       </button>
                     ))}
