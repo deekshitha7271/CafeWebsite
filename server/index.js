@@ -7,7 +7,12 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:5173", "http://localhost:3000"].filter(Boolean);
+
+// Clean up the CLIENT_URL to handle accidental trailing slashes or spaces
+const clientUrl = process.env.CLIENT_URL?.trim().replace(/\/$/, "");
+const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:3000"].filter(Boolean);
+
+console.log("🔒 Trusted Origins:", allowedOrigins);
 
 const io = new Server(server, {
   cors: {
