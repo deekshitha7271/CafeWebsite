@@ -96,10 +96,14 @@ app.get('/api/menu', async (req, res) => {
 app.get('/api/analytics', async (req, res) => {
   try {
     const today = new Date();
-    today.setHours(today.getHours() - 24);
+    const yesterday = new Date(today);
+    yesterday.setHours(yesterday.getHours() - 24);
+    const dayBefore = new Date(yesterday);
+    dayBefore.setHours(dayBefore.getHours() - 24);
     
+    // 1. Current Stats (Last 24h)
     const stats = await Order.aggregate([
-      { $match: { timestamp: { $gte: today } } },
+      { $match: { timestamp: { $gte: yesterday }, paymentStatus: 'paid' } },
       {
         $group: {
           _id: null,
@@ -109,14 +113,37 @@ app.get('/api/analytics', async (req, res) => {
       }
     ]);
 
-    const revenue = stats.length > 0 ? stats[0].totalRevenue : 0;
-    const totalOrdersToday = stats.length > 0 ? stats[0].totalOrders : 0;
-    
-    console.log(`📊 Analytics Heartbeat: Orders: ${totalOrdersToday}, Revenue: ₹${revenue}`);
+    // 2. Previous Stats (24h-48h ago for Growth)
+    const prevStats = await Order.aggregate([
+      { $match: { timestamp: { $gte: dayBefore, $lt: yesterday }, paymentStatus: 'paid' } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $ifNull: ["$total", 0] } }
+        }
+      }
+    ]);
 
-    // Most ordered items aggregation
+    // 3. Active Tables (Any order not yet completed)
+    const activeTablesData = await Order.distinct('table', { orderStatus: { $ne: 'completed' } });
+
+    const currentRevenue = stats.length > 0 ? stats[0].totalRevenue : 0;
+    const prevRevenue = prevStats.length > 0 ? prevStats[0].totalRevenue : 0;
+    const totalOrdersToday = stats.length > 0 ? stats[0].totalOrders : 0;
+
+    // Calculate Growth %
+    let growth = 0;
+    if (prevRevenue > 0) {
+      growth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
+    } else if (currentRevenue > 0) {
+      growth = 100; // First sales!
+    }
+    
+    console.log(`📈 Analytics Pulse | Today: ₹${currentRevenue}, Yesterday: ₹${prevRevenue}, Growth: ${growth.toFixed(1)}%`);
+
+    // Popular items
     const popularItems = await Order.aggregate([
-      { $match: { timestamp: { $gte: today } } },
+      { $match: { timestamp: { $gte: yesterday }, paymentStatus: 'paid' } },
       { $unwind: "$items" },
       { $group: { _id: "$items.name", count: { $sum: "$items.quantity" } } },
       { $sort: { count: -1 } },
@@ -125,12 +152,14 @@ app.get('/api/analytics', async (req, res) => {
     
     res.json({ 
       totalOrdersToday, 
-      revenue: parseFloat(revenue || 0).toFixed(2),
+      revenue: parseFloat(currentRevenue || 0).toFixed(2),
+      activeTables: activeTablesData.length,
+      growth: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`,
       popularItems 
     });
   } catch (error) {
     console.error('Analytics Error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics', details: error.message });
+    res.status(500).json({ error: 'Failed to fetch analytics' });
   }
 });
 

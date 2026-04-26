@@ -193,10 +193,10 @@ const MenuPage = () => {
                 </motion.div>
                 
                 {/* Category Navigation - Minimal & Glassy */}
-                <div className="overflow-x-auto hide-scrollbar flex space-x-3 p-2 bg-surface-dark/40 backdrop-blur-2xl rounded-[30px] border border-white/5">
+                <div className="overflow-x-auto hide-scrollbar flex space-x-3 p-2 bg-surface-dark/40 backdrop-blur-2xl rounded-[30px] border border-white/5 w-full md:w-auto overflow-y-hidden touch-pan-x">
                     <button
                       onClick={() => setActiveCategory('all')}
-                      className={`whitespace-nowrap px-8 py-3.5 rounded-[22px] text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
+                      className={`whitespace-nowrap px-8 py-3.5 rounded-[22px] text-[10px] uppercase tracking-[0.2em] font-black transition-all flex-shrink-0 ${
                         activeCategory === 'all' 
                           ? 'bg-primary text-background shadow-[0_10px_30px_rgba(245,158,11,0.4)]' 
                           : 'text-text-muted hover:text-white'
@@ -208,7 +208,7 @@ const MenuPage = () => {
                       <button
                         key={cat._id}
                         onClick={() => setActiveCategory(cat._id)}
-                        className={`whitespace-nowrap px-8 py-3.5 rounded-[22px] text-[10px] uppercase tracking-[0.2em] font-black transition-all flex items-center gap-3 ${
+                        className={`whitespace-nowrap px-8 py-3.5 rounded-[22px] text-[10px] uppercase tracking-[0.2em] font-black transition-all flex items-center gap-3 flex-shrink-0 ${
                           activeCategory === cat._id 
                             ? 'bg-primary text-background shadow-[0_10px_30px_rgba(245,158,11,0.4)]' 
                             : 'text-text-muted hover:text-white'
@@ -292,7 +292,7 @@ const MenuPage = () => {
                           <div className="space-y-2 mb-10 opacity-70">
                              {(item.includedItems || []).map((inc, k) => (
                                 <p key={k} className="text-[10px] text-white font-medium flex items-center gap-2 tracking-wide">
-                                   <div className="w-1 h-1 rounded-full bg-primary" /> {inc}
+                                   <span className="w-1 h-1 rounded-full bg-primary" /> {inc}
                                 </p>
                              ))}
                           </div>

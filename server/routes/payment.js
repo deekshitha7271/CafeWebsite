@@ -6,37 +6,41 @@ const Order = require('../models/Order');
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total } = req.body;
+    const { items, table, total, orderId } = req.body;
+    let targetOrder;
 
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: 'No items in order' });
+    if (orderId) {
+      targetOrder = await Order.findById(orderId);
+      if (!targetOrder) return res.status(404).json({ error: 'Order not found' });
+    } else {
+      if (!items || items.length === 0) {
+        return res.status(400).json({ error: 'No items in order' });
+      }
+
+      // Save new order to DB
+      targetOrder = new Order({
+        table,
+        items: items.map(i => ({
+          menuItemId: i._id || i.menuItemId,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity
+        })),
+        total,
+        paymentStatus: 'pending',
+        orderStatus: 'placed'
+      });
+      await targetOrder.save();
     }
 
-    // Save preliminary order to DB
-    const newOrder = new Order({
-      table,
-      items: items.map(i => ({
-        menuItemId: i._id,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity
-      })),
-      total,
-      paymentStatus: 'pending',
-      orderStatus: 'placed'
-    });
-    
-    await newOrder.save();
-
-    // Map items for Stripe
-    const line_items = items.map(item => ({
+    // Map items for Stripe using the order's items
+    const line_items = targetOrder.items.map(item => ({
       price_data: {
-        currency: 'usd',
+        currency: 'inr',
         product_data: {
           name: item.name,
-          images: item.image ? [item.image] : [],
         },
-        unit_amount: Math.round(item.price * 100), // Stripe expects cents
+        unit_amount: Math.round(item.price * 100), // Stripe expects cents/paise
       },
       quantity: item.quantity,
     }));
@@ -46,21 +50,25 @@ router.post('/checkout', async (req, res) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${newOrder._id}`,
-      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/?table=${table}`,
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?success=true`,
+      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?canceled=true`,
       metadata: {
-        orderId: newOrder._id.toString()
+        orderId: targetOrder._id.toString()
       }
     });
 
     // Update order with session id
-    newOrder.stripeSessionId = session.id;
-    await newOrder.save();
+    targetOrder.stripeSessionId = session.id;
+    await targetOrder.save();
 
-    res.json({ url: session.url, sessionId: session.id, orderId: newOrder._id });
+    res.json({ url: session.url, sessionId: session.id, orderId: targetOrder._id });
   } catch (error) {
-    console.error('Checkout error:', error);
-    res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('🔥 CRITICAL STRIPE ERROR:', error.message);
+    console.error('Detailed Debug Info:', error);
+    res.status(500).json({ 
+      error: 'Failed to create checkout session', 
+      details: error.message 
+    });
   }
 });
 

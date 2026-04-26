@@ -45,7 +45,7 @@ const AdminDashboard = () => {
           { label: 'Total Orders', value: stats?.totalOrdersToday || 0, icon: Activity, color: 'text-primary' },
           { label: 'Revenue', value: '₹' + (stats?.revenue || '0.00'), icon: Wallet, color: 'text-emerald-400' },
           { label: 'Active Tables', value: stats?.activeTables || 0, icon: Users, color: 'text-blue-400' },
-          { label: 'Growth', value: '+12%', icon: TrendingUp, color: 'text-purple-400' },
+          { label: 'Growth', value: stats?.growth || '0.0%', icon: TrendingUp, color: 'text-purple-400' },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (

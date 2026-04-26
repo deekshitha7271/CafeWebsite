@@ -13,7 +13,7 @@ const CartDrawer = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleCashOrder = async () => {
+  const handlePlaceOrder = async () => {
     if (state.items.length === 0) return;
     
     if (!state.table) {
@@ -40,35 +40,8 @@ const CartDrawer = () => {
       dispatch({ type: 'SET_CART_OPEN', payload: false });
       navigate(`/track/${response.data._id}`);
     } catch (error) {
-      console.error('Cash order error:', error);
+      console.error('Order placement error:', error);
       alert("❌ Failed to place order. Please check your connection.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCheckout = async () => {
-    if (state.items.length === 0) return;
-    setLoading(true);
-    
-    try {
-      const stripe = await stripePromise;
-      
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
-        items: state.items,
-        table: state.table,
-        total: cartTotal,
-      });
-
-      const result = await stripe.redirectToCheckout({
-        sessionId: response.data.sessionId,
-      });
-
-      if (result.error) {
-        console.error(result.error.message);
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
     } finally {
       setLoading(false);
     }
@@ -187,7 +160,7 @@ const CartDrawer = () => {
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleCheckout}
+                  onClick={handlePlaceOrder}
                   disabled={state.items.length === 0 || loading}
                   className="relative w-full group disabled:opacity-50 overflow-hidden"
                 >
@@ -199,22 +172,11 @@ const CartDrawer = () => {
                       <Loader2 className="w-6 h-6 animate-spin text-background" />
                     ) : (
                       <>
-                        <span>Pay with Stripe</span>
+                        <span>Place Order Now</span>
                         <Sparkles className="w-4 h-4 opacity-70" />
                       </>
                     )}
                   </div>
-                </motion.button>
-
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleCashOrder}
-                  disabled={state.items.length === 0 || loading}
-                  className="w-full bg-surface-light border border-white/10 hover:border-white/30 text-white font-bold py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all"
-                >
-                  <Banknote className="w-5 h-5 text-primary" />
-                  <span>Pay at Counter</span>
                 </motion.button>
               </div>
             </div>
