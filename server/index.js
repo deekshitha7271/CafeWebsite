@@ -56,7 +56,7 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   socket.on('join:order', (orderId) => {
     socket.join(`order:${orderId}`);
     console.log(`Socket joined room order:${orderId}`);
@@ -100,7 +100,7 @@ app.get('/api/analytics', async (req, res) => {
     yesterday.setHours(yesterday.getHours() - 24);
     const dayBefore = new Date(yesterday);
     dayBefore.setHours(dayBefore.getHours() - 24);
-    
+
     // 1. Current Stats (Last 24h)
     const stats = await Order.aggregate([
       { $match: { timestamp: { $gte: yesterday }, paymentStatus: 'paid' } },
@@ -125,7 +125,10 @@ app.get('/api/analytics', async (req, res) => {
     ]);
 
     // 3. Active Tables (Any order not yet completed)
-    const activeTablesData = await Order.distinct('table', { orderStatus: { $ne: 'completed' } });
+    const activeTablesData = await Order.distinct('table', {
+      orderStatus: { $ne: 'completed' },
+      table: { $ne: null }
+    });
 
     const currentRevenue = stats.length > 0 ? stats[0].totalRevenue : 0;
     const prevRevenue = prevStats.length > 0 ? prevStats[0].totalRevenue : 0;
@@ -138,7 +141,7 @@ app.get('/api/analytics', async (req, res) => {
     } else if (currentRevenue > 0) {
       growth = 100; // First sales!
     }
-    
+
     console.log(`📈 Analytics Pulse | Today: ₹${currentRevenue}, Yesterday: ₹${prevRevenue}, Growth: ${growth.toFixed(1)}%`);
 
     // Popular items
@@ -149,13 +152,13 @@ app.get('/api/analytics', async (req, res) => {
       { $sort: { count: -1 } },
       { $limit: 5 }
     ]);
-    
-    res.json({ 
-      totalOrdersToday, 
+
+    res.json({
+      totalOrdersToday,
       revenue: parseFloat(currentRevenue || 0).toFixed(2),
       activeTables: activeTablesData.length,
       growth: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`,
-      popularItems 
+      popularItems
     });
   } catch (error) {
     console.error('Analytics Error:', error);

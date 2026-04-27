@@ -8,11 +8,19 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  table: { type: Number, required: true },
+  table: { type: Number },
+  orderType: {
+    type: String,
+    enum: ['dinein-qr', 'dinein-web', 'takeaway'],
+    default: 'dinein-qr'
+  },
   items: [orderItemSchema],
   total: { type: Number, required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   orderStatus: { type: String, enum: ['placed', 'preparing', 'ready', 'completed'], default: 'placed' },
+  estimatedReadyTime: { type: Date },
+  customerName: { type: String },
+  customerPhone: { type: String },
   stripeSessionId: { type: String },
   timestamp: { type: Date, default: Date.now }
 });

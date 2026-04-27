@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total, orderId } = req.body;
+    const { items, table, total, orderId, orderType, customerName, customerPhone } = req.body;
     let targetOrder;
 
     if (orderId) {
@@ -20,6 +20,9 @@ router.post('/checkout', async (req, res) => {
       // Save new order to DB
       targetOrder = new Order({
         table,
+        orderType: orderType || 'dinein-web',
+        customerName,
+        customerPhone,
         items: items.map(i => ({
           menuItemId: i._id || i.menuItemId,
           name: i.name,
@@ -65,9 +68,9 @@ router.post('/checkout', async (req, res) => {
   } catch (error) {
     console.error('🔥 CRITICAL STRIPE ERROR:', error.message);
     console.error('Detailed Debug Info:', error);
-    res.status(500).json({ 
-      error: 'Failed to create checkout session', 
-      details: error.message 
+    res.status(500).json({
+      error: 'Failed to create checkout session',
+      details: error.message
     });
   }
 });
@@ -81,9 +84,9 @@ router.post('/webhook', async (req, res) => {
     // If you add a webhook secret in .env, verify it here.
     // For now we trust the webhook payload locally or bypass verification if no secret is set.
     if (process.env.STRIPE_WEBHOOK_SECRET) {
-        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } else {
-        event = JSON.parse(req.body.toString()); // Raw body parsing fallback
+      event = JSON.parse(req.body.toString()); // Raw body parsing fallback
     }
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
@@ -100,7 +103,7 @@ router.post('/webhook', async (req, res) => {
       if (order && order.paymentStatus !== 'paid') {
         order.paymentStatus = 'paid';
         await order.save();
-        
+
         // Emit socket event to admins
         const io = req.app.get('io');
         if (io) {
