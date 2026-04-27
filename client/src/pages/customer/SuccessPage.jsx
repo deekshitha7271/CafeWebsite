@@ -15,6 +15,11 @@ const SuccessPage = () => {
     dispatch({ type: 'CLEAR_CART' });
     dispatch({ type: 'SET_CART_OPEN', payload: false });
 
+    // Ensure Navbar recognizes the active order
+    if (orderId) {
+      dispatch({ type: 'SET_LAST_ORDER_ID', payload: orderId });
+    }
+
     // Redirect to tracking page after 3 seconds
     const timer = setTimeout(() => {
       if (orderId) {
@@ -27,12 +32,12 @@ const SuccessPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="glass-card p-8 rounded-3xl flex flex-col items-center text-center max-w-sm w-full"
       >
-        <motion.div 
+        <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: 'spring' }}
@@ -40,7 +45,7 @@ const SuccessPage = () => {
         >
           <CheckCircle2 className="w-10 h-10" />
         </motion.div>
-        
+
         <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
         <p className="text-text-muted mb-8">
           Your order has been placed. We're redirecting you to the tracking page...

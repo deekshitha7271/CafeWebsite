@@ -11,13 +11,22 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 const CartDrawer = () => {
   const { state, dispatch, cartTotal } = useCart();
   const [loading, setLoading] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const navigate = useNavigate();
+
+  const isTableOrder = state.orderType === 'dinein-qr' && state.table;
 
   const handlePlaceOrder = async () => {
     if (state.items.length === 0) return;
-    
-    if (!state.table) {
-      alert("⚠️ Table Assignment Missing! Please scan a Table QR code to place an order.");
+
+    if (!isTableOrder) {
+      alert("⚠️ Cash payment is only available for table-scanned orders. Please use Online Payment.");
+      return;
+    }
+
+    if (state.orderType !== 'dinein-qr' && (!customerName || !customerPhone)) {
+      alert("⚠️ Please provide your name and phone number.");
       return;
     }
 
@@ -31,11 +40,14 @@ const CartDrawer = () => {
           quantity: i.quantity
         })),
         table: state.table,
+        orderType: state.orderType,
+        customerName,
+        customerPhone,
         total: cartTotal,
       });
 
       // Save order ID and navigate
-      localStorage.setItem('lastOrderId', response.data._id);
+      dispatch({ type: 'SET_LAST_ORDER_ID', payload: response.data._id });
       dispatch({ type: 'CLEAR_CART' });
       dispatch({ type: 'SET_CART_OPEN', payload: false });
       navigate(`/track/${response.data._id}`);
@@ -47,11 +59,38 @@ const CartDrawer = () => {
     }
   };
 
+  const handleCheckout = async () => {
+    if (state.items.length === 0) return;
+
+    if (state.orderType !== 'dinein-qr' && (!customerName || !customerPhone)) {
+      alert("⚠️ Please provide your name and phone number.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
+        items: state.items,
+        table: state.table,
+        total: cartTotal,
+        orderType: state.orderType,
+        customerName,
+        customerPhone
+      });
+      window.location.href = res.data.url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert("❌ Failed to initiate checkout.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {state.isCartOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -59,8 +98,8 @@ const CartDrawer = () => {
             onClick={() => dispatch({ type: 'SET_CART_OPEN', payload: false })}
             className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 mix-blend-overlay"
           />
-          
-          <motion.div 
+
+          <motion.div
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
@@ -75,7 +114,7 @@ const CartDrawer = () => {
                 <Sparkles className="w-5 h-5 text-primary" />
                 <h2 className="text-2xl font-serif font-bold text-white tracking-wide">Your Order</h2>
               </div>
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => dispatch({ type: 'SET_CART_OPEN', payload: false })}
@@ -89,7 +128,7 @@ const CartDrawer = () => {
               {state.items.length === 0 ? (
                 <div className="text-center text-text-muted py-20 flex flex-col items-center justify-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-surface border border-white/5 flex items-center justify-center">
-                     <span className="opacity-50 text-2xl">🍽️</span>
+                    <span className="opacity-50 text-2xl">🍽️</span>
                   </div>
                   <p className="font-serif text-lg tracking-wide">Your cart is empty.</p>
                 </div>
@@ -97,28 +136,28 @@ const CartDrawer = () => {
                 <div className="space-y-4">
                   <AnimatePresence>
                     {state.items.map((item, index) => (
-                      <motion.div 
-                        key={item._id} 
+                      <motion.div
+                        key={item._id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20, scale: 0.9 }}
                         transition={{ delay: index * 0.05 }}
                         className="flex items-center gap-4 bg-surface-light/40 backdrop-blur-md p-4 rounded-3xl border border-white/10 hover:border-primary/30 transition-colors shadow-lg"
                       >
-                         {item.image ? (
-                             <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-2xl shadow-inner border border-white/5" />
-                         ) : (
-                             <div className="w-16 h-16 rounded-2xl bg-surface-dark flex items-center justify-center border border-white/5">
-                                 <span className="opacity-30 text-xs">IMG</span>
-                             </div>
-                         )}
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-2xl shadow-inner border border-white/5" />
+                        ) : (
+                          <div className="w-16 h-16 rounded-2xl bg-surface-dark flex items-center justify-center border border-white/5">
+                            <span className="opacity-30 text-xs">IMG</span>
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-serif font-bold text-base text-white truncate">{item.name}</h4>
                           <p className="text-primary font-black text-sm mt-0.5 tracking-wider">₹{(item.price * item.quantity).toFixed(2)}</p>
                         </div>
-                        
+
                         <div className="flex items-center gap-3 bg-surface-dark/80 px-2 py-1.5 rounded-full border border-white/5 shadow-inner">
-                          <motion.button 
+                          <motion.button
                             whileTap={{ scale: 0.8 }}
                             onClick={() => dispatch({ type: 'DECREMENT_ITEM', payload: item._id })}
                             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-text-muted transition-colors"
@@ -126,7 +165,7 @@ const CartDrawer = () => {
                             <Minus className="w-4 h-4" />
                           </motion.button>
                           <span className="text-sm font-black w-4 text-center text-white">{item.quantity}</span>
-                          <motion.button 
+                          <motion.button
                             whileTap={{ scale: 0.8 }}
                             onClick={() => dispatch({ type: 'ADD_ITEM', payload: item })}
                             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-primary transition-colors"
@@ -142,42 +181,66 @@ const CartDrawer = () => {
             </div>
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
+              {/* Customer Info (For non-QR orders) */}
+              {state.orderType !== 'dinein-qr' && (
+                <div className="mb-6 space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Your Name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/40"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/40"
+                  />
+                </div>
+              )}
+
               <div className="flex justify-between items-end mb-6 text-sm">
                 <div className="flex flex-col gap-1">
-                   <span className="text-text-muted font-black tracking-widest uppercase text-xs">Total Amount</span>
-                   {!state.table && (
-                     <button 
-                        onClick={() => dispatch({ type: 'SET_TABLE', payload: 1 })}
-                        className="text-[9px] text-primary underline underline-offset-4 font-bold tracking-widest opacity-60 hover:opacity-100 transition-opacity"
-                     >
-                        Assign to Table 01 (Test)
-                     </button>
-                   )}
+                  <span className="text-text-muted font-black tracking-widest uppercase text-xs">Total Amount</span>
                 </div>
                 <span className="text-3xl font-black text-white drop-shadow-lg">₹{cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex flex-col gap-3">
-                <motion.button 
+                <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handlePlaceOrder}
+                  onClick={handleCheckout}
                   disabled={state.items.length === 0 || loading}
                   className="relative w-full group disabled:opacity-50 overflow-hidden"
                 >
-                  {/* Button Glow Background */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary-dark via-primary to-primary-light rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
-                  <div className="relative bg-gradient-to-r from-primary-dark to-primary text-background font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-primary-light/50 shadow-xl">
-                    {loading ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-background" />
-                    ) : (
-                      <>
-                        <span>Place Order Now</span>
-                        <Sparkles className="w-4 h-4 opacity-70" />
-                      </>
-                    )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-emerald-400/50 shadow-xl">
+                    {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Order & Pay Online <Sparkles className="w-4 h-4 opacity-70" /></>}
                   </div>
                 </motion.button>
+
+                {state.orderType === 'dinein-qr' && state.table && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handlePlaceOrder}
+                    disabled={state.items.length === 0 || loading}
+                    className="relative w-full group disabled:opacity-50 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white/5 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative bg-surface-light border border-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 hover:bg-surface transition-all">
+                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Pay Cash at Counter <Banknote className="w-4 h-4 opacity-70" /></>}
+                    </div>
+                  </motion.button>
+                )}
+
+                {state.orderType !== 'dinein-qr' && (
+                  <p className="text-[9px] text-center text-text-muted/40 uppercase font-bold tracking-widest mt-1">
+                    Advance payment required for web orders
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>

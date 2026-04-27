@@ -33,7 +33,7 @@ const AdminOrders = () => {
           return [newOrder, ...prev];
         });
       });
-      
+
       socket.on('order:update', (updatedOrder) => {
         setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
       });
@@ -48,11 +48,12 @@ const AdminOrders = () => {
     };
   }, [socket]);
 
-  const updateStatus = async (orderId, newStatus, newPaymentStatus) => {
+  const updateStatus = async (orderId, newStatus, newPaymentStatus, estimatedReadyTime) => {
     try {
       const updateData = {};
       if (newStatus) updateData.orderStatus = newStatus;
       if (newPaymentStatus) updateData.paymentStatus = newPaymentStatus;
+      if (estimatedReadyTime) updateData.estimatedReadyTime = estimatedReadyTime;
 
       // Optimistic Update
       setOrders(prev => prev.map(o => o._id === orderId ? { ...o, ...updateData } : o));
@@ -72,7 +73,7 @@ const AdminOrders = () => {
   const pastOrders = orders.filter(o => o.orderStatus === 'ready');
 
   const OrderCard = ({ order, isActive }) => (
-    <motion.div 
+    <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -81,27 +82,35 @@ const AdminOrders = () => {
     >
       <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
         <div>
-          <h3 className="font-serif font-bold text-2xl text-white">Table {order.table}</h3>
-          <p className="text-xs text-text-muted mt-1 uppercase tracking-widest">{new Date(order.timestamp).toLocaleTimeString()}</p>
+          <h3 className="font-serif font-bold text-2xl text-white">
+            {order.orderType === 'takeaway' ? '🥡 Takeaway' : `🪑 Table ${order.table}`}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-text-muted uppercase tracking-widest">{new Date(order.timestamp).toLocaleTimeString()}</p>
+            {order.customerName && (
+              <span className="text-[10px] text-primary font-black uppercase tracking-widest border-l border-white/10 pl-2">
+                {order.customerName}
+              </span>
+            )}
+          </div>
         </div>
         <div className="text-right">
-          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-            order.orderStatus === 'placed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
+          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.orderStatus === 'placed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
             order.orderStatus === 'preparing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
-            'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-          }`}>
+              'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+            }`}>
             {order.orderStatus}
           </span>
           {order.paymentStatus === 'paid' ? (
-             <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-               PAID
-             </p>
+            <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              PAID
+            </p>
           ) : (
-             <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-               <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-               CASH PENDING
-             </p>
+            <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+              CASH PENDING
+            </p>
           )}
         </div>
       </div>
@@ -119,7 +128,7 @@ const AdminOrders = () => {
         {isActive && (
           <div className="flex gap-4">
             {order.orderStatus === 'placed' && (
-              <button 
+              <button
                 onClick={() => updateStatus(order._id, 'preparing')}
                 className="flex-1 bg-surface-light border border-white/10 hover:border-white/30 hover:bg-surface text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all"
               >
@@ -127,18 +136,42 @@ const AdminOrders = () => {
               </button>
             )}
             {order.orderStatus === 'preparing' && (
-              <button 
-                onClick={() => updateStatus(order._id, 'ready')}
-                className="flex-1 bg-primary hover:bg-primary-light hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] text-background py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all transform hover:scale-[1.02]"
-              >
-                Mark Ready
-              </button>
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-2 hide-scrollbar">
+                  {[10, 15, 20, 30, 45].map(mins => (
+                    <button
+                      key={mins}
+                      onClick={() => {
+                        const readyAt = new Date();
+                        readyAt.setMinutes(readyAt.getMinutes() + mins);
+                        updateStatus(order._id, null, null, readyAt);
+                      }}
+                      className="whitespace-nowrap px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-white hover:border-primary hover:bg-primary/10 transition-all flex-shrink-0"
+                    >
+                      +{mins}m
+                    </button>
+                  ))}
+                </div>
+                {order.estimatedReadyTime && (
+                  <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl mb-2 text-center">
+                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">
+                      Target Ready: {new Date(order.estimatedReadyTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                )}
+                <button
+                  onClick={() => updateStatus(order._id, 'ready')}
+                  className="w-full bg-primary hover:bg-primary-light hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] text-background py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all transform hover:scale-[1.02]"
+                >
+                  Mark Ready
+                </button>
+              </div>
             )}
           </div>
         )}
-        
+
         {order.paymentStatus === 'pending' && (
-          <button 
+          <button
             onClick={() => updateStatus(order._id, null, 'paid')}
             className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
           >
@@ -159,7 +192,7 @@ const AdminOrders = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-7">
           <h3 className="text-2xl font-serif font-bold text-white mb-6 flex items-center gap-3">
-            Active Priority 
+            Active Priority
             <span className="bg-primary text-background font-sans text-sm font-black w-8 h-8 flex items-center justify-center rounded-full">
               {activeOrders.length}
             </span>
@@ -169,7 +202,7 @@ const AdminOrders = () => {
               {activeOrders.map(order => <OrderCard key={order._id} order={order} isActive={true} />)}
               {activeOrders.length === 0 && (
                 <div className="text-center py-20 bg-surface/30 rounded-3xl border border-white/5">
-                   <p className="text-text-muted text-lg font-serif">No active orders right now.</p>
+                  <p className="text-text-muted text-lg font-serif">No active orders right now.</p>
                 </div>
               )}
             </AnimatePresence>

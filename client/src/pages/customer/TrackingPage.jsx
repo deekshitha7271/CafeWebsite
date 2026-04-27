@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
+import { useCart } from '../../context/CartContext';
 import { ChefHat, Coffee, Check, Loader2, CreditCard, Banknote, Sparkles, Activity, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
 
 const STATUS_STEPS = [
@@ -16,9 +17,12 @@ const STATUS_STEPS = [
 const TrackingPage = () => {
   const { orderId } = useParams();
   const socket = useSocket();
+  const { dispatch } = useCart();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [showTimeNotification, setShowTimeNotification] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -36,10 +40,23 @@ const TrackingPage = () => {
 
     if (socket) {
       socket.emit('join:order', orderId);
-      
+
       socket.on('order:statusUpdate', (data) => {
         if (data.orderId === orderId) {
-          setOrder(prev => prev ? { ...prev, orderStatus: data.status } : null);
+          setOrder(prev => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              orderStatus: data.status,
+              estimatedReadyTime: data.estimatedReadyTime || prev.estimatedReadyTime
+            };
+          });
+        }
+      });
+
+      socket.on('order:update', (updatedOrder) => {
+        if (updatedOrder._id === orderId) {
+          setOrder(updatedOrder);
         }
       });
     }
@@ -47,9 +64,35 @@ const TrackingPage = () => {
     return () => {
       if (socket) {
         socket.off('order:statusUpdate');
+        socket.off('order:update');
       }
     };
   }, [orderId, socket]);
+
+  useEffect(() => {
+    if (!order?.estimatedReadyTime) return;
+
+    // Show notification when estimation changes
+    setShowTimeNotification(true);
+    const timer = setTimeout(() => setShowTimeNotification(false), 5000);
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const readyTime = new Date(order.estimatedReadyTime);
+      const diff = readyTime - now;
+
+      if (diff <= 0) {
+        setTimeLeft('Ready!');
+        clearInterval(interval);
+      } else {
+        const mins = Math.floor(diff / 1000 / 60);
+        const secs = Math.floor((diff / 1000) % 60);
+        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order?.estimatedReadyTime]);
 
   const handleStripePayment = async () => {
     setLoadingPayment(true);
@@ -96,14 +139,19 @@ const TrackingPage = () => {
 
       <div className="max-w-6xl mx-auto p-8 pt-24">
         <header className="py-10 text-center relative">
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -z-10" />
-           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-             <h1 className="text-5xl md:text-7xl font-serif font-black text-white mb-2">Order Journey</h1>
-             <div className="flex items-center justify-center gap-4 mt-6">
-                <span className="text-primary-light text-[10px] font-black uppercase tracking-[0.4em] bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">Table {order.table}</span>
-                <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {order._id.slice(-6)}</span>
-             </div>
-           </motion.div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -z-10" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 className="text-5xl md:text-7xl font-serif font-black text-white mb-2">Order Journey</h1>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
+              <span className="text-primary-light text-[10px] font-black uppercase tracking-[0.4em] bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
+                {order.orderType === 'takeaway' ? '🥡 Takeaway' : `🪑 Dine-in ${order.table ? `(Table ${order.table})` : ''}`}
+              </span>
+              <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {order._id.slice(-6)}</span>
+              {order.customerName && (
+                <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] border-l border-white/10 pl-4">{order.customerName}</span>
+              )}
+            </div>
+          </motion.div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-12">
@@ -111,13 +159,40 @@ const TrackingPage = () => {
           <div className="lg:col-span-4 space-y-8">
             <div className="glass-card p-10 relative overflow-hidden">
               <h3 className="font-serif font-bold text-2xl mb-10 text-white flex items-center gap-3">
-                 <Activity className="w-5 h-5 text-primary" />
-                 Live Tracker
+                <Activity className="w-5 h-5 text-primary" />
+                Live Tracker
               </h3>
+
+              <AnimatePresence>
+                {showTimeNotification && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-center"
+                  >
+                    <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                      <Sparkles className="w-3 h-3" /> Preparation Time Updated!
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {timeLeft && order.orderStatus === 'preparing' && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-[30px] text-center"
+                >
+                  <p className="text-text-muted/60 text-[10px] font-black uppercase tracking-widest mb-1">Estimated Ready In</p>
+                  <p className="text-4xl font-serif font-black text-primary tracking-tighter">{timeLeft}</p>
+                </motion.div>
+              )}
+
               <div className="relative">
                 {/* Connecting line */}
                 <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-white/5 -ml-px z-0">
-                  <motion.div 
+                  <motion.div
                     className="absolute top-0 w-full bg-primary shadow-[0_0_15px_rgba(245,158,11,0.5)]"
                     initial={{ height: 0 }}
                     animate={{ height: `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
@@ -133,9 +208,8 @@ const TrackingPage = () => {
 
                     return (
                       <div key={step.id} className="flex items-center gap-8">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 ${
-                          isCompleted ? 'bg-primary text-background shadow-[0_0_30px_rgba(245,158,11,0.3)] rotate-0' : 'bg-surface-dark text-text-muted border border-white/5 rotate-[-10deg]'
-                        }`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 ${isCompleted ? 'bg-primary text-background shadow-[0_0_30px_rgba(245,158,11,0.3)] rotate-0' : 'bg-surface-dark text-text-muted border border-white/5 rotate-[-10deg]'
+                          }`}>
                           <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex flex-col">
@@ -143,12 +217,12 @@ const TrackingPage = () => {
                             {step.label}
                           </h3>
                           {isActive && (
-                            <motion.span 
-                               animate={{ opacity: [1, 0.4, 1] }}
-                               transition={{ duration: 2, repeat: Infinity }}
-                               className="text-primary text-[9px] font-black uppercase tracking-[0.2em] mt-1"
+                            <motion.span
+                              animate={{ opacity: [1, 0.4, 1] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="text-primary text-[9px] font-black uppercase tracking-[0.2em] mt-1"
                             >
-                               Live Update
+                              Live Update
                             </motion.span>
                           )}
                         </div>
@@ -162,86 +236,86 @@ const TrackingPage = () => {
 
           {/* Payment & Receipt Column */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Payment Options Section (Only if Pending) */}
-            {order.paymentStatus === 'pending' && (
-               <motion.div 
-                 initial={{ opacity: 0, y: 30 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 className="glass-card p-10 border-primary/20 relative overflow-hidden"
-               >
-                 <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -z-10" />
-                 <div className="flex items-center justify-between mb-10">
-                    <div>
-                      <h3 className="font-serif font-black text-3xl text-white mb-2">Complete Payment</h3>
-                      <p className="text-text-muted/60 text-xs uppercase tracking-widest font-bold">Choose your preferred method</p>
-                    </div>
-                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
-                 </div>
+            {/* Payment Options Section (Only if Pending and Case is QR/Table) */}
+            {order.paymentStatus === 'pending' && order.orderType === 'dinein-qr' && (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-10 border-primary/20 relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -z-10" />
+                <div className="flex items-center justify-between mb-10">
+                  <div>
+                    <h3 className="font-serif font-black text-3xl text-white mb-2">Complete Payment</h3>
+                    <p className="text-text-muted/60 text-xs uppercase tracking-widest font-bold">Choose your preferred method</p>
+                  </div>
+                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Stripe Card */}
-                    <div 
-                      className="group relative p-8 rounded-[35px] bg-white/5 border border-white/10 hover:border-primary/40 transition-all hover:bg-primary/5 flex flex-col"
-                    >
-                       <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-background transition-colors duration-500">
-                          <CreditCard className="w-7 h-7 text-primary group-hover:text-background" />
-                       </div>
-                       <h4 className="text-white font-serif text-2xl mb-2">Online Payment</h4>
-                       <p className="text-text-muted text-[10px] uppercase font-black tracking-widest opacity-60 mb-8">Secure UPI, Card, NetBanking</p>
-                       
-                       <motion.button 
-                         whileHover={{ scale: 1.05 }}
-                         whileTap={{ scale: 0.95 }}
-                         onClick={handleStripePayment}
-                         disabled={loadingPayment}
-                         className="mt-auto w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2"
-                       >
-                          {loadingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Pay Now <ArrowRight className="w-3 h-3" /></>}
-                       </motion.button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Stripe Card */}
+                  <div
+                    className="group relative p-8 rounded-[35px] bg-white/5 border border-white/10 hover:border-primary/40 transition-all hover:bg-primary/5 flex flex-col"
+                  >
+                    <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-background transition-colors duration-500">
+                      <CreditCard className="w-7 h-7 text-primary group-hover:text-background" />
                     </div>
+                    <h4 className="text-white font-serif text-2xl mb-2">Online Payment</h4>
+                    <p className="text-text-muted text-[10px] uppercase font-black tracking-widest opacity-60 mb-8">Secure UPI, Card, NetBanking</p>
 
-                    {/* Cash Card */}
-                    <div 
-                      className="group relative p-8 rounded-[35px] bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all hover:bg-emerald-500/5 flex flex-col"
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleStripePayment}
+                      disabled={loadingPayment}
+                      className="mt-auto w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2"
                     >
-                       <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6">
-                          <Banknote className="w-7 h-7 text-emerald-400" />
-                       </div>
-                       <h4 className="text-white font-serif text-2xl mb-2">Cash at Counter</h4>
-                       <p className="text-text-muted text-[10px] uppercase font-black tracking-widest opacity-60 mb-8">Pay via Cash/Scanner at the Desk</p>
-                       
-                       <button 
-                         onClick={() => alert("✅ Choice Recorded! Please visit the counter to settle your bill.")}
-                         className="mt-auto w-full bg-surface-light border border-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] hover:bg-surface-dark transition-all"
-                       >
-                          I'll Pay Cash
-                       </button>
+                      {loadingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Pay Now <ArrowRight className="w-3 h-3" /></>}
+                    </motion.button>
+                  </div>
+
+                  {/* Cash Card */}
+                  <div
+                    className="group relative p-8 rounded-[35px] bg-white/5 border border-white/10 hover:border-emerald-500/40 transition-all hover:bg-emerald-500/5 flex flex-col"
+                  >
+                    <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6">
+                      <Banknote className="w-7 h-7 text-emerald-400" />
                     </div>
-                 </div>
-               </motion.div>
+                    <h4 className="text-white font-serif text-2xl mb-2">Cash at Counter</h4>
+                    <p className="text-text-muted text-[10px] uppercase font-black tracking-widest opacity-60 mb-8">Pay via Cash/Scanner at the Desk</p>
+
+                    <button
+                      onClick={() => alert("✅ Choice Recorded! Please visit the counter to settle your bill.")}
+                      className="mt-auto w-full bg-surface-light border border-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] hover:bg-surface-dark transition-all"
+                    >
+                      I'll Pay Cash
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
             )}
 
             {/* Receipt Summary */}
             <div className="glass-card p-10">
               <div className="flex items-center justify-between mb-10 border-b border-white/10 pb-6">
-                 <h3 className="font-serif font-black text-3xl text-white">Receipt Summary</h3>
-                 {order.paymentStatus === 'paid' ? (
-                   <span className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-emerald-500/20 flex items-center gap-2">
-                      <Check className="w-3 h-3" /> Paid In Full
-                   </span>
-                 ) : (
-                   <span className="bg-orange-500/20 text-orange-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-orange-500/20 animate-pulse">
-                      Payment Pending
-                   </span>
-                 )}
+                <h3 className="font-serif font-black text-3xl text-white">Receipt Summary</h3>
+                {order.paymentStatus === 'paid' ? (
+                  <span className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-emerald-500/20 flex items-center gap-2">
+                    <Check className="w-3 h-3" /> Paid In Full
+                  </span>
+                ) : (
+                  <span className="bg-orange-500/20 text-orange-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-orange-500/20 animate-pulse">
+                    Payment Pending
+                  </span>
+                )}
               </div>
-              
+
               <div className="space-y-6">
                 {order.items.map(item => (
                   <div key={item._id} className="flex justify-between items-center group">
                     <div className="flex flex-col">
-                       <span className="text-white font-serif text-xl group-hover:text-primary transition-colors cursor-default">{item.name}</span>
-                       <span className="text-primary text-[10px] font-black uppercase tracking-widest">Quantity: {item.quantity}</span>
+                      <span className="text-white font-serif text-xl group-hover:text-primary transition-colors cursor-default">{item.name}</span>
+                      <span className="text-primary text-[10px] font-black uppercase tracking-widest">Quantity: {item.quantity}</span>
                     </div>
                     <span className="font-black text-2xl text-white">₹{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
@@ -250,61 +324,66 @@ const TrackingPage = () => {
 
               <div className="mt-12 pt-8 border-t-2 border-dashed border-white/10 flex justify-between items-center">
                 <div>
-                   <span className="font-serif text-4xl text-white font-black">Grand Total</span>
-                   <p className="text-text-muted/40 text-[9px] font-black uppercase tracking-[0.4em] mt-1">Includes all service charges</p>
+                  <span className="font-serif text-4xl text-white font-black">Grand Total</span>
+                  <p className="text-text-muted/40 text-[9px] font-black uppercase tracking-[0.4em] mt-1">Includes all service charges</p>
                 </div>
                 <span className="font-black text-5xl text-primary drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">₹{order.total.toFixed(2)}</span>
               </div>
 
-            {order.orderStatus === 'ready' && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleOrderReceived}
-                className="mt-8 w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest shadow-[0_10px_25px_rgba(245,158,11,0.3)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] transition-all"
-              >
-                I've Received my Order!
-              </motion.button>
-            )}
+              {order.orderStatus === 'ready' && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleOrderReceived}
+                  className="mt-8 w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest shadow-[0_10px_25px_rgba(245,158,11,0.3)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] transition-all"
+                >
+                  I've Received my Order!
+                </motion.button>
+              )}
 
-            {order.orderStatus === 'completed' && (
-              <div className="mt-8 space-y-4">
-                <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
-                  <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
-                  <p className="text-emerald-400/60 text-xs uppercase tracking-widest font-black">Thank you for visiting</p>
+              {order.orderStatus === 'completed' && (
+                <div className="mt-8 space-y-4">
+                  <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
+                    <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
+                    <p className="text-emerald-400/60 text-xs uppercase tracking-widest font-black">Thank you for visiting</p>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      disabled={order.paymentStatus !== 'paid'}
+                      onClick={() => {
+                        const baseUrl = '/';
+                        const tableParam = order.table ? `?table=${order.table}` : '';
+                        window.location.href = baseUrl + tableParam;
+                      }}
+                      className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${order.paymentStatus === 'paid'
+                        ? 'bg-surface-light border border-white/10 hover:border-white/30 text-white'
+                        : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
+                        }`}
+                    >
+                      Order Again?
+                    </button>
+                    <button
+                      disabled={order.paymentStatus !== 'paid'}
+                      onClick={() => {
+                        dispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
+                        window.location.href = '/';
+                      }}
+                      className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${order.paymentStatus === 'paid'
+                        ? 'bg-surface border border-white/10 hover:bg-surface-dark text-text-muted hover:text-white'
+                        : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
+                        }`}
+                    >
+                      I'm Done
+                    </button>
+                  </div>
+                  {order.paymentStatus !== 'paid' && (
+                    <p className="text-center text-[10px] text-orange-400/60 font-black uppercase tracking-[0.2em] animate-pulse pt-2">
+                      Please settle your bill to finalize order
+                    </p>
+                  )}
                 </div>
-                
-                <div className="flex gap-4">
-                  <button 
-                    disabled={order.paymentStatus !== 'paid'}
-                    onClick={() => window.location.href = '/'}
-                    className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${
-                      order.paymentStatus === 'paid' 
-                      ? 'bg-surface-light border border-white/10 hover:border-white/30 text-white' 
-                      : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
-                    }`}
-                  >
-                    Order Again?
-                  </button>
-                  <button 
-                    disabled={order.paymentStatus !== 'paid'}
-                    onClick={() => { localStorage.removeItem('lastOrderId'); window.location.href = '/'; }}
-                    className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${
-                      order.paymentStatus === 'paid' 
-                      ? 'bg-surface border border-white/10 hover:bg-surface-dark text-text-muted hover:text-white' 
-                      : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
-                    }`}
-                  >
-                    I'm Done
-                  </button>
-                </div>
-                {order.paymentStatus !== 'paid' && (
-                  <p className="text-center text-[10px] text-orange-400/60 font-black uppercase tracking-[0.2em] animate-pulse pt-2">
-                    Please settle your bill to finalize order
-                  </p>
-                )}
-              </div>
-            )}
+              )}
             </div>
           </div>
         </div>
