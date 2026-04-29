@@ -609,9 +609,33 @@ const MenuPage = () => {
               Reinventing the café culture through digital innovation and traditional mastery.
             </p>
             <div className="flex gap-8">
-              <motion.a whileHover={{ y: -5 }} className="text-white/40 hover:text-primary transition-colors"><Camera className="w-6 h-6" /></motion.a>
-              <motion.a whileHover={{ y: -5 }} className="text-white/40 hover:text-primary transition-colors"><MessageCircle className="w-6 h-6" /></motion.a>
-              <motion.a whileHover={{ y: -5 }} className="text-white/40 hover:text-primary transition-colors"><Mail className="w-6 h-6" /></motion.a>
+              <motion.a
+                href="https://www.instagram.com/artisancafeny/"
+                target="_blank"
+                rel="noreferrer"
+                whileHover={{ y: -5 }}
+                className="text-white/40 hover:text-primary transition-colors"
+              >
+                <Camera className="w-6 h-6" />
+              </motion.a>
+              <motion.a
+                href="https://wa.me/12345678901?text=Hi%20Artisan%20Cafe"
+                target="_blank"
+                rel="noreferrer"
+                whileHover={{ y: -5 }}
+                className="text-white/40 hover:text-primary transition-colors"
+              >
+                <MessageCircle className="w-6 h-6" />
+              </motion.a>
+              <motion.a
+                href="mailto:hello@artisancafe.example"
+                target="_blank"
+                rel="noreferrer"
+                whileHover={{ y: -5 }}
+                className="text-white/40 hover:text-primary transition-colors"
+              >
+                <Mail className="w-6 h-6" />
+              </motion.a>
             </div>
           </div>
 
@@ -620,9 +644,9 @@ const MenuPage = () => {
             <div className="space-y-10">
               <h6 className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">Connect</h6>
               <div className="space-y-6 text-sm text-text-muted font-light">
-                <p className="hover:text-white transition-colors cursor-pointer capitalize">Instagram</p>
-                <p className="hover:text-white transition-colors cursor-pointer capitalize">Twitter / X</p>
-                <p className="hover:text-white transition-colors cursor-pointer capitalize">Discord</p>
+                <a href="https://www.instagram.com/artisancafeny/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">Instagram</a>
+                <a href="https://wa.me/12345678901?text=Hi%20Artisan%20Cafe" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">WhatsApp</a>
+                <a href="https://www.google.com/maps/search/?api=1&query=Artisan+Cafe+Manhattan+NY" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">Google Maps</a>
               </div>
             </div>
 
@@ -630,7 +654,14 @@ const MenuPage = () => {
               <h6 className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">Address</h6>
               <div className="space-y-6 text-sm text-text-muted font-light leading-relaxed">
                 <p>123 Espresso Avenue <br /> Manhattan, NY 10001</p>
-                <p className="text-white font-bold underline decoration-primary/40 underline-offset-4">Get Directions</p>
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Artisan+Cafe+Manhattan+NY"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white font-bold underline decoration-primary/40 underline-offset-4 hover:text-primary transition-colors"
+                >
+                  Get Directions
+                </a>
               </div>
             </div>
 

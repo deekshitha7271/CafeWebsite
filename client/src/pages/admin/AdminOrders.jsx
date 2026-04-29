@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { Loader2 } from 'lucide-react';
@@ -85,11 +85,16 @@ const AdminOrders = () => {
           <h3 className="font-serif font-bold text-2xl text-white">
             {order.orderType === 'takeaway' ? '🥡 Takeaway' : `🪑 Table ${order.table}`}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             <p className="text-xs text-text-muted uppercase tracking-widest">{new Date(order.timestamp).toLocaleTimeString()}</p>
             {order.customerName && (
               <span className="text-[10px] text-primary font-black uppercase tracking-widest border-l border-white/10 pl-2">
                 {order.customerName}
+              </span>
+            )}
+            {order.arrivalTime && (
+              <span className="text-[10px] text-emerald-300 font-black uppercase tracking-widest border-l border-white/10 pl-2">
+                Arrive by {new Date(order.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             )}
           </div>
@@ -138,7 +143,7 @@ const AdminOrders = () => {
             {order.orderStatus === 'preparing' && (
               <div className="flex flex-col gap-3 w-full">
                 <div className="flex gap-2 mb-2 overflow-x-auto pb-2 hide-scrollbar">
-                  {[10, 15, 20, 30, 45].map(mins => (
+                  {[10, 15, 20].map(mins => (
                     <button
                       key={mins}
                       onClick={() => {

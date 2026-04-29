@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total, orderId, orderType, customerName, customerPhone } = req.body;
+    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime } = req.body;
     let targetOrder;
 
     if (orderId) {
@@ -20,9 +20,11 @@ router.post('/checkout', async (req, res) => {
       // Save new order to DB
       targetOrder = new Order({
         table,
+        user: req.session?.userId,
         orderType: orderType || 'dinein-web',
         customerName,
         customerPhone,
+        arrivalTime: arrivalTime ? new Date(arrivalTime) : undefined,
         items: items.map(i => ({
           menuItemId: i._id || i.menuItemId,
           name: i.name,

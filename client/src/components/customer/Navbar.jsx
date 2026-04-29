@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { ShoppingBag, Crown, Navigation, Activity, ChefHat, Package } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 
 const Navbar = () => {
   const { cartCount, dispatch, state } = useCart();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -116,6 +118,36 @@ const Navbar = () => {
               </>
             )}
           </motion.button>
+
+          {user ? (
+            <div className="hidden md:flex items-center gap-3 px-4 py-2.5 rounded-full border border-white/10 bg-white/5 text-white">
+              <span className="text-[10px] uppercase tracking-[0.3em] font-black">{user.name}</span>
+              <button
+                onClick={() => {
+                  logout();
+                  navigate('/');
+                }}
+                className="text-[10px] uppercase tracking-[0.3em] font-black text-primary hover:text-primary-light"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                onClick={() => navigate('/login')}
+                className="text-[10px] uppercase tracking-[0.3em] font-black text-text-muted hover:text-white"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/register')}
+                className="px-3 py-2 rounded-full bg-primary text-background text-[10px] uppercase tracking-[0.3em] font-black hover:bg-primary-light"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
 
           {/* Premium Cart Button */}
           <motion.button

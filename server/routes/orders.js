@@ -5,15 +5,17 @@ const Order = require('../models/Order');
 // Create new order (for Cash/Pay Later)
 router.post('/cash', async (req, res) => {
   try {
-    const { table, items, total, orderType, customerName, customerPhone } = req.body;
+    const { table, items, total, orderType, customerName, customerPhone, arrivalTime } = req.body;
 
     const newOrder = new Order({
       table,
+      user: req.session?.userId,
       orderType: orderType || 'dinein-qr',
       items,
       total,
       customerName,
       customerPhone,
+      arrivalTime: arrivalTime ? new Date(arrivalTime) : undefined,
       paymentStatus: 'pending',
       orderStatus: 'placed'
     });

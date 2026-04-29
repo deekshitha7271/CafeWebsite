@@ -1,11 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { SocketProvider } from './context/SocketContext';
+import { AuthProvider } from './context/AuthContext';
 
 // Pages - Customer
 import MenuPage from './pages/customer/MenuPage';
 import SuccessPage from './pages/customer/SuccessPage';
 import TrackingPage from './pages/customer/TrackingPage';
+import OrderAgainPage from './pages/customer/OrderAgainPage';
+import LoginPage from './pages/customer/LoginPage';
+import RegisterPage from './pages/customer/RegisterPage';
 
 // Pages - Admin
 import AdminLayout from './pages/admin/AdminLayout';
@@ -18,22 +22,27 @@ function App() {
   return (
     <Router>
       <SocketProvider>
-        <CartProvider>
-          <Routes>
-            {/* Customer Routes */}
-            <Route path="/" element={<MenuPage />} />
-            <Route path="/checkout/success" element={<SuccessPage />} />
-            <Route path="/track/:orderId" element={<TrackingPage />} />
+        <AuthProvider>
+          <CartProvider>
+            <Routes>
+              {/* Customer Routes */}
+              <Route path="/" element={<MenuPage />} />
+              <Route path="/checkout/success" element={<SuccessPage />} />
+              <Route path="/track/:orderId" element={<TrackingPage />} />
+              <Route path="/repeat/:orderId" element={<OrderAgainPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="menu" element={<AdminMenu />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="qr" element={<AdminQR />} />
-            </Route>
-          </Routes>
-        </CartProvider>
+              {/* Admin Routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="menu" element={<AdminMenu />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="qr" element={<AdminQR />} />
+              </Route>
+            </Routes>
+          </CartProvider>
+        </AuthProvider>
       </SocketProvider>
     </Router>
   );

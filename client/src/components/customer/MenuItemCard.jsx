@@ -8,7 +8,8 @@ const MenuItemCard = ({ item }) => {
 
   return (
     <motion.div 
-      whileHover={{ y: -8, scale: 1.02 }}
+      style={{ perspective: 1200 }}
+      whileHover={{ y: -8, x: 2, rotateY: 4, rotateX: -2, scale: 1.02 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="flex flex-col relative group h-full cursor-pointer bg-surface-dark/10 rounded-3xl p-2 transition-colors hover:bg-surface-dark/40"
     >
@@ -37,7 +38,7 @@ const MenuItemCard = ({ item }) => {
       )}
       
       {/* High-quality image block with smooth rounded corners */}
-      <div className="h-40 w-full overflow-hidden rounded-[24px] relative shadow-lg bg-surface border border-white/5 group-hover:border-primary/40 transition-colors duration-500">
+      <div className="h-40 w-full overflow-hidden rounded-[24px] relative shadow-lg bg-surface border border-white/5 group-hover:border-primary/40 transition-colors duration-500 transform-gpu">
         
         {/* Ambient backlight glow behind image */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-700 blur-2xl z-0 rounded-full scale-150"></div>
@@ -46,7 +47,7 @@ const MenuItemCard = ({ item }) => {
           <img 
             src={item.image} 
             alt={item.name} 
-            className="w-full h-full object-cover relative z-10 group-hover:scale-110 transition-transform duration-700 ease-out"
+            className="w-full h-full object-cover relative z-10 group-hover:scale-110 group-hover:rotate-[1.5deg] transition-transform duration-700 ease-out"
             loading="lazy"
           />
         ) : (

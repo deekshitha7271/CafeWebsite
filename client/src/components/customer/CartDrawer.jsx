@@ -1,32 +1,29 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCart } from '../../context/CartContext';
-import { loadStripe } from '@stripe/stripe-js';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import { X, Minus, Plus, Loader2, Sparkles, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
 const CartDrawer = () => {
   const { state, dispatch, cartTotal } = useCart();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [arrivalTime, setArrivalTime] = useState(state.arrivalTime || '');
   const navigate = useNavigate();
 
   const isTableOrder = state.orderType === 'dinein-qr' && state.table;
+
+  useEffect(() => {
+    setArrivalTime(state.arrivalTime || '');
+  }, [state.arrivalTime]);
 
   const handlePlaceOrder = async () => {
     if (state.items.length === 0) return;
 
     if (!isTableOrder) {
       alert("⚠️ Cash payment is only available for table-scanned orders. Please use Online Payment.");
-      return;
-    }
-
-    if (state.orderType !== 'dinein-qr' && (!customerName || !customerPhone)) {
-      alert("⚠️ Please provide your name and phone number.");
       return;
     }
 
@@ -41,8 +38,9 @@ const CartDrawer = () => {
         })),
         table: state.table,
         orderType: state.orderType,
-        customerName,
-        customerPhone,
+        customerName: user?.name || '',
+        customerPhone: '',
+        arrivalTime,
         total: cartTotal,
       });
 
@@ -62,8 +60,8 @@ const CartDrawer = () => {
   const handleCheckout = async () => {
     if (state.items.length === 0) return;
 
-    if (state.orderType !== 'dinein-qr' && (!customerName || !customerPhone)) {
-      alert("⚠️ Please provide your name and phone number.");
+    if (state.orderType !== 'dinein-qr' && !user) {
+      navigate('/login');
       return;
     }
 
@@ -74,8 +72,9 @@ const CartDrawer = () => {
         table: state.table,
         total: cartTotal,
         orderType: state.orderType,
-        customerName,
-        customerPhone
+        customerName: user?.name || '',
+        customerPhone: '',
+        arrivalTime
       });
       window.location.href = res.data.url;
     } catch (error) {
@@ -182,22 +181,34 @@ const CartDrawer = () => {
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
               {/* Customer Info (For non-QR orders) */}
-              {state.orderType !== 'dinein-qr' && (
-                <div className="mb-6 space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/40"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Phone Number"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/40"
-                  />
+              <div className="mb-6 space-y-3">
+                <label className="text-[10px] uppercase tracking-[0.3em] text-text-muted font-black">
+                  Preferred time to arrive
+                </label>
+                <input
+                  type="datetime-local"
+                  value={arrivalTime}
+                  onChange={(e) => {
+                    setArrivalTime(e.target.value);
+                    dispatch({ type: 'SET_ARRIVAL_TIME', payload: e.target.value });
+                  }}
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all"
+                />
+              </div>
+
+              {state.orderType !== 'dinein-qr' && !user && (
+                <div className="mb-6 p-4 rounded-3xl border border-orange-500/20 bg-orange-500/5 text-orange-200 text-sm">
+                  <p className="font-black uppercase tracking-[0.2em] mb-2">Login required</p>
+                  <p>You need to sign in before placing a web order. Tap below to continue.</p>
+                  <button
+                    onClick={() => {
+                      dispatch({ type: 'SET_CART_OPEN', payload: false });
+                      navigate('/login');
+                    }}
+                    className="mt-4 inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-orange-500 text-background font-black uppercase tracking-[0.1em]"
+                  >
+                    Log In to Continue
+                  </button>
                 </div>
               )}
 

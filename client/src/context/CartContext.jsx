@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer } from 'react';
 
 const CartContext = createContext();
 
@@ -7,6 +7,7 @@ const initialState = {
   table: null,
   isCartOpen: false,
   orderType: 'dinein-web', // Default
+  arrivalTime: '',
   lastOrderId: localStorage.getItem('lastOrderId') || null,
 };
 
@@ -18,7 +19,17 @@ const cartReducer = (state, action) => {
         table: action.payload,
         orderType: action.payload ? 'dinein-qr' : state.orderType
       };
-    case 'ADD_ITEM':
+    case 'SET_CART':
+      return {
+        ...state,
+        ...action.payload
+      };
+    case 'SET_ARRIVAL_TIME':
+      return {
+        ...state,
+        arrivalTime: action.payload
+      };
+    case 'ADD_ITEM': {
       const existingItem = state.items.find(i => i._id === action.payload._id);
       if (existingItem) {
         return {
@@ -29,6 +40,7 @@ const cartReducer = (state, action) => {
         };
       }
       return { ...state, items: [...state.items, { ...action.payload, quantity: 1 }] };
+    }
     case 'REMOVE_ITEM':
       return {
         ...state,
@@ -45,7 +57,7 @@ const cartReducer = (state, action) => {
         }).filter(i => i.quantity > 0)
       };
     case 'CLEAR_CART':
-      return { ...state, items: [] };
+      return { ...state, items: [], arrivalTime: '' };
     case 'TOGGLE_CART':
       return { ...state, isCartOpen: !state.isCartOpen };
     case 'SET_CART_OPEN':

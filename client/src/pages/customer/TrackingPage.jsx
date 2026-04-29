@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { useCart } from '../../context/CartContext';
@@ -16,6 +16,7 @@ const STATUS_STEPS = [
 
 const TrackingPage = () => {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const socket = useSocket();
   const { dispatch } = useCart();
   const [order, setOrder] = useState(null);
@@ -150,6 +151,14 @@ const TrackingPage = () => {
               {order.customerName && (
                 <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] border-l border-white/10 pl-4">{order.customerName}</span>
               )}
+            </div>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => navigate(`/repeat/${order._id}`)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-background font-black uppercase text-[10px] tracking-[0.3em] hover:bg-primary-light transition-all shadow-lg"
+              >
+                Repeat Order
+              </button>
             </div>
           </motion.div>
         </header>
