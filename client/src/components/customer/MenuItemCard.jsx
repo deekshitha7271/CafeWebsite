@@ -1,13 +1,20 @@
 import React from 'react';
 import { useCart } from '../../context/CartContext';
-import { Plus } from 'lucide-react';
+import { Plus, Minus, Coffee, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import QuantitySelector from './QuantitySelector';
 
 const MenuItemCard = ({ item }) => {
-  const { dispatch } = useCart();
+  const { state, dispatch } = useCart();
+  const navigate = useNavigate();
+
+  const cartItem = state.items.find(i => i._id === item._id);
+  const quantity = cartItem ? cartItem.quantity : 0;
 
   return (
-    <motion.div 
+    <motion.div
+      onClick={() => navigate(`/menu/item/${item._id}`)}
       style={{ perspective: 1200 }}
       whileHover={{ y: -8, x: 2, rotateY: 4, rotateX: -2, scale: 1.02 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -36,34 +43,35 @@ const MenuItemCard = ({ item }) => {
           SAVE ₹{(item.originalPrice - item.price).toFixed(2)}
         </div>
       )}
-      
+
       {/* High-quality image block with smooth rounded corners */}
       <div className="h-40 w-full overflow-hidden rounded-[24px] relative shadow-lg bg-surface border border-white/5 group-hover:border-primary/40 transition-colors duration-500 transform-gpu">
-        
+
         {/* Ambient backlight glow behind image */}
         <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-colors duration-700 blur-2xl z-0 rounded-full scale-150"></div>
 
         {item.image ? (
-          <img 
-            src={item.image} 
-            alt={item.name} 
+          <img
+            src={item.image}
+            alt={item.name}
             className="w-full h-full object-cover relative z-10 group-hover:scale-110 group-hover:rotate-[1.5deg] transition-transform duration-700 ease-out"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-text-muted text-xs bg-surface-dark relative z-10">
-            <span className="opacity-50 font-bold uppercase tracking-widest text-[10px]">No Image</span>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-surface to-surface-dark relative z-10 scale-110">
+            <Coffee className="w-10 h-10 text-primary opacity-20 group-hover:scale-110 group-hover:opacity-40 transition-all duration-700" />
+            <span className="opacity-20 font-serif italic text-[10px] mt-2 group-hover:opacity-40 transition-all">Ca Phe Bistro</span>
           </div>
         )}
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-500" />
       </div>
-      
+
       {/* Content strictly formatted like the mockup */}
       <div className="pt-4 flex flex-col flex-1 px-2">
         <h3 className="font-serif font-bold text-lg text-white line-clamp-1 group-hover:text-primary transition-colors duration-300 drop-shadow-md">
           {item.name}
         </h3>
-        
+
         {/* Subtle divider with gradient */}
         <div className="flex items-center gap-3 mt-2">
           <div className="h-px bg-gradient-to-r from-primary/50 to-transparent flex-1" />
@@ -71,7 +79,7 @@ const MenuItemCard = ({ item }) => {
         </div>
 
         <p className="text-text-muted text-xs mt-3 leading-relaxed line-clamp-2 min-h-[36px] font-light">
-          {item.description || 'A delicious choice for any occasion.'}
+          {item.description || 'Crafted with passion by Ca Phe Bistro.'}
         </p>
 
         {/* Combo Included Items List */}
@@ -80,35 +88,25 @@ const MenuItemCard = ({ item }) => {
             <p className="text-[8px] font-black uppercase text-primary tracking-widest mb-1 opacity-70">INCLUDES:</p>
             {item.includedItems.map((sub, i) => (
               <div key={i} className="flex items-center gap-2">
-                 <div className="w-1 h-1 rounded-full bg-emerald-400"></div>
-                 <span className="text-[10px] text-white/90 font-medium truncate">{sub}</span>
+                <div className="w-1 h-1 rounded-full bg-emerald-400"></div>
+                <span className="text-[10px] text-white/90 font-medium truncate">{sub}</span>
               </div>
             ))}
           </div>
         )}
-        
+
         <div className="mt-auto pt-6 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="font-sans font-black text-xl text-primary drop-shadow-sm tracking-tight">
-                ₹{item.price.toFixed(2)}
+              ₹{item.price.toFixed(2)}
             </span>
             {item.originalPrice > item.price && (
-                <span className="text-[10px] text-text-muted line-through opacity-40 font-bold">
-                    ₹{item.originalPrice.toFixed(2)}
-                </span>
+              <span className="text-[10px] text-text-muted line-through opacity-40 font-bold">
+                ₹{item.originalPrice.toFixed(2)}
+              </span>
             )}
           </div>
-          <motion.button 
-            whileHover={{ scale: 1.15, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              dispatch({ type: 'ADD_ITEM', payload: item });
-            }}
-            className="bg-surface-light group-hover:bg-gradient-to-tr from-primary-dark to-primary text-white p-2.5 rounded-full transition-all duration-300 border border-white/10 group-hover:border-primary-light/50 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.6)]"
-          >
-            <Plus className="w-5 h-5 text-text-muted group-hover:text-white transition-colors" />
-          </motion.button>
+          <QuantitySelector item={item} variant="grid" />
         </div>
       </div>
     </motion.div>

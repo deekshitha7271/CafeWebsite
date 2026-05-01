@@ -15,8 +15,14 @@ const LoginPage = () => {
     setError(null);
 
     try {
-      await login(email, password);
-      navigate('/');
+      const loggedInUser = await login(email, password);
+
+      // Role-based redirection
+      if (loggedInUser.role === 'admin' || loggedInUser.role === 'worker') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -26,7 +32,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-20">
       <div className="glass-panel rounded-3xl p-10 max-w-md w-full text-center">
         <h1 className="text-4xl font-serif font-black text-white mb-4">Login</h1>
-        <p className="text-text-muted mb-8">Access your cafe ordering session and save your orders.</p>
+        <p className="text-text-muted mb-8">Access your Ca Phe Bistro session and save your orders.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <input

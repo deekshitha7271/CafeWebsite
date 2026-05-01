@@ -17,6 +17,18 @@ router.post('/checkout', async (req, res) => {
         return res.status(400).json({ error: 'No items in order' });
       }
 
+      let parsedArrivalTime;
+      if (arrivalTime) {
+        if (arrivalTime.includes(':') && arrivalTime.length <= 5) {
+          const today = new Date();
+          const [hours, minutes] = arrivalTime.split(':');
+          today.setHours(parseInt(hours, 10) || 0, parseInt(minutes, 10) || 0, 0, 0);
+          parsedArrivalTime = today;
+        } else {
+          parsedArrivalTime = new Date(arrivalTime);
+        }
+      }
+
       // Save new order to DB
       targetOrder = new Order({
         table,
@@ -24,7 +36,7 @@ router.post('/checkout', async (req, res) => {
         orderType: orderType || 'dinein-web',
         customerName,
         customerPhone,
-        arrivalTime: arrivalTime ? new Date(arrivalTime) : undefined,
+        arrivalTime: parsedArrivalTime,
         items: items.map(i => ({
           menuItemId: i._id || i.menuItemId,
           name: i.name,
@@ -74,6 +86,38 @@ router.post('/checkout', async (req, res) => {
       error: 'Failed to create checkout session',
       details: error.message
     });
+  }
+});
+
+// Verify payment for local dev when Stripe webhooks aren't forwarded
+router.get('/verify-session/:orderId', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (order.paymentStatus === 'paid') {
+      return res.json({ paid: true });
+    }
+
+    if (order.stripeSessionId) {
+      const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
+      if (session.payment_status === 'paid') {
+        order.paymentStatus = 'paid';
+        await order.save();
+
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('order:new', order);
+          io.emit('order:update', order);
+        }
+        return res.json({ paid: true });
+      }
+    }
+
+    res.json({ paid: false });
+  } catch (error) {
+    console.error('Session verify error:', error);
+    res.status(500).json({ error: 'Verification failed' });
   }
 });
 

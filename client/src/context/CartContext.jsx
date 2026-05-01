@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -78,6 +79,34 @@ const cartReducer = (state, action) => {
 
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { user } = useAuth();
+  const userId = user ? (user._id || user.id) : 'guest';
+  const initialLoadDone = useRef(false);
+
+  // Load from local storage when user changes
+  useEffect(() => {
+    const savedItems = localStorage.getItem(`cart_${userId}`);
+    if (savedItems) {
+      try {
+        dispatch({ type: 'SET_CART', payload: { items: JSON.parse(savedItems) } });
+      } catch (e) {
+        dispatch({ type: 'CLEAR_CART' });
+      }
+    } else {
+      dispatch({ type: 'CLEAR_CART' });
+    }
+    initialLoadDone.current = true;
+  }, [userId]);
+
+  // Save to local storage when items change
+  useEffect(() => {
+    if (!initialLoadDone.current) return;
+    if (state.items.length > 0) {
+      localStorage.setItem(`cart_${userId}`, JSON.stringify(state.items));
+    } else {
+      localStorage.removeItem(`cart_${userId}`);
+    }
+  }, [state.items, userId]);
 
   const cartTotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartCount = state.items.reduce((count, item) => count + item.quantity, 0);

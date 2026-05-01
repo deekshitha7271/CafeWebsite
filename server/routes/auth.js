@@ -21,7 +21,7 @@ router.post('/register', async (req, res) => {
 
     req.session.userId = user._id;
 
-    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email } });
+    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error('Auth register error:', error);
     res.status(500).json({ error: 'Failed to register user.' });
@@ -46,7 +46,7 @@ router.post('/login', async (req, res) => {
     }
 
     req.session.userId = user._id;
-    res.json({ user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     console.error('Auth login error:', error);
     res.status(500).json({ error: 'Failed to log in.' });
@@ -59,7 +59,7 @@ router.get('/me', async (req, res) => {
       return res.json({ user: null });
     }
 
-    const user = await User.findById(req.session.userId).select('name email');
+    const user = await User.findById(req.session.userId).select('name email role');
     if (!user) {
       return res.json({ user: null });
     }

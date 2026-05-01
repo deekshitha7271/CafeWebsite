@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(new Date());
   const socket = useSocket();
 
   const fetchOrders = async () => {
@@ -25,6 +26,7 @@ const AdminOrders = () => {
 
     // Fail-safe polling every 30 seconds
     const interval = setInterval(fetchOrders, 30000);
+    const timeInterval = setInterval(() => setNow(new Date()), 1000);
 
     if (socket) {
       socket.on('order:new', (newOrder) => {
@@ -41,6 +43,7 @@ const AdminOrders = () => {
 
     return () => {
       clearInterval(interval);
+      clearInterval(timeInterval);
       if (socket) {
         socket.off('order:new');
         socket.off('order:update');
@@ -72,120 +75,138 @@ const AdminOrders = () => {
   const activeOrders = orders.filter(o => o.orderStatus !== 'ready');
   const pastOrders = orders.filter(o => o.orderStatus === 'ready');
 
-  const OrderCard = ({ order, isActive }) => (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className={`glass-panel p-6 ${isActive ? 'border-2 border-primary/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] bg-surface/50' : 'bg-surface-dark/40 opacity-70'}`}
-    >
-      <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
-        <div>
-          <h3 className="font-serif font-bold text-2xl text-white">
-            {order.orderType === 'takeaway' ? '🥡 Takeaway' : `🪑 Table ${order.table}`}
-          </h3>
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            <p className="text-xs text-text-muted uppercase tracking-widest">{new Date(order.timestamp).toLocaleTimeString()}</p>
-            {order.customerName && (
-              <span className="text-[10px] text-primary font-black uppercase tracking-widest border-l border-white/10 pl-2">
-                {order.customerName}
-              </span>
-            )}
+  const OrderCard = ({ order, isActive }) => {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className={`glass-panel p-6 ${isActive ? 'border-2 border-primary/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] bg-surface/50' : 'bg-surface-dark/40 opacity-70'}`}
+      >
+        <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
+          <div>
+            <h3 className="font-serif font-bold text-2xl text-white">
+              {order.orderType === 'takeaway' ? '🥡 Takeaway' : (order.table ? `🪑 Table ${order.table}` : '🌐 Web Order')}
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <p className="text-[10px] text-text-muted uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded-md bg-surface-dark">{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              {order.customerName && (
+                <span className="text-[10px] text-primary font-black uppercase tracking-widest px-2 py-0.5 bg-primary/10 rounded-md border border-primary/20">
+                  {order.customerName}
+                </span>
+              )}
+            </div>
             {order.arrivalTime && (
-              <span className="text-[10px] text-emerald-300 font-black uppercase tracking-widest border-l border-white/10 pl-2">
-                Arrive by {new Date(order.arrivalTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="text-right">
-          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.orderStatus === 'placed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
-            order.orderStatus === 'preparing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
-              'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-            }`}>
-            {order.orderStatus}
-          </span>
-          {order.paymentStatus === 'paid' ? (
-            <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              PAID
-            </p>
-          ) : (
-            <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-              CASH PENDING
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-3 mb-6 bg-surface-dark/50 p-4 rounded-xl border border-white/5">
-        {order.items.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center text-sm">
-            <span className="text-text-muted font-medium"><span className="font-bold text-primary mr-3 text-base">{item.quantity}×</span> {item.name}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Actions Section */}
-      <div className="flex flex-col gap-3 mt-6">
-        {isActive && (
-          <div className="flex gap-4">
-            {order.orderStatus === 'placed' && (
-              <button
-                onClick={() => updateStatus(order._id, 'preparing')}
-                className="flex-1 bg-surface-light border border-white/10 hover:border-white/30 hover:bg-surface text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all"
-              >
-                Start Preparing
-              </button>
-            )}
-            {order.orderStatus === 'preparing' && (
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex gap-2 mb-2 overflow-x-auto pb-2 hide-scrollbar">
-                  {[10, 15, 20].map(mins => (
-                    <button
-                      key={mins}
-                      onClick={() => {
-                        const readyAt = new Date();
-                        readyAt.setMinutes(readyAt.getMinutes() + mins);
-                        updateStatus(order._id, null, null, readyAt);
-                      }}
-                      className="whitespace-nowrap px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-white hover:border-primary hover:bg-primary/10 transition-all flex-shrink-0"
-                    >
-                      +{mins}m
-                    </button>
-                  ))}
-                </div>
-                {order.estimatedReadyTime && (
-                  <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl mb-2 text-center">
-                    <p className="text-[10px] font-black uppercase text-primary tracking-widest">
-                      Target Ready: {new Date(order.estimatedReadyTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                )}
-                <button
-                  onClick={() => updateStatus(order._id, 'ready')}
-                  className="w-full bg-primary hover:bg-primary-light hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] text-background py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all transform hover:scale-[1.02]"
-                >
-                  Mark Ready
-                </button>
+              <div className="flex items-center gap-2 mt-3">
+                <span className={`flex items-center gap-1.5 text-[10px] border px-3 py-1.5 rounded-full font-black uppercase tracking-[0.2em] shadow-inner transition-colors duration-500 ${(() => {
+                  const diff = new Date(order.arrivalTime) - now;
+                  if (diff <= 0) return "bg-red-500/10 text-red-500 border-red-500/30";
+                  if (diff <= 300000) return "bg-orange-500/10 text-orange-400 border-orange-500/30";
+                  return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                })()
+                  }`}>
+                  {(() => {
+                    const diff = new Date(order.arrivalTime) - now;
+                    if (diff <= 0) {
+                      return <><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping"></div> ARRIVED</>;
+                    }
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    return <><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div> IN {mins}:{secs.toString().padStart(2, '0')} MINS</>;
+                  })()}
+                </span>
               </div>
             )}
           </div>
-        )}
+          <div className="text-right">
+            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.orderStatus === 'placed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
+              order.orderStatus === 'preparing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              }`}>
+              {order.orderStatus}
+            </span>
+            {order.paymentStatus === 'paid' ? (
+              <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                PAID
+              </p>
+            ) : (
+              <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+                CASH PENDING
+              </p>
+            )}
+          </div>
+        </div>
 
-        {order.paymentStatus === 'pending' && (
-          <button
-            onClick={() => updateStatus(order._id, null, 'paid')}
-            className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
-          >
-            Confirm Cash Payment Received
-          </button>
-        )}
-      </div>
-    </motion.div>
-  );
+        <div className="space-y-3 mb-6 bg-surface-dark/50 p-4 rounded-xl border border-white/5">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="flex justify-between items-center text-sm">
+              <span className="text-text-muted font-medium"><span className="font-bold text-primary mr-3 text-base">{item.quantity}×</span> {item.name}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions Section */}
+        <div className="flex flex-col gap-3 mt-6">
+          {isActive && (
+            <div className="flex gap-4">
+              {order.orderStatus === 'placed' && (
+                <button
+                  onClick={() => updateStatus(order._id, 'preparing')}
+                  className="flex-1 bg-surface-light border border-white/10 hover:border-white/30 hover:bg-surface text-white py-3 rounded-xl text-sm font-bold uppercase tracking-widest transition-all"
+                >
+                  Start Preparing
+                </button>
+              )}
+              {order.orderStatus === 'preparing' && (
+                <div className="flex flex-col gap-3 w-full">
+                  <div className="flex gap-2 mb-2 overflow-x-auto pb-2 hide-scrollbar">
+                    {[10, 15, 20].map(mins => (
+                      <button
+                        key={mins}
+                        onClick={() => {
+                          const readyAt = new Date();
+                          readyAt.setMinutes(readyAt.getMinutes() + mins);
+                          updateStatus(order._id, null, null, readyAt);
+                        }}
+                        className="whitespace-nowrap px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black text-white hover:border-primary hover:bg-primary/10 transition-all flex-shrink-0"
+                      >
+                        +{mins}m
+                      </button>
+                    ))}
+                  </div>
+                  {order.estimatedReadyTime && (
+                    <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl mb-2 text-center">
+                      <p className="text-[10px] font-black uppercase text-primary tracking-widest">
+                        Target Ready: {new Date(order.estimatedReadyTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => updateStatus(order._id, 'ready')}
+                    className="w-full bg-primary hover:bg-primary-light hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] text-background py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all transform hover:scale-[1.02]"
+                  >
+                    Mark Ready
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {order.paymentStatus === 'pending' && (
+            <button
+              onClick={() => updateStatus(order._id, null, 'paid')}
+              className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
+            >
+              Confirm Cash Payment Received
+            </button>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div>

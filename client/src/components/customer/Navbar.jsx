@@ -31,8 +31,8 @@ const Navbar = () => {
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
-          ? 'bg-surface-dark/70 backdrop-blur-2xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)] py-5'
-          : 'bg-transparent border-b border-transparent py-8'
+        ? 'bg-surface-dark/70 backdrop-blur-2xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8)] py-5'
+        : 'bg-transparent border-b border-transparent py-8'
         }`}
     >
       <div className="max-w-[1600px] mx-auto px-6 lg:px-12 flex items-center justify-between">
@@ -47,8 +47,8 @@ const Navbar = () => {
             <Crown className="w-8 h-8 text-primary" />
           </motion.div>
           <div className="text-left hidden lg:block">
-            <h1 className="font-serif font-bold text-2xl leading-none text-white tracking-wide">Premium</h1>
-            <span className="text-[10px] uppercase font-bold text-primary tracking-widest mt-1 block">Cafe System</span>
+            <h1 className="font-serif font-bold text-2xl leading-none text-white tracking-wide">Ca Phe</h1>
+            <span className="text-[10px] uppercase font-bold text-primary tracking-widest mt-1 block">Bistro</span>
           </div>
         </button>
 
@@ -57,8 +57,8 @@ const Navbar = () => {
           <button
             onClick={() => !state.table && handleOrderTypeChange('dinein-web')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${(state.orderType === 'dinein-web' || state.orderType === 'dinein-qr')
-                ? 'bg-primary text-background shadow-lg scale-105'
-                : 'text-text-muted hover:text-white'
+              ? 'bg-primary text-background shadow-lg scale-105'
+              : 'text-text-muted hover:text-white'
               }`}
           >
             <ChefHat className="w-4 h-4" />
@@ -69,8 +69,8 @@ const Navbar = () => {
             <button
               onClick={() => handleOrderTypeChange('takeaway')}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
-                  ? 'bg-primary text-background shadow-lg scale-105'
-                  : 'text-text-muted hover:text-white'
+                ? 'bg-primary text-background shadow-lg scale-105'
+                : 'text-text-muted hover:text-white'
                 }`}
             >
               <Package className="w-4 h-4" />
@@ -99,8 +99,8 @@ const Navbar = () => {
             }}
             disabled={!activeOrderId}
             className={`flex items-center gap-2 transition-all px-4 py-2.5 rounded-full border ${activeOrderId
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer'
-                : 'bg-surface-light border-white/5 text-text-muted opacity-50 cursor-not-allowed hidden md:flex'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer'
+              : 'bg-surface-light border-white/5 text-text-muted opacity-50 cursor-not-allowed hidden md:flex'
               }`}
           >
             {activeOrderId ? (
@@ -120,29 +120,38 @@ const Navbar = () => {
           </motion.button>
 
           {user ? (
-            <div className="hidden md:flex items-center gap-3 px-4 py-2.5 rounded-full border border-white/10 bg-white/5 text-white">
-              <span className="text-[10px] uppercase tracking-[0.3em] font-black">{user.name}</span>
+            <div className="flex items-center gap-2 md:gap-3 px-3 py-1.5 md:px-4 md:py-2.5 rounded-full border border-white/10 bg-white/5 text-white">
+              {(user.role === 'admin' || user.role === 'worker') && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="flex items-center gap-2 text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-primary hover:text-primary-light border-r border-white/10 pr-2 md:pr-3 mr-1"
+                >
+                  <Activity className="w-3.5 h-3.5" />
+                  Portal
+                </button>
+              )}
+              <span className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black max-w-[60px] md:max-w-none truncate">{user.name}</span>
               <button
                 onClick={() => {
                   logout();
                   navigate('/');
                 }}
-                className="text-[10px] uppercase tracking-[0.3em] font-black text-primary hover:text-primary-light"
+                className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-white/40 hover:text-white border-l border-white/10 pl-2 md:pl-3"
               >
                 Logout
               </button>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={() => navigate('/login')}
-                className="text-[10px] uppercase tracking-[0.3em] font-black text-text-muted hover:text-white"
+                className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-text-muted hover:text-white"
               >
                 Login
               </button>
               <button
                 onClick={() => navigate('/register')}
-                className="px-3 py-2 rounded-full bg-primary text-background text-[10px] uppercase tracking-[0.3em] font-black hover:bg-primary-light"
+                className="px-2.5 py-1.5 md:px-3 md:py-2 rounded-full bg-primary text-background text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black hover:bg-primary-light"
               >
                 Sign Up
               </button>

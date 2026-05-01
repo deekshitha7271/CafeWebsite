@@ -67,6 +67,11 @@ const CartDrawer = () => {
 
     setLoading(true);
     try {
+      let arrivalDate;
+      if (arrivalTime) {
+        arrivalDate = new Date(Date.now() + parseInt(arrivalTime, 10) * 60000).toISOString();
+      }
+
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
         items: state.items,
         table: state.table,
@@ -74,12 +79,13 @@ const CartDrawer = () => {
         orderType: state.orderType,
         customerName: user?.name || '',
         customerPhone: '',
-        arrivalTime
+        arrivalTime: arrivalDate
       });
       window.location.href = res.data.url;
     } catch (error) {
       console.error('Checkout error:', error);
-      alert("❌ Failed to initiate checkout.");
+      const errorMsg = error.response?.data?.details || error.response?.data?.error || error.message;
+      alert(`❌ Checkout failed: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -177,40 +183,33 @@ const CartDrawer = () => {
                   </AnimatePresence>
                 </div>
               )}
+
+              {/* Customer Info (For non-QR orders) */}
+              {state.items.length > 0 && (
+                <div className="mt-8 mb-4">
+                  <div className="space-y-3">
+                    <label className="text-[10px] uppercase tracking-[0.3em] text-text-muted font-black">
+                      Time to arrival in minutes
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 15"
+                      value={arrivalTime}
+                      onChange={(e) => {
+                        setArrivalTime(e.target.value);
+                        dispatch({ type: 'SET_ARRIVAL_TIME', payload: e.target.value });
+                      }}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/30"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Removed old inline login banner */}
             </div>
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
-              {/* Customer Info (For non-QR orders) */}
-              <div className="mb-6 space-y-3">
-                <label className="text-[10px] uppercase tracking-[0.3em] text-text-muted font-black">
-                  Preferred time to arrive
-                </label>
-                <input
-                  type="datetime-local"
-                  value={arrivalTime}
-                  onChange={(e) => {
-                    setArrivalTime(e.target.value);
-                    dispatch({ type: 'SET_ARRIVAL_TIME', payload: e.target.value });
-                  }}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:border-primary outline-none transition-all"
-                />
-              </div>
-
-              {state.orderType !== 'dinein-qr' && !user && (
-                <div className="mb-6 p-4 rounded-3xl border border-orange-500/20 bg-orange-500/5 text-orange-200 text-sm">
-                  <p className="font-black uppercase tracking-[0.2em] mb-2">Login required</p>
-                  <p>You need to sign in before placing a web order. Tap below to continue.</p>
-                  <button
-                    onClick={() => {
-                      dispatch({ type: 'SET_CART_OPEN', payload: false });
-                      navigate('/login');
-                    }}
-                    className="mt-4 inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-orange-500 text-background font-black uppercase tracking-[0.1em]"
-                  >
-                    Log In to Continue
-                  </button>
-                </div>
-              )}
 
               <div className="flex justify-between items-end mb-6 text-sm">
                 <div className="flex flex-col gap-1">
@@ -219,18 +218,35 @@ const CartDrawer = () => {
                 <span className="text-3xl font-black text-white drop-shadow-lg">₹{cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex flex-col gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleCheckout}
-                  disabled={state.items.length === 0 || loading}
-                  className="relative w-full group disabled:opacity-50 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-emerald-400/50 shadow-xl">
-                    {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Order & Pay Online <Sparkles className="w-4 h-4 opacity-70" /></>}
-                  </div>
-                </motion.button>
+                {state.orderType !== 'dinein-qr' && !user ? (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      dispatch({ type: 'SET_CART_OPEN', payload: false });
+                      navigate('/login');
+                    }}
+                    className="relative w-full group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-orange-400/50 shadow-xl">
+                      Log In to Checkout
+                    </div>
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleCheckout}
+                    disabled={state.items.length === 0 || loading}
+                    className="relative w-full group disabled:opacity-50 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-emerald-400/50 shadow-xl">
+                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Order & Pay Online <Sparkles className="w-4 h-4 opacity-70" /></>}
+                    </div>
+                  </motion.button>
+                )}
 
                 {state.orderType === 'dinein-qr' && state.table && (
                   <motion.button

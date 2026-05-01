@@ -27,7 +27,7 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-20">
       <div className="glass-panel rounded-3xl p-10 max-w-md w-full text-center">
         <h1 className="text-4xl font-serif font-black text-white mb-4">Create Account</h1>
-        <p className="text-text-muted mb-8">Register your own cafe session to keep orders separate.</p>
+        <p className="text-text-muted mb-8">Register your own Ca Phe Bistro session to keep orders separate.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <input

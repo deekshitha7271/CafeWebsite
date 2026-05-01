@@ -28,6 +28,17 @@ const TrackingPage = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+          try {
+            await axios.get(`${import.meta.env.VITE_API_URL}/verify-session/${orderId}`);
+            // Force removal of query param from url to avoid repeat verifications
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch (e) {
+            console.error("Verification error:", e);
+          }
+        }
+
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`);
         setOrder(res.data);
       } catch (error) {
