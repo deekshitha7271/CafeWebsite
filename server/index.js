@@ -87,12 +87,14 @@ const categoryRoutes = require('./routes/categories');
 const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payment');
+const adminRoutes = require('./routes/admin');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/menu-items', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api', paymentRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Public combined API
 const Category = require('./models/Category');

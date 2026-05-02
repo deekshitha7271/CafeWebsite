@@ -23,7 +23,7 @@ const SuccessPage = () => {
     // Redirect to tracking page after 3 seconds
     const timer = setTimeout(() => {
       if (orderId) {
-        navigate(`/track/${orderId}`);
+        navigate(`/track/${orderId}?success=true`);
       }
     }, 3000);
 

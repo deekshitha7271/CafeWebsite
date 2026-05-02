@@ -85,16 +85,45 @@ export const CartProvider = ({ children }) => {
 
   // Load from local storage when user changes
   useEffect(() => {
-    const savedItems = localStorage.getItem(`cart_${userId}`);
-    if (savedItems) {
+    const userCartKey = `cart_${userId}`;
+    const guestCartKey = 'cart_guest';
+    
+    let itemsToLoad = [];
+    const savedUserItems = localStorage.getItem(userCartKey);
+    const savedGuestItems = localStorage.getItem(guestCartKey);
+
+    if (userId !== 'guest' && savedGuestItems) {
+      // User just logged in, merge guest items
+      const guestItems = JSON.parse(savedGuestItems);
+      const userItems = savedUserItems ? JSON.parse(savedUserItems) : [];
+      
+      // Simple merge: add guest items to user items, avoiding duplicates if necessary
+      // For simplicity, we'll just append and the reducer handles quantities if we were adding, 
+      // but here we are setting the whole cart. Let's merge properly.
+      const mergedItems = [...userItems];
+      guestItems.forEach(gItem => {
+        const existing = mergedItems.find(uItem => uItem._id === gItem._id);
+        if (existing) {
+          existing.quantity += gItem.quantity;
+        } else {
+          mergedItems.push(gItem);
+        }
+      });
+      
+      itemsToLoad = mergedItems;
+      // Clear guest cart after merging
+      localStorage.removeItem(guestCartKey);
+      // Save merged cart to user key immediately
+      localStorage.setItem(userCartKey, JSON.stringify(itemsToLoad));
+    } else if (savedUserItems) {
       try {
-        dispatch({ type: 'SET_CART', payload: { items: JSON.parse(savedItems) } });
+        itemsToLoad = JSON.parse(savedUserItems);
       } catch (e) {
-        dispatch({ type: 'CLEAR_CART' });
+        itemsToLoad = [];
       }
-    } else {
-      dispatch({ type: 'CLEAR_CART' });
     }
+
+    dispatch({ type: 'SET_CART', payload: { items: itemsToLoad } });
     initialLoadDone.current = true;
   }, [userId]);
 

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import MenuItemCard from '../../components/customer/MenuItemCard';
 import MenuListItem from '../../components/customer/MenuListItem';
-import CategorySidebar from '../../components/customer/CategorySidebar';
 import Navbar from '../../components/customer/Navbar';
 import CartDrawer from '../../components/customer/CartDrawer';
 import CartToast from '../../components/customer/CartToast';
@@ -12,7 +11,7 @@ import {
   Sparkles, Crown, Activity, Coffee, Moon, ArrowRight, Camera,
   MessageCircle, Mail, MapPin, Clock, Zap, Leaf, Smartphone,
   Check, Flame, Plus, ChevronLeft, ChevronRight, Search,
-  Grid, List, Filter as FilterIcon
+  Grid, List, Filter as FilterIcon, Menu as MenuIcon, X, Phone, Navigation
 } from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 
@@ -30,6 +29,23 @@ const MenuPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [dietaryFilter, setDietaryFilter] = useState('all'); // 'all', 'veg', 'non-veg'
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const catStripRef = useRef(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+
+  const scrollCatStrip = (dir) => {
+    if (catStripRef.current) {
+      catStripRef.current.scrollBy({ left: dir * 250, behavior: 'smooth' });
+    }
+  };
+
+  const handleCatStripScroll = () => {
+    const el = catStripRef.current;
+    if (!el) return;
+    setShowLeftArrow(el.scrollLeft > 10);
+    setShowRightArrow(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
 
   // Toast State for Premium Feedback
   const [showToast, setShowToast] = useState(false);
@@ -77,38 +93,56 @@ const MenuPage = () => {
   }, [tableNumber, dispatch]);
 
   // Refined filtering for 200+ items - Hard filtering for high-density focus
-  const filteredItems = items.filter(item => {
-    const itemCatId = String(item.categoryId?._id || item.categoryId || '');
-    const matchesCategory = activeCategory === 'all' || itemCatId === String(activeCategory);
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDietary = dietaryFilter === 'all' || item.dietaryTag === dietaryFilter;
-    return matchesCategory && matchesSearch && matchesDietary;
-  });
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDietary = dietaryFilter === 'all' || item.dietaryTag === dietaryFilter;
+      return matchesSearch && matchesDietary;
+    });
+  }, [items, searchQuery, dietaryFilter]);
 
   // Group items by category for sectioned rendering
-  const itemsByCategory = categories.reduce((acc, cat) => {
-    const catItems = filteredItems.filter(item => String(item.categoryId?._id || item.categoryId) === String(cat._id));
-    if (catItems.length > 0) acc.push({ ...cat, items: catItems });
-    return acc;
-  }, []);
+  const itemsByCategory = useMemo(() => {
+    return categories.reduce((acc, cat) => {
+      const catItems = filteredItems.filter(item => String(item.categoryId?._id || item.categoryId) === String(cat._id));
+      if (catItems.length > 0) acc.push({ ...cat, items: catItems });
+      return acc;
+    }, []);
+  }, [categories, filteredItems]);
 
+  const comboCategory = useMemo(() => categories.find(c => c.name.toLowerCase().includes('combo')), [categories]);
+  const comboItems = useMemo(() => comboCategory ? items.filter(i => String(i.categoryId?._id || i.categoryId) === String(comboCategory._id)) : [], [comboCategory, items]);
+
+  // Active Category State logic
   const handleCategoryChange = (catId) => {
-    setActiveCategory(catId);
-
-    // Use a small timeout to ensure React has committed the category filter to the DOM
-    // This provides a much more stable offset calculation than requestAnimationFrame
-    setTimeout(() => {
-      const discoverSection = document.getElementById('discover');
-      if (discoverSection) {
-        const offset = discoverSection.offsetTop - 120;
-        window.scrollTo({ top: offset, behavior: 'auto' });
+    if (catId === 'footer') {
+      const footerSection = document.getElementById('footer');
+      if (footerSection) {
+        const y = footerSection.getBoundingClientRect().top + window.scrollY - 120;
+        window.scrollTo({ top: y, behavior: 'auto' });
       }
-    }, 50);
+      return;
+    }
+
+    setActiveCategory(catId);
+    
+    // Snap scroll to the top of the menu grid so the user immediately sees the selected items
+    const discoverSection = document.getElementById('discover');
+    if (discoverSection) {
+      const y = discoverSection.getBoundingClientRect().top + window.scrollY - 200;
+      window.scrollTo({ top: y, behavior: 'auto' });
+    }
   };
 
+  // Determine which categories to render on the right
+  const displayedCategories = useMemo(() => {
+    if (activeCategory === 'all') return itemsByCategory;
+    return itemsByCategory.filter(cat => String(cat._id) === String(activeCategory));
+  }, [itemsByCategory, activeCategory]);
+
   return (
-    <div className="relative min-h-screen font-sans bg-background overflow-x-hidden">
+    <div className="relative min-h-screen font-sans bg-background">
       <Navbar />
 
       <CartToast
@@ -264,16 +298,70 @@ const MenuPage = () => {
         </div>
       </div>
 
+
       {/* Container for the rest of the page */}
       <div className="pb-28 max-w-[1600px] mx-auto w-full">
 
+        {/* RESTAURANT INFO HEADER — Zomato-style profile card */}
+        <div className="px-6 lg:px-20 mt-8 mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="bg-surface/60 border border-white/5 rounded-[24px] px-6 lg:px-10 py-5 backdrop-blur-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-2xl"
+          >
+            {/* Left — Address + timings */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="w-14 h-14 bg-primary/15 border border-primary/20 rounded-2xl flex items-center justify-center shrink-0">
+                <span className="text-background font-serif font-black text-xl text-primary">C.</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-serif font-black text-white mb-1">Ca Phe <span className="text-primary italic">Bistro</span></h2>
+                <p className="text-text-muted text-xs flex items-center gap-1.5 font-light">
+                  <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                  Financial District, Nanakramguda, Makthakousarali, Telangana 500032
+                </p>
+              </div>
+            </div>
 
-        {/* TIER 1: TRENDING NOW (CINEMATIC SPOTLIGHT) */}
-        {items.some(i => i.isPopular) && (
+            {/* Middle — Info Chips */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
+                <Clock className="w-3 h-3 text-primary" /> 08:30 AM – 11:00 PM
+                <span className="ml-1 text-green-400 font-black">(Open)</span>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
+                <Phone className="w-3 h-3 text-primary" /> +91 123 456 7890
+              </div>
+            </div>
+
+            {/* Right — Action Buttons */}
+            <div className="flex items-center gap-3">
+              <a
+                href="https://maps.app.goo.gl/4iQhPwpcW323YQFt9"
+                target="_blank" rel="noreferrer"
+                className="bg-primary text-background px-6 py-2.5 rounded-full font-black uppercase tracking-[0.15em] text-[9px] hover:bg-primary-light transition-all flex items-center gap-2 shadow-[0_8px_24px_rgba(245,158,11,0.3)] whitespace-nowrap"
+              >
+                <Navigation className="w-3.5 h-3.5" /> Directions
+              </a>
+              <a href="https://www.instagram.com/caphe_bistro?igsh=M3p2cWw1eGEzcGs5" target="_blank" rel="noreferrer"
+                className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
+                <Camera className="w-4 h-4" />
+              </a>
+              <a href="https://wa.me/911234567890?text=Hi%20Ca%20Phe%20Bistro" target="_blank" rel="noreferrer"
+                className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
+                <MessageCircle className="w-4 h-4" />
+              </a>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* TIER 1: CURATED COMBOS */}
+        {comboItems.length > 0 && (
           <section className="mt-20 px-8 lg:px-20 relative overflow-hidden">
             {/* Background branding text */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 text-[15vw] font-serif font-black text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
-              TOP PICKS • TOP PICKS • TOP PICKS
+              COMBOS • COMBOS • COMBOS
             </div>
 
             <motion.div
@@ -283,20 +371,16 @@ const MenuPage = () => {
               className="flex items-end justify-between mb-16 relative z-10"
             >
               <div>
-                <h3 className="font-serif text-5xl lg:text-7xl font-bold text-white mb-4">Trending <span className="text-primary italic">Favorites.</span></h3>
+                <h3 className="font-serif text-5xl lg:text-7xl font-bold text-white mb-4">Curated <span className="text-primary italic">Combos.</span></h3>
                 <div className="flex items-center gap-4">
                   <div className="h-[2px] w-12 bg-primary"></div>
-                  <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Real-time Global Top Picks</p>
+                  <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Perfect pairings</p>
                 </div>
-              </div>
-              <div className="hidden md:flex items-center gap-3 text-primary/60 animate-pulse">
-                <Activity className="w-5 h-5" />
-                <span className="text-[10px] uppercase font-black tracking-widest">Live Updates</span>
               </div>
             </motion.div>
 
             <div className="flex overflow-x-auto hide-scrollbar gap-12 pb-20 -mx-4 px-4 snap-x snap-mandatory relative z-10">
-              {items.filter(i => i.isPopular).map((item, idx) => (
+              {comboItems.map((item, idx) => (
                 <motion.div
                   key={item._id}
                   initial={{ opacity: 0, y: 30 }}
@@ -313,95 +397,128 @@ const MenuPage = () => {
         )}
 
         {/* TIER 2: DISCOVER (HIGH-VELOCITY SECTIONED MENU) */}
-        <section id="discover" className="mt-32 px-8 lg:px-20 relative">
+        <section id="discover" className="mt-16 relative">
 
-          {/* Sticky Quick-Bar: Search & View Toggle */}
-          <div className="sticky top-[80px] z-[40] mb-12 -mx-4 px-4 py-6 bg-background/80 backdrop-blur-3xl border-b border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
-            <div className="relative w-full md:w-96 group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
-              <input
-                type="text"
-                placeholder="Find a delicacy..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-surface-dark border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-sm outline-none focus:border-primary/50 transition-all placeholder:text-white/20 shadow-inner"
-              />
-            </div>
+          {/* ── FIXED STICKY SHELL: Search bar + Category Strip (always on top) ── */}
+          <div className="sticky top-[72px] z-[40] bg-background/90 backdrop-blur-3xl border-b border-white/5 shadow-2xl">
 
-            <div className="flex items-center gap-2 bg-surface-dark p-1.5 rounded-2xl border border-white/5 mx-auto md:mx-0">
-              <button
-                onClick={() => setDietaryFilter('all')}
-                className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dietaryFilter === 'all' ? 'bg-primary text-background shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white'}`}
-              >
-                Full Menu
-              </button>
-              <button
-                onClick={() => setDietaryFilter('veg')}
-                className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${dietaryFilter === 'veg' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-white/40 hover:text-white'}`}
-              >
-                <Leaf className="w-3 h-3" /> Veg Only
-              </button>
-              <div className="w-px h-4 bg-white/10 mx-2" />
-              <div className="flex items-center gap-1">
+            {/* Row 1: Search + View Toggle */}
+            <div className="px-6 lg:px-20 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full md:w-96 group">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
+                <input
+                  type="text"
+                  placeholder="Find a delicacy..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-surface-dark border border-white/10 rounded-2xl py-3.5 pl-14 pr-6 text-sm outline-none focus:border-primary/50 transition-all placeholder:text-white/20 shadow-inner"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 bg-surface-dark p-1.5 rounded-2xl border border-white/5 mx-auto md:mx-0">
                 <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
-                  title="Gallery View"
+                  onClick={() => setDietaryFilter('all')}
+                  className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dietaryFilter === 'all' ? 'bg-primary text-background shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white'}`}
                 >
-                  <Grid className="w-4 h-4" />
+                  Full Menu
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
-                  title="List View"
+                  onClick={() => setDietaryFilter('veg')}
+                  className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${dietaryFilter === 'veg' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-white/40 hover:text-white'}`}
                 >
-                  <List className="w-4 h-4" />
+                  <Leaf className="w-3 h-3" /> Veg Only
+                </button>
+                <div className="w-px h-4 bg-white/10 mx-2" />
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
+                    title="Gallery View"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
+                    title="List View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Horizontal Category Strip with Arrow Buttons */}
+            <div className="relative px-6 lg:px-20 pb-3">
+              {/* Left Arrow */}
+              {showLeftArrow && (
+                <button
+                  onClick={() => scrollCatStrip(-1)}
+                  className="absolute left-2 lg:left-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/40 transition-all shadow-xl backdrop-blur-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
+              {/* Right Arrow */}
+              {showRightArrow && (
+                <button
+                  onClick={() => scrollCatStrip(1)}
+                  className="absolute right-2 lg:right-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/40 transition-all shadow-xl backdrop-blur-sm"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+
+              <div
+                ref={catStripRef}
+                onScroll={handleCatStripScroll}
+                className="overflow-x-auto hide-scrollbar flex items-center gap-2"
+              >
+                <button
+                  onClick={() => handleCategoryChange('all')}
+                  className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
+                    activeCategory === 'all'
+                      ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                      : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
+                  }`}
+                >All</button>
+                {itemsByCategory.map(cat => (
+                  <button
+                    key={cat._id}
+                    onClick={() => handleCategoryChange(cat._id)}
+                    className={`shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
+                      activeCategory === cat._id
+                        ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                        : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {cat.icon && !cat.icon.startsWith('http') && <span className="text-xs">{cat.icon}</span>}
+                    {cat.name}
+                  </button>
+                ))}
+                <button
+                  onClick={() => handleCategoryChange('footer')}
+                  className="shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap bg-white/5 text-white/60 border-white/10 hover:text-primary hover:bg-white/10"
+                >
+                  <MapPin className="w-3 h-3" /> Restaurant Info
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Mobile Category Navigator (Only visible on < lg) */}
-          <div className="lg:hidden sticky top-[220px] md:top-[160px] z-[35] -mx-4 px-4 py-4 bg-background/60 backdrop-blur-2xl border-b border-white/5 overflow-x-auto hide-scrollbar flex items-center gap-2 mb-8">
-            <button
-              onClick={() => handleCategoryChange('all')}
-              className={`whitespace-nowrap px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === 'all' ? 'bg-primary text-background' : 'text-white/40 bg-surface-dark/50'}`}
-            >
-              All
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat._id}
-                onClick={() => handleCategoryChange(cat._id)}
-                className={`whitespace-nowrap px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeCategory === cat._id ? 'bg-white/10 text-primary border border-primary/20' : 'text-white/40 bg-surface-dark/50'}`}
-              >
-                <span className="text-xs">{cat.icon?.startsWith('http') ? '✨' : cat.icon}</span>
-                {cat.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-16">
-            {/* Sticky Sidebar Navigation */}
-            <CategorySidebar
-              categories={categories}
-              activeCategory={activeCategory}
-              onCategoryClick={handleCategoryChange}
-            />
-
-            {/* Main Content Area: Sectioned by Category */}
-            <div className="flex-1 space-y-32 min-h-[100vh]">
-              {loading ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-10">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="animate-pulse flex flex-col gap-6">
-                      <div className="h-64 bg-surface rounded-[40px]"></div>
-                      <div className="h-4 w-3/4 bg-surface rounded-full"></div>
-                    </div>
-                  ))}
+          {/* Main Content Area — full width, sectioned by category */}
+          <div className="px-6 lg:px-20 w-full space-y-28 min-h-[60vh] mt-12">
+            {loading ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="animate-pulse flex flex-col gap-4">
+                    <div className="h-56 bg-surface rounded-[32px]"></div>
+                    <div className="h-4 w-3/4 bg-surface rounded-full"></div>
+                  </div>
+                ))}
                 </div>
-              ) : itemsByCategory.length > 0 ? (
-                itemsByCategory.map((section) => (
+              ) : displayedCategories.length > 0 ? (
+                displayedCategories.map((section) => (
                   <div key={section._id} id={`category-${section._id}`} className="scroll-mt-48">
                     <div className="flex items-end gap-6 mb-16 group flex-wrap">
                       <div className="flex flex-col min-w-[200px]">
@@ -416,7 +533,7 @@ const MenuPage = () => {
                     </div>
 
                     <div className={viewMode === 'grid'
-                      ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-10"
+                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
                       : "flex flex-col gap-4 overflow-x-hidden"
                     }>
                       {section.items.map((item, i) => (
@@ -444,73 +561,9 @@ const MenuPage = () => {
                   <button onClick={() => { setSearchQuery(''); setDietaryFilter('all'); setActiveCategory('all'); }} className="text-primary text-[10px] uppercase font-black tracking-widest hover:underline transition-all">Clear All Filters</button>
                 </div>
               )}
-            </div>
           </div>
         </section>
 
-        {/* TIER 3: THE COMBO SAVERS (VALUE SPOTLIGHT) */}
-        {
-          items.some(i => (i.tags || []).includes('combo')) && (
-            <section className="mt-20 px-8 lg:px-20 py-24 border-y border-white/5 bg-gradient-to-tr from-primary/5 via-transparent to-transparent relative">
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-wood.png')] opacity-5 pointer-events-none"></div>
-              <div className="text-center mb-32">
-                <h5 className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-6">Expertly Curated</h5>
-                <h3 className="text-6xl lg:text-9xl font-serif text-white">Bundle & <span className="text-gradient-gold italic">Save.</span></h3>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 max-w-7xl mx-auto">
-                {items.filter(i => (i.tags || []).includes('combo')).map((item, i) => (
-                  <motion.div
-                    key={item._id}
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="group relative overflow-hidden rounded-[60px] bg-surface-dark border border-white/5 p-2 flex flex-col md:flex-row h-auto md:h-[320px] transition-all hover:border-primary/30"
-                  >
-                    <div className="w-full md:w-[45%] h-[300px] md:h-full overflow-hidden rounded-[55px]">
-                      <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms] ease-out" />
-                    </div>
-                    <div className="flex-1 p-10 flex flex-col justify-center">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h4 className="text-3xl font-serif text-white mb-2">{item.name}</h4>
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-3 h-3 text-primary" />
-                            <span className="text-primary text-[9px] font-black uppercase tracking-widest">Handcrafted Bundle</span>
-                          </div>
-                        </div>
-                        <div className="bg-primary/20 text-primary text-[10px] px-3 py-1 rounded-full border border-primary/30 font-black animate-pulse">VALUE</div>
-                      </div>
-
-                      <div className="space-y-2 mb-10 opacity-70">
-                        {(item.includedItems || []).map((inc, k) => (
-                          <p key={k} className="text-[10px] text-white font-medium flex items-center gap-2 tracking-wide">
-                            <span className="w-1 h-1 rounded-full bg-primary" /> {inc}
-                          </p>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                        <div className="flex flex-col">
-                          <span className="text-4xl font-black text-white">₹{item.price}</span>
-                          <span className="text-xs text-text-muted line-through opacity-40 italic">₹{item.originalPrice}</span>
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => dispatch({ type: 'ADD_ITEM', payload: item })}
-                          className="px-10 py-5 bg-gradient-to-r from-primary to-primary-dark text-background font-black rounded-[25px] uppercase tracking-widest text-[10px] shadow-2xl hover:shadow-primary/20 transition-all"
-                        >
-                          Get Combo
-                        </motion.button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </section>
-          )
-        }
 
         {/* GOOGLE MAPS LOCATION INTEGRATION */}
         <section className="mt-40 px-8 lg:px-20 relative z-10">
@@ -594,14 +647,14 @@ const MenuPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[800px]">
-            {/* Large Featured Image */}
+            {/* Large Featured Image — image 1 (the cafe) */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="md:col-span-7 h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
             >
-              <img src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=2078" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
+              <img src="/ca phe bistro website images/image 1.jpeg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
               <div className="absolute bottom-12 left-12">
                 <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">Ambience</span>
@@ -617,7 +670,7 @@ const MenuPage = () => {
                 viewport={{ once: true }}
                 className="rounded-[60px] overflow-hidden group relative border border-white/10"
               >
-                <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2070" className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]" />
+                <img src="/ca phe bistro website images/image 2.avif" className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]" />
                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               </motion.div>
 
@@ -628,75 +681,22 @@ const MenuPage = () => {
                   viewport={{ once: true }}
                   className="rounded-[40px] overflow-hidden border border-white/10 relative group"
                 >
-                  <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1887" className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]" />
+                  <img src="/ca phe bistro website images/image 3.webp" className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]" />
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
-                  className="rounded-[40px] overflow-hidden border border-white/10 flex items-center justify-center bg-surface-dark group relative"
+                  className="rounded-[40px] overflow-hidden border border-white/10 relative group"
                 >
-                  <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2047" className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform">
-                      <Plus className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
+                  <img src="/ca phe bistro website images/image 4.jpeg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]" />
                 </motion.div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* 2. HOW IT'S MADE: CINEMATIC TIMELINE */}
-        <section className="mt-60 px-8 lg:px-20 py-48 bg-gradient-to-b from-surface/40 to-background border-y border-white/5 relative overflow-hidden">
-          {/* Connection Line */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[70%] h-px bg-white/5 hidden md:block">
-            <motion.div
-              initial={{ width: 0 }}
-              whileInView={{ width: '100%' }}
-              viewport={{ once: true }}
-              transition={{ duration: 2, ease: "easeInOut" }}
-              className="h-full bg-gradient-to-r from-transparent via-primary/50 to-transparent"
-            />
-          </div>
-
-          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-24 md:gap-12 relative z-10">
-            {[
-              { icon: Coffee, title: "Fresh Beans", tag: "Harvested", color: "text-primary", bg: "bg-primary/5" },
-              { icon: Flame, title: "Brewed Daily", tag: "Slow Roast", color: "text-orange-400", bg: "bg-orange-400/5" },
-              { icon: Check, title: "Served Warm", tag: "Artisan Care", color: "text-emerald-400", bg: "bg-emerald-400/5" }
-            ].map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.3 }}
-                className="flex flex-col items-center group"
-              >
-                <div className="relative mb-12">
-                  {/* Outer Ring Animation */}
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                    className={`absolute inset-[-20px] rounded-full ${step.bg} blur-xl`}
-                  />
-                  <div className={`w-28 h-28 rounded-full ${step.bg} border-2 border-white/5 flex items-center justify-center backdrop-blur-xl group-hover:border-primary/40 transition-all duration-700 shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]`}>
-                    <step.icon className={`w-10 h-10 ${step.color} group-hover:scale-110 transition-transform`} />
-                  </div>
-                  {/* Number Badge */}
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-surface-dark border border-white/10 flex items-center justify-center text-[10px] font-black text-white shadow-xl">
-                    0{i + 1}
-                  </div>
-                </div>
-                <span className="text-white/40 text-[9px] font-black uppercase tracking-[0.4em] mb-3">{step.tag}</span>
-                <h4 className="text-3xl font-serif font-black text-white group-hover:text-primary transition-colors duration-500">{step.title}</h4>
-              </motion.div>
-            ))}
-          </div>
-        </section>
 
         {/* INNOVATIVE "ABOUT US" STORY SECTION (Image Left, Text Right) */}
         <section className="mt-72 px-8 lg:px-20 mb-72 flex flex-col lg:flex-row items-center gap-32">
@@ -781,7 +781,7 @@ const MenuPage = () => {
       </div >
 
       {/* 4. PREMIUM FOOTER REDESIGNED */}
-      < footer className="bg-[#080402] border-t border-white/5 relative pt-40 pb-20 overflow-hidden" >
+      < footer id="footer" className="bg-[#080402] border-t border-white/5 relative pt-40 pb-20 overflow-hidden" >
         {/* Giant Logo Background */}
         < div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] font-serif font-black text-white/[0.02] pointer-events-none select-none uppercase" >
           CA PHE
@@ -878,6 +878,75 @@ const MenuPage = () => {
       </footer >
 
       <CartDrawer />
+
+      {/* Mobile Menu FAB (Swiggy/Zomato style) */}
+      <div className="lg:hidden fixed bottom-8 left-1/2 -translate-x-1/2 z-[45]">
+        <button
+          onClick={() => setIsMenuModalOpen(true)}
+          className="bg-surface border border-white/10 text-white px-8 py-3.5 rounded-full font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl transition-all active:scale-95"
+        >
+          <MenuIcon className="w-4 h-4 text-primary" />
+          MENU
+        </button>
+      </div>
+
+      {/* Mobile Category Bottom Sheet */}
+      <AnimatePresence>
+        {isMenuModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuModalOpen(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[50] lg:hidden"
+            />
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 bg-surface border-t border-white/10 rounded-t-[40px] z-[55] lg:hidden flex flex-col shadow-[0_-20px_50px_rgba(0,0,0,0.5)] max-h-[85vh]"
+            >
+              <div className="p-8 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <h3 className="font-serif text-3xl font-bold text-white mb-1">Categories</h3>
+                  <p className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">Jump to section</p>
+                </div>
+                <button onClick={() => setIsMenuModalOpen(false)} className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="overflow-y-auto p-4 space-y-2 pb-12 hide-scrollbar">
+                <button
+                  onClick={() => { handleCategoryChange('all'); setIsMenuModalOpen(false); }}
+                  className={`w-full flex items-center justify-between p-5 rounded-3xl transition-all ${activeCategory === 'all' ? 'bg-primary/10 border border-primary/20' : 'bg-transparent hover:bg-white/5 border border-transparent'}`}
+                >
+                  <span className={`font-bold text-sm tracking-wide ${activeCategory === 'all' ? 'text-primary' : 'text-white/80'}`}>Explore All</span>
+                  <span className="text-[10px] font-black opacity-40 text-white bg-white/5 px-3 py-1.5 rounded-full">{filteredItems.length} ITEMS</span>
+                </button>
+                {categories.map(cat => {
+                  const count = filteredItems.filter(i => String(i.categoryId?._id || i.categoryId) === String(cat._id)).length;
+                  if (count === 0) return null;
+                  return (
+                    <button
+                      key={cat._id}
+                      onClick={() => { handleCategoryChange(cat._id); setIsMenuModalOpen(false); }}
+                      className={`w-full flex items-center justify-between p-5 rounded-3xl transition-all ${activeCategory === cat._id ? 'bg-primary/10 border border-primary/20' : 'bg-transparent hover:bg-white/5 border border-transparent'}`}
+                    >
+                      <span className={`font-bold text-sm tracking-wide flex items-center gap-4 ${activeCategory === cat._id ? 'text-primary' : 'text-white/80'}`}>
+                        <span className="text-xl bg-white/5 w-10 h-10 flex items-center justify-center rounded-xl">{cat.icon?.startsWith('http') ? '✨' : cat.icon}</span>
+                        {cat.name}
+                      </span>
+                      <span className="text-[10px] font-black opacity-40 text-white bg-white/5 px-3 py-1.5 rounded-full">{count} ITEMS</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div >
   );
 };

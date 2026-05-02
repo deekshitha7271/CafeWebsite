@@ -1,117 +1,173 @@
-import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Menu as MenuIcon, ClipboardList, Crown, QrCode, LogOut, User as UserIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Outlet, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import {
+  LayoutDashboard, ClipboardList, Users, Package, BarChart3,
+  UserCog, CreditCard, Tag, Star, Bell, Globe, Settings,
+  Crown, LogOut, User as UserIcon, Activity, ChevronDown, X, Menu, Coffee
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+
+const allLinks = [
+  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'], end: true },
+  { to: '/admin/orders', icon: ClipboardList, label: 'Live Orders', roles: ['admin', 'worker'] },
+  { to: '/admin/menu', icon: Coffee, label: 'Menu Management', roles: ['admin'] },
+  { to: '/admin/customers', icon: Users, label: 'Customers', roles: ['admin'] },
+  { to: '/admin/inventory', icon: Package, label: 'Inventory', roles: ['admin'] },
+  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics & Reports', roles: ['admin'] },
+  { to: '/admin/staff', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
+  { to: '/admin/payments', icon: CreditCard, label: 'Payments & Billing', roles: ['admin'] },
+  { to: '/admin/offers', icon: Tag, label: 'Offers & Coupons', roles: ['admin'] },
+  { to: '/admin/reviews', icon: Star, label: 'Reviews & Feedback', roles: ['admin'] },
+  { to: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['admin'], badge: 3 },
+  { to: '/admin/cms', icon: Globe, label: 'Website CMS', roles: ['admin'] },
+  { to: '/admin/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
+];
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
-
-  const allLinks = [
-    { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true, roles: ['admin'] },
-    { to: '/admin/orders', icon: ClipboardList, label: 'Live Orders', roles: ['admin', 'worker'] },
-    { to: '/admin/menu', icon: MenuIcon, label: 'Menu Control', roles: ['admin'] },
-    { to: '/admin/qr', icon: QrCode, label: 'QR Studio', roles: ['admin'] },
-  ];
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const allowedLinks = allLinks.filter(link => link.roles.includes(user?.role));
 
-  // If a worker tries to access /admin (dashboard) directly, redirect to /admin/orders
   if (user?.role === 'worker' && location.pathname === '/admin') {
     return <Navigate to="/admin/orders" replace />;
   }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row text-text font-sans">
-      {/* Sidebar */}
-      <aside className="w-full md:w-80 bg-surface border-r border-white/5 order-2 md:order-1 fixed bottom-0 md:sticky md:top-0 md:h-screen z-20 shadow-2xl flex flex-col">
-        <div className="p-8 hidden md:block border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent">
-          <div className="flex items-center gap-4">
-            <div className="bg-primary/20 p-2.5 rounded-2xl border border-primary/30 shadow-lg shadow-primary/10">
-              <Crown className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-xl font-serif font-bold text-white tracking-wide">
-                {isAdmin ? 'Admin Portal' : 'Worker Portal'}
-              </h1>
-              <p className="text-primary text-[9px] uppercase font-black tracking-[0.2em] mt-1 opacity-80">
-                {isAdmin ? 'Core Systems' : 'Operation Lead'}
-              </p>
-            </div>
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Brand Header */}
+      <div className="p-6 border-b border-white/5">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="bg-primary/20 p-2.5 rounded-2xl border border-primary/30 shadow-lg shadow-primary/10 flex-shrink-0">
+            <Crown className="w-6 h-6 text-primary" />
           </div>
-        </div>
-
-        <nav className="flex md:flex-col p-4 md:p-6 gap-3 overflow-x-auto flex-1">
-          {allowedLinks.map((link) => {
-            const Icon = link.icon;
-            return (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-4 px-5 py-4 rounded-xl transition-all group relative ${isActive
-                    ? 'bg-primary text-background shadow-[0_10px_25px_rgba(245,158,11,0.3)]'
-                    : 'text-text-muted hover:bg-white/5 hover:text-white border border-transparent'
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-background' : 'text-primary/70'}`} />
-                    <span className={`hidden md:inline font-bold tracking-wide ${isActive ? 'text-background' : 'text-text-muted'}`}>
-                      {link.label}
-                    </span>
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-pill"
-                        className="absolute right-3 w-1.5 h-1.5 rounded-full bg-background"
-                      />
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        {/* User Profile / Logout Section */}
-        <div className="p-6 mt-auto border-t border-white/5 hidden md:block">
-          <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-surface-light flex items-center justify-center">
-                <UserIcon className="w-4 h-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate uppercase tracking-wider">{user?.name}</p>
-                <p className="text-[10px] text-text-muted capitalize">{user?.role}</p>
-              </div>
-            </div>
-            <button
-              onClick={logout}
-              className="p-2 hover:bg-red-500/10 rounded-lg text-text-muted hover:text-red-400 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-24 md:pb-0 order-1 md:order-2">
-        <div className="md:hidden bg-surface p-6 border-b border-white/5 flex items-center justify-between shadow-xl relative z-10">
-          <div className="flex items-center gap-2">
-            <Crown className="w-5 h-5 text-primary" />
-            <h1 className="text-lg font-serif font-bold text-white">
-              {isAdmin ? 'Admin Portal' : 'Worker Portal'}
+          <div className="min-w-0">
+            <h1 className="text-lg font-serif font-bold text-white truncate">
+              {isAdmin ? 'Admin' : 'Worker'}
+              <span className="ml-2 text-[9px] text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 font-sans">Portal</span>
             </h1>
+            <p className="text-[9px] text-primary/70 uppercase font-black tracking-widest">Ca Phe Bistro</p>
           </div>
-          <button onClick={logout} className="p-2 text-text-muted">
-            <LogOut className="w-5 h-5" />
+        </div>
+
+        <button
+          onClick={() => navigate('/')}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/50 hover:bg-primary hover:text-background hover:border-primary transition-all duration-300 group"
+        >
+          <Activity className="w-3.5 h-3.5 text-primary group-hover:text-background transition-colors" />
+          Exit to Home
+        </button>
+      </div>
+
+      {/* Nav Links */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin">
+        {allowedLinks.map((link) => {
+          const Icon = link.icon;
+          return (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.end}
+              onClick={() => setMobileSidebarOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative ${isActive
+                  ? 'bg-primary text-background shadow-lg shadow-primary/20'
+                  : 'text-white/50 hover:bg-white/5 hover:text-white'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-background' : 'text-primary/60'}`} />
+                  <span className={`text-[11px] font-bold tracking-wide truncate ${isActive ? 'text-background' : ''}`}>
+                    {link.label}
+                  </span>
+                  {link.badge && !isActive && (
+                    <span className="ml-auto bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {link.badge}
+                    </span>
+                  )}
+                  {isActive && (
+                    <motion.div layoutId="active-pill" className="absolute right-3 w-1.5 h-1.5 rounded-full bg-background" />
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* User Profile */}
+      <div className="p-4 border-t border-white/5">
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
+              <UserIcon className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white truncate">{user?.name}</p>
+              <p className="text-[10px] text-primary capitalize">{user?.role}</p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-white/30 hover:text-red-400 transition-colors flex-shrink-0"
+            title="Logout"
+          >
+            <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="p-6 md:p-12 lg:p-16 max-w-7xl mx-auto">
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background flex text-text font-sans">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 sticky top-0 h-screen z-20 shadow-2xl flex-shrink-0">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 z-40 md:hidden"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 30 }}
+              className="fixed top-0 left-0 w-72 h-full bg-surface border-r border-white/5 z-50 md:hidden shadow-2xl"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 overflow-x-hidden">
+        {/* Mobile Topbar */}
+        <div className="md:hidden bg-surface/90 backdrop-blur border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+          <button onClick={() => setMobileSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <Crown className="w-4 h-4 text-primary" />
+            <span className="text-sm font-serif font-bold text-white">Ca Phe Bistro</span>
+          </div>
+          <button onClick={logout} className="p-2 text-white/40 hover:text-red-400">
+            <LogOut className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto">
           <Outlet />
         </div>
       </main>

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { X, Minus, Plus, Loader2, Sparkles, Banknote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { playOrderSuccessSound } from '../../lib/utils';
 
 const CartDrawer = () => {
   const { state, dispatch, cartTotal } = useCart();
@@ -45,10 +46,11 @@ const CartDrawer = () => {
       });
 
       // Save order ID and navigate
+      playOrderSuccessSound();
       dispatch({ type: 'SET_LAST_ORDER_ID', payload: response.data._id });
       dispatch({ type: 'CLEAR_CART' });
       dispatch({ type: 'SET_CART_OPEN', payload: false });
-      navigate(`/track/${response.data._id}`);
+      navigate(`/track/${response.data._id}?success=true`);
     } catch (error) {
       console.error('Order placement error:', error);
       alert("❌ Failed to place order. Please check your connection.");

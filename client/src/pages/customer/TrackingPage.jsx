@@ -7,6 +7,8 @@ import { ChefHat, Coffee, Check, Loader2, CreditCard, Banknote, Sparkles, Activi
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
 
+import { playOrderSuccessSound } from '../../lib/utils';
+
 const STATUS_STEPS = [
   { id: 'placed', label: 'Order Received', icon: Coffee },
   { id: 'preparing', label: 'Preparing', icon: ChefHat },
@@ -24,23 +26,42 @@ const TrackingPage = () => {
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
   const [showTimeNotification, setShowTimeNotification] = useState(false);
+  const [showOrderConfirmed, setShowOrderConfirmed] = useState(false);
+
+  // Success Notification Effect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      console.log("🎯 Success detected, triggering notification...");
+      playOrderSuccessSound();
+      setShowOrderConfirmed(true);
+      
+      // Increased to 10s for maximum visibility
+      const timer = setTimeout(() => setShowOrderConfirmed(false), 10000);
+      
+      // Remove query param from URL without refreshing
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [orderId]); // Only run when orderId is stable
 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`);
+        setOrder(res.data);
+        
+        // Background verification if it's a success landing
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('success') === 'true') {
           try {
             await axios.get(`${import.meta.env.VITE_API_URL}/verify-session/${orderId}`);
-            // Force removal of query param from url to avoid repeat verifications
-            window.history.replaceState({}, document.title, window.location.pathname);
           } catch (e) {
-            console.error("Verification error:", e);
+            console.error("Background verification failed:", e);
           }
         }
-
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`);
-        setOrder(res.data);
       } catch (error) {
         console.error('Failed to fetch order:', error);
       } finally {
@@ -408,6 +429,81 @@ const TrackingPage = () => {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showOrderConfirmed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-background/60 backdrop-blur-3xl"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 40, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.8, y: 40, opacity: 0 }}
+              className="relative max-w-md w-full bg-surface-dark border border-white/10 rounded-[50px] p-12 text-center shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden"
+            >
+              {/* Background ambient light */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -z-10" />
+              
+              <div className="relative mb-10">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
+                  className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(245,158,11,0.4)]"
+                >
+                  <Check className="w-12 h-12 text-background stroke-[4px]" />
+                </motion.div>
+                
+                {/* Floating sparkles */}
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ 
+                      y: [-10, -30, -10],
+                      x: [0, (i % 2 === 0 ? 20 : -20), 0],
+                      opacity: [0, 1, 0]
+                    }}
+                    transition={{ 
+                      duration: 2 + Math.random(), 
+                      repeat: Infinity,
+                      delay: i * 0.2
+                    }}
+                    className="absolute text-primary text-xl"
+                    style={{ 
+                      top: '20%', 
+                      left: `${15 + i * 15}%` 
+                    }}
+                  >
+                    ✨
+                  </motion.div>
+                ))}
+              </div>
+
+              <h2 className="text-4xl font-serif font-black text-white mb-4">Order Placed!</h2>
+              <p className="text-text-muted text-sm leading-relaxed mb-10 font-light italic">
+                Your culinary journey has begun. Our master chefs are now preparing your delicacies with artisan soul.
+              </p>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  playOrderSuccessSound();
+                  setShowOrderConfirmed(false);
+                }}
+                className="w-full bg-white text-background font-black py-5 rounded-3xl uppercase tracking-[0.2em] text-[10px] shadow-2xl hover:bg-primary transition-colors"
+              >
+                Track My Journey
+              </motion.button>
+              
+              <p className="mt-6 text-[9px] text-white/30 font-black uppercase tracking-[0.4em]">Ca Phe Bistro Sanctuary</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
