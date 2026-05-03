@@ -72,8 +72,8 @@ const AdminOrders = () => {
     return <div className="flex justify-center p-20"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
-  const activeOrders = orders.filter(o => o.orderStatus !== 'ready');
-  const pastOrders = orders.filter(o => o.orderStatus === 'ready');
+  const activeOrders = Array.isArray(orders) ? orders.filter(o => o.orderStatus !== 'ready') : [];
+  const pastOrders = Array.isArray(orders) ? orders.filter(o => o.orderStatus === 'ready') : [];
 
   const OrderCard = ({ order, isActive }) => {
     return (

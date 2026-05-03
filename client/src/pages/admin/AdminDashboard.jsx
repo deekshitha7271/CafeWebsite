@@ -131,7 +131,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data?.weeklyRevenue || []}>
+            <AreaChart data={Array.isArray(data?.weeklyRevenue) ? data.weeklyRevenue : []}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
           className="bg-surface border border-white/5 rounded-3xl p-6">
           <h3 className="text-white font-serif font-bold text-xl mb-1">Top Items</h3>
           <p className="text-primary text-[10px] uppercase tracking-widest font-black mb-4">By Volume (30 days)</p>
-          {(data?.topItems?.length > 0) ? (
+          {(Array.isArray(data?.topItems) && data.topItems.length > 0) ? (
             <>
               <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
@@ -186,7 +186,7 @@ const AdminDashboard = () => {
           <h3 className="text-white font-serif font-bold text-xl mb-1">Peak Order Timings</h3>
           <p className="text-primary text-[10px] uppercase tracking-widest font-black mb-6">Today's Activity by Hour</p>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={data?.peakHours || []}>
+            <BarChart data={Array.isArray(data?.peakHours) ? data.peakHours : []}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
               <XAxis dataKey="hour" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 700 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -206,7 +206,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="space-y-4 overflow-y-auto max-h-56 pr-1">
-            {(data?.recentActivity || []).map((a, i) => (
+            {(Array.isArray(data?.recentActivity) ? data.recentActivity : []).map((a, i) => (
               <div key={a._id} className="flex gap-3">
                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.orderStatus === 'completed' ? 'bg-emerald-400' : a.orderStatus === 'placed' ? 'bg-blue-400' : 'bg-primary'}`} />
                 <div className="flex-1 min-w-0">
@@ -218,7 +218,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
             ))}
-            {(!data?.recentActivity?.length) && (
+            {(!Array.isArray(data?.recentActivity) || !data?.recentActivity?.length) && (
               <p className="text-white/20 text-sm text-center py-8">No recent activity</p>
             )}
           </div>
