@@ -51,14 +51,18 @@ const io = new Server(server, {
 app.use('/api/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
+const MongoStore = require('connect-mongo').default;
+
+app.set('trust proxy', 1);
 app.use(session({
   secret: process.env.SESSION_SECRET || 'cafe-secret',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
