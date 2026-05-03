@@ -56,31 +56,6 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get related orders in the session chain
-router.get('/related/:id', async (req, res) => {
-  try {
-    const currentOrder = await Order.findById(req.params.id);
-    if (!currentOrder) return res.status(404).json({ error: 'Order not found' });
-
-    // Find all orders that share the same "root" order or are part of the chain
-    // If current order has a relatedOrderId, fetch its parent and siblings
-    // If current order is a parent, fetch its children
-    const chainRootId = currentOrder.relatedOrderId || currentOrder._id;
-    
-    const relatedOrders = await Order.find({
-      $or: [
-        { _id: chainRootId },
-        { relatedOrderId: chainRootId },
-        { relatedOrderId: currentOrder.relatedOrderId } // Siblings
-      ]
-    }).sort({ timestamp: 1 });
-
-    res.json(relatedOrders);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Update order status (Admin)
 router.put('/:id/status', async (req, res) => {
   try {

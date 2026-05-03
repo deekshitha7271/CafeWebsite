@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Check, Play, Package, User, Hash, Sparkles } from 'lucide-react';
+import { Clock, Check, Play, Package, User, Hash } from 'lucide-react';
 
 const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
     const [timeLeft, setTimeLeft] = useState(null);
@@ -71,16 +71,9 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
                 </div>
 
                 {timeLeft && (
-                    <div className="flex flex-col items-end gap-2">
-                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 ${timerBadgeStyles[urgency]}`}>
-                            <Clock className={`w-3.5 h-3.5 ${urgency === 'normal' ? '' : 'animate-spin-slow'}`} />
-                            <span className="text-sm font-black tracking-tighter tabular-nums">{timeLeft}</span>
-                        </div>
-                        {order.relatedOrderId && (
-                            <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles className="w-3 h-3" /> Linked Order
-                            </span>
-                        )}
+                    <div className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all duration-300 ${timerBadgeStyles[urgency]}`}>
+                        <Clock className={`w-3.5 h-3.5 ${urgency === 'normal' ? '' : 'animate-spin-slow'}`} />
+                        <span className="text-sm font-black tracking-tighter tabular-nums">{timeLeft}</span>
                     </div>
                 )}
             </div>

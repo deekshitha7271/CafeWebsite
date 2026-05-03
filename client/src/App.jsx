@@ -29,7 +29,7 @@ import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminCMS from './pages/admin/AdminCMS';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminMenu from './pages/admin/AdminMenu';
-import AdminActivity from './pages/admin/AdminActivity';
+
 
 import { useEffect } from 'react';
 
@@ -44,8 +44,8 @@ function App() {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
     };
-    window.addEventListener('click', unlockAudio, { passive: true });
-    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
     return () => {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
@@ -89,7 +89,7 @@ function App() {
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="cms" element={<AdminCMS />} />
                   <Route path="settings" element={<AdminSettings />} />
-                  <Route path="activity" element={<AdminActivity />} />
+
                 </Route>
               </Route>
             </Routes>

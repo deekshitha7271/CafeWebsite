@@ -4,7 +4,7 @@ import { useSocket } from '../../context/SocketContext';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AdminActivity = () => {
+const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
@@ -72,8 +72,8 @@ const AdminActivity = () => {
     return <div className="flex justify-center p-20"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
   }
 
-  const activeOrders = Array.isArray(orders) ? orders.filter(o => o.orderStatus !== 'ready') : [];
-  const pastOrders = Array.isArray(orders) ? orders.filter(o => o.orderStatus === 'ready') : [];
+  const activeOrders = orders.filter(o => o.orderStatus !== 'ready');
+  const pastOrders = orders.filter(o => o.orderStatus === 'ready');
 
   const OrderCard = ({ order, isActive }) => {
     return (
@@ -127,29 +127,15 @@ const AdminActivity = () => {
               {order.orderStatus}
             </span>
             {order.paymentStatus === 'paid' ? (
-              <div className="flex flex-col items-end gap-2">
-                <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  PAID
-                </p>
-                {order.relatedOrderId && (
-                  <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
-                    Linked Order
-                  </span>
-                )}
-              </div>
+              <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                PAID
+              </p>
             ) : (
-              <div className="flex flex-col items-end gap-2">
-                <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-                  CASH PENDING
-                </p>
-                {order.relatedOrderId && (
-                  <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
-                    Linked Order
-                  </span>
-                )}
-              </div>
+              <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+                CASH PENDING
+              </p>
             )}
           </div>
         </div>
@@ -262,4 +248,4 @@ const AdminActivity = () => {
   );
 };
 
-export default AdminActivity;
+export default AdminOrders;

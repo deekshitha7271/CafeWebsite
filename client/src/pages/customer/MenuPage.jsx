@@ -84,7 +84,7 @@ const MenuPage = () => {
     };
 
     fetchMenu();
-  }, []);
+  }, [dispatch]);
 
   // Refined filtering for 200+ items - Hard filtering for high-density focus
   const filteredItems = useMemo(() => {

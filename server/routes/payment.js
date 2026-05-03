@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime, relatedOrderId } = req.body;
+    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime } = req.body;
     let targetOrder;
 
     if (orderId) {
@@ -44,7 +44,6 @@ router.post('/checkout', async (req, res) => {
           quantity: i.quantity
         })),
         total,
-        relatedOrderId,
         paymentStatus: 'pending',
         orderStatus: 'placed'
       });

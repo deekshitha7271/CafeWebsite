@@ -16,8 +16,15 @@ const SuccessPage = () => {
     dispatch({ type: 'CLEAR_CART' });
     dispatch({ type: 'SET_CART_OPEN', payload: false });
 
+    // Ensure Navbar recognizes the active order
     if (orderId) {
       dispatch({ type: 'SET_LAST_ORDER_ID', payload: orderId });
+      
+      // Track order placement
+      axios.post(`${import.meta.env.VITE_API_URL}/audit/record`, {
+        action: 'order_placed',
+        details: { orderId }
+      }).catch(() => {});
     }
 
     // Redirect to tracking page after 3 seconds

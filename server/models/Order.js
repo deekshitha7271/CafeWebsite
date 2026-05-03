@@ -23,7 +23,6 @@ const orderSchema = new mongoose.Schema({
   customerName: { type: String },
   customerPhone: { type: String },
   stripeSessionId: { type: String },
-  relatedOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   timestamp: { type: Date, default: Date.now }
 });
 

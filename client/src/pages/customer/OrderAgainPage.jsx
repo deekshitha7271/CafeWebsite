@@ -21,6 +21,15 @@ const OrderAgainPage = () => {
           _id: item.menuItemId || item._id,
         }));
 
+        // Track repeat order with item details
+        axios.post(`${import.meta.env.VITE_API_URL}/audit/record`, {
+          action: 'order_repeated',
+          details: { 
+            originalOrderId: orderId,
+            items: cartItems.map(i => `${i.quantity}x ${i.name}`).join(', ')
+          }
+        }).catch(() => {});
+
         const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Clear existing cart items first to avoid persistence issues

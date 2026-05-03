@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 const allLinks = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'], end: true },
   { to: '/admin/orders', icon: ClipboardList, label: 'Live Orders', roles: ['admin', 'worker'] },
+
   { to: '/admin/menu', icon: Coffee, label: 'Menu Management', roles: ['admin'] },
   { to: '/admin/customers', icon: Users, label: 'Customers', roles: ['admin'] },
   { to: '/admin/inventory', icon: Package, label: 'Inventory', roles: ['admin'] },
