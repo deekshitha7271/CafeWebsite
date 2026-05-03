@@ -1,8 +1,8 @@
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const ProtectedRoute = ({ allowedRoles }) => {
+const GuestRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
 
@@ -14,15 +14,16 @@ const ProtectedRoute = ({ allowedRoles }) => {
         );
     }
 
-    if (!user) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
-    }
-
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user) {
+        // If user is already logged in, redirect them away from login/register
+        // Redirect to admin if they are admin/worker, otherwise to home
+        if (user.role === 'admin' || user.role === 'worker') {
+            return <Navigate to="/admin" replace />;
+        }
         return <Navigate to="/" replace />;
     }
 
-    return <Outlet />;
+    return children;
 };
 
-export default ProtectedRoute;
+export default GuestRoute;

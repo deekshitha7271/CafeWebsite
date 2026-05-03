@@ -15,6 +15,18 @@ const RegisterPage = () => {
     e.preventDefault();
     setError(null);
 
+    // Basic email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     try {
       await register(name, email, password);
       navigate('/');
@@ -33,6 +45,7 @@ const RegisterPage = () => {
           <input
             type="text"
             placeholder="Full Name"
+            autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all"
@@ -40,6 +53,7 @@ const RegisterPage = () => {
           <input
             type="email"
             placeholder="Email address"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all"
@@ -47,6 +61,7 @@ const RegisterPage = () => {
           <input
             type="password"
             placeholder="Password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all"

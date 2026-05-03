@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, IndianRupee, Download, Search, CheckCircle, Clock, RefreshCw, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import InvoiceModal from '../../components/admin/InvoiceModal';
 
 const methodColors = {
     UPI: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
@@ -20,6 +21,13 @@ const AdminPayments = () => {
     const [data, setData] = useState({ transactions: [], totalRevenue: 0, totalGST: 0 });
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+
+    const handleViewInvoice = (transaction) => {
+        setSelectedTransaction(transaction);
+        setIsInvoiceOpen(true);
+    };
 
     useEffect(() => {
         axios.get(`${import.meta.env.VITE_API_URL}/admin/payments`)
@@ -92,7 +100,10 @@ const AdminPayments = () => {
                                     </td>
                                     <td className="px-5 py-4 text-white/30 text-[10px]">{t.time}</td>
                                     <td className="px-5 py-4">
-                                        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 hover:text-primary hover:border-primary/30 transition-all">
+                                        <button 
+                                            onClick={() => handleViewInvoice(t)}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-white/40 hover:text-primary hover:border-primary/30 transition-all"
+                                        >
                                             <Download className="w-3 h-3" /> Invoice
                                         </button>
                                     </td>
@@ -102,6 +113,12 @@ const AdminPayments = () => {
                     </table>
                 </div>
             </div>
+
+            <InvoiceModal 
+                isOpen={isInvoiceOpen} 
+                onClose={() => setIsInvoiceOpen(false)} 
+                transaction={selectedTransaction} 
+            />
         </div>
     );
 };

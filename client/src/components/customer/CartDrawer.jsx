@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { X, Minus, Plus, Loader2, Sparkles, Banknote } from 'lucide-react';
+import { X, Minus, Plus, Loader2, Sparkles, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { playOrderSuccessSound } from '../../lib/utils';
@@ -14,56 +14,18 @@ const CartDrawer = () => {
   const [arrivalTime, setArrivalTime] = useState(state.arrivalTime || '');
   const navigate = useNavigate();
 
-  const isTableOrder = state.orderType === 'dinein-qr' && state.table;
 
   useEffect(() => {
     setArrivalTime(state.arrivalTime || '');
   }, [state.arrivalTime]);
 
-  const handlePlaceOrder = async () => {
-    if (state.items.length === 0) return;
-
-    if (!isTableOrder) {
-      alert("⚠️ Cash payment is only available for table-scanned orders. Please use Online Payment.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/orders/cash`, {
-        items: state.items.map(i => ({
-          menuItemId: i._id,
-          name: i.name,
-          price: i.price,
-          quantity: i.quantity
-        })),
-        table: state.table,
-        orderType: state.orderType,
-        customerName: user?.name || '',
-        customerPhone: '',
-        arrivalTime,
-        total: cartTotal,
-      });
-
-      // Save order ID and navigate
-      playOrderSuccessSound();
-      dispatch({ type: 'SET_LAST_ORDER_ID', payload: response.data._id });
-      dispatch({ type: 'CLEAR_CART' });
-      dispatch({ type: 'SET_CART_OPEN', payload: false });
-      navigate(`/track/${response.data._id}?success=true`);
-    } catch (error) {
-      console.error('Order placement error:', error);
-      alert("❌ Failed to place order. Please check your connection.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCheckout = async () => {
     if (state.items.length === 0) return;
 
-    if (state.orderType !== 'dinein-qr' && !user) {
-      navigate('/login');
+    if (!user) {
+      navigate('/login', { state: { from: { pathname: window.location.pathname, search: window.location.search } } });
+      dispatch({ type: 'SET_CART_OPEN', payload: false });
       return;
     }
 
@@ -74,14 +36,14 @@ const CartDrawer = () => {
         arrivalDate = new Date(Date.now() + parseInt(arrivalTime, 10) * 60000).toISOString();
       }
 
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/checkout`, {
         items: state.items,
-        table: state.table,
         total: cartTotal,
         orderType: state.orderType,
         customerName: user?.name || '',
         customerPhone: '',
-        arrivalTime: arrivalDate
+        arrivalTime: arrivalDate,
+        relatedOrderId: state.relatedOrderId
       });
       window.location.href = res.data.url;
     } catch (error) {
@@ -208,7 +170,16 @@ const CartDrawer = () => {
                 </div>
               )}
 
-              {/* Removed old inline login banner */}
+              {/* Shadow Cart Contextual Message */}
+              {state.relatedOrderId && (
+                <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-[2rem] flex items-center gap-3">
+                  <Activity className="w-5 h-5 text-primary animate-pulse" />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Active Session</p>
+                    <p className="text-xs text-white/70">Your previous order is being prepared. We'll try to serve them together!</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
@@ -220,22 +191,6 @@ const CartDrawer = () => {
                 <span className="text-3xl font-black text-white drop-shadow-lg">₹{cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex flex-col gap-3">
-                {state.orderType !== 'dinein-qr' && !user ? (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      dispatch({ type: 'SET_CART_OPEN', payload: false });
-                      navigate('/login');
-                    }}
-                    className="relative w-full group overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 rounded-2xl blur-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative bg-gradient-to-r from-orange-600 to-orange-500 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 border border-orange-400/50 shadow-xl">
-                      Log In to Checkout
-                    </div>
-                  </motion.button>
-                ) : (
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -248,28 +203,7 @@ const CartDrawer = () => {
                       {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Order & Pay Online <Sparkles className="w-4 h-4 opacity-70" /></>}
                     </div>
                   </motion.button>
-                )}
 
-                {state.orderType === 'dinein-qr' && state.table && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handlePlaceOrder}
-                    disabled={state.items.length === 0 || loading}
-                    className="relative w-full group disabled:opacity-50 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-white/5 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="relative bg-surface-light border border-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-[0.15em] flex items-center justify-center gap-3 hover:bg-surface transition-all">
-                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Pay Cash at Counter <Banknote className="w-4 h-4 opacity-70" /></>}
-                    </div>
-                  </motion.button>
-                )}
-
-                {state.orderType !== 'dinein-qr' && (
-                  <p className="text-[9px] text-center text-text-muted/40 uppercase font-bold tracking-widest mt-1">
-                    Advance payment required for web orders
-                  </p>
-                )}
               </div>
             </div>
           </motion.div>

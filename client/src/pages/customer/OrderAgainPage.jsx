@@ -23,6 +23,9 @@ const OrderAgainPage = () => {
 
         const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+        // Clear existing cart items first to avoid persistence issues
+        dispatch({ type: 'CLEAR_CART' });
+
         dispatch({
           type: 'SET_CART',
           payload: {

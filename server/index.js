@@ -7,6 +7,7 @@ const session = require('express-session');
 const { Server } = require('socket.io');
 
 const authRoutes = require('./routes/auth');
+const { protect, authorize } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -89,18 +90,14 @@ const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
 
-app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/menu-items', menuRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api', paymentRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Public combined API
+// Models for Public combined API
 const Category = require('./models/Category');
 const MenuItem = require('./models/MenuItem');
 const Order = require('./models/Order');
 
+app.use('/api/auth', authRoutes);
+
+// Public combined API - MUST BE ABOVE PROTECTED ROUTES
 app.get('/api/menu', async (req, res) => {
   try {
     const categories = await Category.find();
@@ -111,7 +108,16 @@ app.get('/api/menu', async (req, res) => {
   }
 });
 
-app.get('/api/analytics', async (req, res) => {
+// Category and Menu items have internal protection for mutation routes
+app.use('/api/categories', categoryRoutes);
+app.use('/api/menu-items', menuRoutes);
+
+// Protected routes
+app.use('/api/orders', protect, orderRoutes);
+app.use('/api/payment', protect, paymentRoutes);
+app.use('/api/admin', protect, authorize('admin', 'worker'), adminRoutes);
+
+app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res) => {
   try {
     const today = new Date();
     const yesterday = new Date(today);

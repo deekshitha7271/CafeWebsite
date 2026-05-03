@@ -110,7 +110,7 @@ const AdminLayout = () => {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-white truncate">{user?.name}</p>
-              <p className="text-[10px] text-primary capitalize">{user?.role}</p>
+              <p className="text-[9px] text-primary/60 uppercase font-black tracking-widest mt-0.5">{user?.role}</p>
             </div>
           </div>
           <button

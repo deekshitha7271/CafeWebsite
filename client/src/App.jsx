@@ -3,6 +3,7 @@ import { CartProvider } from './context/CartContext';
 import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import GuestRoute from './components/auth/GuestRoute';
 
 // Pages - Customer
 import MenuPage from './pages/customer/MenuPage';
@@ -27,8 +28,8 @@ import AdminReviews from './pages/admin/AdminReviews';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminCMS from './pages/admin/AdminCMS';
 import AdminSettings from './pages/admin/AdminSettings';
-import AdminQR from './pages/admin/AdminQR';
 import AdminMenu from './pages/admin/AdminMenu';
+import AdminActivity from './pages/admin/AdminActivity';
 
 import { useEffect } from 'react';
 
@@ -60,11 +61,17 @@ function App() {
               {/* Customer Routes */}
               <Route path="/" element={<MenuPage />} />
               <Route path="/menu/item/:id" element={<MenuItemDetailsPage />} />
-              <Route path="/checkout/success" element={<SuccessPage />} />
-              <Route path="/track/:orderId" element={<TrackingPage />} />
-              <Route path="/repeat/:orderId" element={<OrderAgainPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+
+              {/* Protected Customer Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/checkout/success" element={<SuccessPage />} />
+                <Route path="/track/:orderId" element={<TrackingPage />} />
+                <Route path="/repeat/:orderId" element={<OrderAgainPage />} />
+              </Route>
+
+              {/* Guest Only Routes */}
+              <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+              <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
 
               {/* Protected Admin/Worker Routes */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'worker']} />}>
@@ -82,7 +89,7 @@ function App() {
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="cms" element={<AdminCMS />} />
                   <Route path="settings" element={<AdminSettings />} />
-                  <Route path="qr" element={<AdminQR />} />
+                  <Route path="activity" element={<AdminActivity />} />
                 </Route>
               </Route>
             </Routes>

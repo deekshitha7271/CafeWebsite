@@ -55,8 +55,8 @@ const Navbar = () => {
         {/* Global Order Type Selector */}
         <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10">
           <button
-            onClick={() => !state.table && handleOrderTypeChange('dinein-web')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${(state.orderType === 'dinein-web' || state.orderType === 'dinein-qr')
+            onClick={() => handleOrderTypeChange('dinein-web')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
               ? 'bg-primary text-background shadow-lg scale-105'
               : 'text-text-muted hover:text-white'
               }`}
@@ -65,30 +65,21 @@ const Navbar = () => {
             <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Dine In</span>
           </button>
 
-          {!state.table && (
-            <button
-              onClick={() => handleOrderTypeChange('takeaway')}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
-                ? 'bg-primary text-background shadow-lg scale-105'
-                : 'text-text-muted hover:text-white'
-                }`}
-            >
-              <Package className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Takeaway</span>
-            </button>
-          )}
+          <button
+            onClick={() => handleOrderTypeChange('takeaway')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
+              ? 'bg-primary text-background shadow-lg scale-105'
+              : 'text-text-muted hover:text-white'
+              }`}
+          >
+            <Package className="w-4 h-4" />
+            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Takeaway</span>
+          </button>
         </div>
 
         {/* Right side links */}
         <div className="flex items-center gap-6">
 
-          {/* Table ID Badge (New) */}
-          {state.table && (
-            <div className={`hidden lg:flex items-center gap-2 px-4 py-2.5 rounded-full border border-primary/20 bg-primary/5 text-primary`}>
-              <Navigation className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black tracking-widest uppercase">Table {state.table}</span>
-            </div>
-          )}
 
           {/* Dynamic Status Badge */}
           <motion.button

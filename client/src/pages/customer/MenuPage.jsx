@@ -16,8 +16,6 @@ import {
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 
 const MenuPage = () => {
-  const [searchParams] = useSearchParams();
-  const tableNumber = searchParams.get('table');
   const { dispatch } = useCart();
 
   const [categories, setCategories] = useState([]);
@@ -73,10 +71,6 @@ const MenuPage = () => {
   const textOpacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   useEffect(() => {
-    if (tableNumber) {
-      dispatch({ type: 'SET_TABLE', payload: parseInt(tableNumber) });
-    }
-
     const fetchMenu = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/menu`);
@@ -90,7 +84,7 @@ const MenuPage = () => {
     };
 
     fetchMenu();
-  }, [tableNumber, dispatch]);
+  }, [dispatch]);
 
   // Refined filtering for 200+ items - Hard filtering for high-density focus
   const filteredItems = useMemo(() => {
@@ -227,11 +221,8 @@ const MenuPage = () => {
               </motion.span>
             </h1>
             <p className="text-text-muted mt-6 text-sm md:text-xl max-w-md leading-relaxed border-l-[3px] border-primary/40 pl-6 tracking-wide font-light">
-              {tableNumber ? (
-                <>Table <strong className="text-white font-bold">{tableNumber}</strong></>
-              ) : (
-                <strong className="text-primary font-bold uppercase tracking-widest text-sm">Web Ordering Active</strong>
-              )} • Indulge in our masterfully crafted culinary collection. Elevate your senses.
+              <strong className="text-primary font-bold uppercase tracking-widest text-sm">Web Ordering Active</strong>
+               • Indulge in our masterfully crafted culinary collection. Elevate your senses.
             </p>
 
             <div className="mt-10 flex flex-col gap-8">

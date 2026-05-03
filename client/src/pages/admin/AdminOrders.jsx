@@ -87,7 +87,7 @@ const AdminOrders = () => {
         <div className="flex justify-between items-start mb-6 border-b border-white/10 pb-4">
           <div>
             <h3 className="font-serif font-bold text-2xl text-white">
-              {order.orderType === 'takeaway' ? '🥡 Takeaway' : (order.table ? `🪑 Table ${order.table}` : '🌐 Web Order')}
+              {order.orderType === 'takeaway' ? '🥡 Takeaway' : '🪑 Dine-in'}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <p className="text-[10px] text-text-muted uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded-md bg-surface-dark">{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -127,15 +127,29 @@ const AdminOrders = () => {
               {order.orderStatus}
             </span>
             {order.paymentStatus === 'paid' ? (
-              <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                PAID
-              </p>
+              <div className="flex flex-col items-end gap-2">
+                <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  PAID
+                </p>
+                {order.relatedOrderId && (
+                  <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
+                    Linked Order
+                  </span>
+                )}
+              </div>
             ) : (
-              <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-                CASH PENDING
-              </p>
+              <div className="flex flex-col items-end gap-2">
+                <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
+                  CASH PENDING
+                </p>
+                {order.relatedOrderId && (
+                  <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full uppercase tracking-widest">
+                    Linked Order
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

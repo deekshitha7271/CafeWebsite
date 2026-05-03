@@ -6,6 +6,7 @@ const stream = require('stream');
 const _ = require('lodash');
 const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
+const { protect, authorize } = require('../middleware/auth');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -78,7 +79,7 @@ router.get('/dietary-tags', async (req, res) => {
 });
 
 // Bulk Update API
-router.patch('/bulk-update', async (req, res) => {
+router.patch('/bulk-update', protect, authorize('admin'), async (req, res) => {
   const { ids, operation, value } = req.body;
   if (!ids || !Array.isArray(ids)) return res.status(400).json({ error: 'Selection required' });
 
@@ -114,7 +115,7 @@ router.patch('/bulk-update', async (req, res) => {
 });
 
 // Inline Single Field Update
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const item = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(item);
@@ -135,7 +136,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Smart Bulk Upload API
-router.post('/bulk-upload', upload.single('file'), async (req, res) => {
+router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const results = { itemsAdded: 0, itemsUpdated: 0, itemsFailed: 0, errors: [] };
@@ -267,7 +268,7 @@ router.post('/bulk-upload', upload.single('file'), async (req, res) => {
     });
 });
 
-router.post('/', async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
     const item = new MenuItem(req.body);
     await item.save();
@@ -277,7 +278,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const item = await MenuItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(item);
@@ -286,7 +287,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     await MenuItem.findByIdAndDelete(req.params.id);
     res.json({ message: 'Menu item deleted' });

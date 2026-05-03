@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -16,9 +17,12 @@ const LoginPage = () => {
 
     try {
       const loggedInUser = await login(email, password);
+      
+      const from = location.state?.from?.pathname || (location.state?.from?.search ? location.state.from.pathname + location.state.from.search : null);
 
-      // Role-based redirection
-      if (loggedInUser.role === 'admin' || loggedInUser.role === 'worker') {
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (loggedInUser.role === 'admin' || loggedInUser.role === 'worker') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -38,6 +42,7 @@ const LoginPage = () => {
           <input
             type="email"
             placeholder="Email address"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all"
@@ -45,6 +50,7 @@ const LoginPage = () => {
           <input
             type="password"
             placeholder="Password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all"

@@ -8,12 +8,11 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const orderSchema = new mongoose.Schema({
-  table: { type: Number },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   orderType: {
     type: String,
-    enum: ['dinein-qr', 'dinein-web', 'takeaway'],
-    default: 'dinein-qr'
+    enum: ['dinein-web', 'takeaway'],
+    default: 'takeaway'
   },
   items: [orderItemSchema],
   total: { type: Number, required: true },
@@ -24,6 +23,7 @@ const orderSchema = new mongoose.Schema({
   customerName: { type: String },
   customerPhone: { type: String },
   stripeSessionId: { type: String },
+  relatedOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   timestamp: { type: Date, default: Date.now }
 });
 

@@ -1,25 +1,21 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
 const initialState = {
   items: [],
-  table: null,
   isCartOpen: false,
-  orderType: 'dinein-web', // Default
+  orderType: 'takeaway', // Default
   arrivalTime: '',
   lastOrderId: localStorage.getItem('lastOrderId') || null,
+  relatedOrderId: null,
+  shadowItems: [], // The "Shadow Cart" clone
 };
 
 const cartReducer = (state, action) => {
   switch (action.type) {
-    case 'SET_TABLE':
-      return {
-        ...state,
-        table: action.payload,
-        orderType: action.payload ? 'dinein-qr' : state.orderType
-      };
     case 'SET_CART':
       return {
         ...state,
@@ -72,6 +68,22 @@ const cartReducer = (state, action) => {
         localStorage.removeItem('lastOrderId');
       }
       return { ...state, lastOrderId: action.payload };
+    case 'CLONE_TO_SHADOW':
+      return {
+        ...state,
+        shadowItems: [...state.items]
+      };
+    case 'RESTORE_FROM_SHADOW':
+      return {
+        ...state,
+        items: [...state.shadowItems],
+        isCartOpen: true
+      };
+    case 'SET_RELATED_ORDER':
+      return {
+        ...state,
+        relatedOrderId: action.payload
+      };
     default:
       return state;
   }

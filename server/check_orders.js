@@ -7,7 +7,7 @@ async function check() {
     
     // Find orders where the ID ends with 028d7b
     const orders = await Order.find({}).lean();
-    const targetOrder = orders.find(o => o._id.toString().endsWith('028d7b'));
+    const targetOrder = orders.find(o => o._id.toString().endsWith('936fdf'));
     
     if (targetOrder) {
         console.log('ORDER FOUND:');

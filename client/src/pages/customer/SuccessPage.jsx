@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import axios from 'axios';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { CheckCircle2 } from 'lucide-react';
@@ -15,7 +16,6 @@ const SuccessPage = () => {
     dispatch({ type: 'CLEAR_CART' });
     dispatch({ type: 'SET_CART_OPEN', payload: false });
 
-    // Ensure Navbar recognizes the active order
     if (orderId) {
       dispatch({ type: 'SET_LAST_ORDER_ID', payload: orderId });
     }

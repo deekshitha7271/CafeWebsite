@@ -6,7 +6,7 @@ const Order = require('../models/Order');
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime } = req.body;
+    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime, relatedOrderId } = req.body;
     let targetOrder;
 
     if (orderId) {
@@ -44,6 +44,7 @@ router.post('/checkout', async (req, res) => {
           quantity: i.quantity
         })),
         total,
+        relatedOrderId,
         paymentStatus: 'pending',
         orderStatus: 'placed'
       });
@@ -110,11 +111,11 @@ router.get('/verify-session/:orderId', async (req, res) => {
           io.emit('order:new', order);
           io.emit('order:update', order);
         }
-        return res.json({ paid: true });
+        return res.json({ paid: true, order });
       }
     }
 
-    res.json({ paid: false });
+    res.json({ paid: false, order });
   } catch (error) {
     console.error('Session verify error:', error);
     res.status(500).json({ error: 'Verification failed' });
