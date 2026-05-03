@@ -87,7 +87,7 @@ const AdminMenu = () => {
       }));
 
       setItems(itemRes.data.items || []);
-      setDietaryTags(tagRes.data);
+      setDietaryTags(Array.isArray(tagRes.data) ? tagRes.data : []);
       setPagination(prev => ({
         ...prev,
         totalPages: itemRes.data.pagination?.totalPages || 1,
@@ -151,8 +151,7 @@ const AdminMenu = () => {
     }
   };
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
+    if (e.target.checked && Array.isArray(items)) {
       setSelectedIds(new Set(items.map(i => i._id)));
     } else {
       setSelectedIds(new Set());

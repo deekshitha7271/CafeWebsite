@@ -15,7 +15,11 @@ const KDSDashboard = () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders`);
             // Only keep non-completed orders for KDS
-            setOrders(res.data.filter(o => o.orderStatus !== 'completed'));
+            if (Array.isArray(res.data)) {
+                setOrders(res.data.filter(o => o.orderStatus !== 'completed'));
+            } else {
+                setOrders([]);
+            }
         } catch (error) {
             console.error('Failed to fetch orders:', error);
         } finally {
@@ -93,16 +97,17 @@ const KDSDashboard = () => {
     }
 
     // Lane Filtering
-    const priorityOrders = orders
+    const safeOrders = Array.isArray(orders) ? orders : [];
+    const priorityOrders = safeOrders
         .filter(o => o.orderStatus === 'placed')
         .sort((a, b) => new Date(a.arrivalTime) - new Date(b.arrivalTime))
         .slice(0, 20);
 
-    const preparingOrders = orders
+    const preparingOrders = safeOrders
         .filter(o => o.orderStatus === 'preparing')
         .slice(0, 20);
 
-    const readyOrders = orders
+    const readyOrders = safeOrders
         .filter(o => o.orderStatus === 'ready')
         .slice(0, 20);
 
