@@ -105,31 +105,27 @@ export const CartProvider = ({ children }) => {
     const savedGuestItems = localStorage.getItem(guestCartKey);
 
     if (userId !== 'guest' && savedGuestItems) {
-      // User just logged in, merge guest items
-      const guestItems = JSON.parse(savedGuestItems);
-      const userItems = savedUserItems ? JSON.parse(savedUserItems) : [];
+      // User just logged in and had a guest cart.
+      // We overwrite any stale local user cart with the new guest cart they just built.
+      try {
+        itemsToLoad = JSON.parse(savedGuestItems);
+      } catch (e) {
+        itemsToLoad = [];
+      }
       
-      // Simple merge: add guest items to user items, avoiding duplicates if necessary
-      // For simplicity, we'll just append and the reducer handles quantities if we were adding, 
-      // but here we are setting the whole cart. Let's merge properly.
-      const mergedItems = [...userItems];
-      guestItems.forEach(gItem => {
-        const existing = mergedItems.find(uItem => uItem._id === gItem._id);
-        if (existing) {
-          existing.quantity += gItem.quantity;
-        } else {
-          mergedItems.push(gItem);
-        }
-      });
-      
-      itemsToLoad = mergedItems;
-      // Clear guest cart after merging
+      // Clear guest cart after transferring
       localStorage.removeItem(guestCartKey);
-      // Save merged cart to user key immediately
+      // Save transferred cart to user key immediately
       localStorage.setItem(userCartKey, JSON.stringify(itemsToLoad));
-    } else if (savedUserItems) {
+    } else if (savedUserItems && userId !== 'guest') {
       try {
         itemsToLoad = JSON.parse(savedUserItems);
+      } catch (e) {
+        itemsToLoad = [];
+      }
+    } else if (savedGuestItems && userId === 'guest') {
+      try {
+        itemsToLoad = JSON.parse(savedGuestItems);
       } catch (e) {
         itemsToLoad = [];
       }

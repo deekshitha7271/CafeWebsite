@@ -35,7 +35,6 @@ const TrackingPage = () => {
 
     if (isSuccess) {
       console.log("🎯 Success detected, triggering notification...");
-      playOrderSuccessSound();
       setShowOrderConfirmed(true);
       
       // Clear cart upon successful payment

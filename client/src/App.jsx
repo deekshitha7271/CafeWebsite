@@ -34,23 +34,8 @@ import AdminMenu from './pages/admin/AdminMenu';
 import { useEffect } from 'react';
 
 function App() {
-  useEffect(() => {
-    const unlockAudio = () => {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-      // Once unlocked, remove the listener
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-    };
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
-    return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
-    };
-  }, []);
+  // Global AudioContext unlocking is no longer necessary and causes warnings.
+  // Browsers handle this automatically when sounds are played in response to user actions (like button clicks).
 
   return (
     <Router>
