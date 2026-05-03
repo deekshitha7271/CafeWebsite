@@ -86,8 +86,13 @@ const AdminStaff = () => {
                         ].map(f => (
                             <div key={f.key}>
                                 <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-1">{f.label}</label>
-                                <input type={f.type} value={form[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                                    className="w-full bg-surface-dark border border-white/10 rounded-xl py-2.5 px-4 text-sm outline-none focus:border-primary/40 text-white" />
+                                <input 
+                                    type={f.type} 
+                                    value={form[f.key]} 
+                                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                                    autoComplete={f.type === 'password' ? 'new-password' : (f.key === 'email' ? 'email' : 'off')}
+                                    className="w-full bg-surface-dark border border-white/10 rounded-xl py-2.5 px-4 text-sm outline-none focus:border-primary/40 text-white" 
+                                />
                             </div>
                         ))}
                         <div>

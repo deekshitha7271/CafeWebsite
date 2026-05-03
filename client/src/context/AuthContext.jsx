@@ -11,6 +11,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     axios.defaults.withCredentials = true;
 
+    // Response interceptor to handle 401s
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          setUser(null);
+        }
+        return Promise.reject(error);
+      }
+    );
+
     const fetchMe = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`);
@@ -23,6 +34,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     fetchMe();
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
   }, []);
 
   const login = async (email, password) => {
