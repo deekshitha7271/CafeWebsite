@@ -3,28 +3,35 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
+axios.defaults.withCredentials = true;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Response interceptor to handle 401s globally
   useEffect(() => {
-    axios.defaults.withCredentials = true;
-
-    // Response interceptor to handle 401s
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        // If we get a 401 and it's NOT from the 'me' check itself 
+        // (because 'me' returning 401 is handled in fetchMe)
+        if (error.response?.status === 401 && !error.config.url.endsWith('/auth/me')) {
           setUser(null);
         }
         return Promise.reject(error);
       }
     );
 
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
+  useEffect(() => {
     const fetchMe = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`);
+        // The server returns { user: null } instead of 401 for /me
         setUser(response.data.user || null);
       } catch (err) {
         setUser(null);
@@ -34,10 +41,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     fetchMe();
-
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
   }, []);
 
   const login = async (email, password) => {

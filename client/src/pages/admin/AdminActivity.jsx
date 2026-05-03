@@ -4,7 +4,7 @@ import { useSocket } from '../../context/SocketContext';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const AdminOrders = () => {
+const AdminActivity = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
@@ -262,4 +262,4 @@ const AdminOrders = () => {
   );
 };
 
-export default AdminOrders;
+export default AdminActivity;

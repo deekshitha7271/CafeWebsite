@@ -65,26 +65,31 @@ const AdminMenu = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', icon: '☕' });
 
-  const fetchData = useCallback(async () => {
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/categories`, {
+        params: { ...catFilters, page: catPagination.page, limit: catPagination.limit }
+      });
+      setCategories(res.data.categories || []);
+      setCatPagination(prev => ({
+        ...prev,
+        totalPages: res.data.totalPages || 1,
+        totalItems: res.data.totalCategories || 0
+      }));
+    } catch (error) {
+      console.error('Failed to fetch categories', error);
+    }
+  }, [catFilters, catPagination.page, catPagination.limit]);
+
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-      const [catRes, itemRes, tagRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_URL}/categories`, {
-          params: { ...catFilters, page: catPagination.page, limit: catPagination.limit }
-        }),
+      const [itemRes, tagRes] = await Promise.all([
         axios.get(`${import.meta.env.VITE_API_URL}/menu-items`, {
           params: { ...filters, page: pagination.page, limit: pagination.limit }
         }),
         axios.get(`${import.meta.env.VITE_API_URL}/menu-items/dietary-tags`)
       ]);
-
-      // Category response is now an object with meta
-      setCategories(catRes.data.categories || []);
-      setCatPagination(prev => ({
-        ...prev,
-        totalPages: catRes.data.totalPages || 1,
-        totalItems: catRes.data.totalCategories || 0
-      }));
 
       setItems(itemRes.data.items || []);
       setDietaryTags(Array.isArray(tagRes.data) ? tagRes.data : []);
@@ -94,13 +99,19 @@ const AdminMenu = () => {
         totalItems: itemRes.data.pagination?.totalItems || 0
       }));
     } catch (error) {
-      console.error('Failed to fetch data', error);
+      console.error('Failed to fetch items', error);
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.page, pagination.limit, catFilters, catPagination.page, catPagination.limit]);
+  }, [filters, pagination.page, pagination.limit]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   // Debounced Search for Products
   const debouncedSearch = useCallback(
@@ -129,7 +140,7 @@ const AdminMenu = () => {
       await axios.patch(`${import.meta.env.VITE_API_URL}/menu-items/${id}`, { [field]: value });
     } catch (error) {
       console.error('Update failed', error);
-      fetchData(); // Rollback on error
+      fetchItems(); // Rollback on error
     }
   };
 
@@ -143,7 +154,7 @@ const AdminMenu = () => {
         value
       });
       setSelectedIds(new Set());
-      fetchData();
+      fetchItems();
     } catch (error) {
       console.error('Bulk action failed', error);
     } finally {
@@ -151,6 +162,7 @@ const AdminMenu = () => {
     }
   };
 
+  const handleSelectAll = (e) => {
     if (e.target.checked && Array.isArray(items)) {
       setSelectedIds(new Set(items.map(i => i._id)));
     } else {
@@ -169,7 +181,7 @@ const AdminMenu = () => {
     if (!window.confirm('Delete this item?')) return;
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/menu-items/${id}`);
-      fetchData();
+      fetchItems();
     } catch (error) { console.error(error); }
   };
 
@@ -184,7 +196,7 @@ const AdminMenu = () => {
       setItemModalOpen(false);
       setEditingItem(null);
       setItemForm({ itemName: '', itemOnlinePrice: '', itemOnlineDisplayName: '', itemId: '', categoryId: '', dietaryTag: '', image: '', rankOrder: 1, allowVariations: false });
-      fetchData();
+      fetchItems();
     } catch (error) { console.error('Error saving item:', error); }
   };
 
@@ -199,7 +211,7 @@ const AdminMenu = () => {
       setCategoryModalOpen(false);
       setEditingCategory(null);
       setCategoryForm({ name: '', icon: '☕' });
-      fetchData();
+      fetchCategories();
     } catch (error) { console.error('Error saving category:', error); }
   };
 
@@ -207,7 +219,7 @@ const AdminMenu = () => {
     if (!window.confirm('Are you sure you want to delete this category? All items in this category will become uncategorized.')) return;
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/categories/${id}`);
-      fetchData();
+      fetchCategories();
     } catch (error) { console.error('Error deleting category:', error); }
   };
 
@@ -343,7 +355,7 @@ const AdminMenu = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => fetchData()}
+                  onClick={() => fetchCategories()}
                   className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
                 >
                   <ArrowUpDown className="w-4 h-4 text-[#f59e0b]" />
@@ -657,7 +669,7 @@ const AdminMenu = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => fetchData()}
+                  onClick={() => fetchCategories()}
                   className="p-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
                 >
                   <ArrowUpDown className="w-4 h-4 text-[#f59e0b]" />
@@ -834,7 +846,7 @@ const AdminMenu = () => {
                 errorSummary += `\n\nSample Error: ${sample.reason}\nRow Keys: ${sample.availableKeys?.join(', ')}`;
               }
               alert(errorSummary);
-              fetchData();
+              fetchCategories();
             } catch (err) {
               console.error(err);
               alert('CSV format error. Please check your columns.');

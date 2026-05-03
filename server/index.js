@@ -58,7 +58,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 1000 * 60 * 60 * 24
   }
 }));
@@ -116,79 +116,6 @@ app.use('/api/menu-items', menuRoutes);
 app.use('/api/orders', protect, orderRoutes);
 app.use('/api/payment', protect, paymentRoutes);
 app.use('/api/admin', protect, authorize('admin', 'worker'), adminRoutes);
-
-app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res) => {
-  try {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setHours(yesterday.getHours() - 24);
-    const dayBefore = new Date(yesterday);
-    dayBefore.setHours(dayBefore.getHours() - 24);
-
-    // 1. Current Stats (Last 24h)
-    const stats = await Order.aggregate([
-      { $match: { timestamp: { $gte: yesterday }, paymentStatus: 'paid' } },
-      {
-        $group: {
-          _id: null,
-          totalOrders: { $sum: 1 },
-          totalRevenue: { $sum: { $ifNull: ["$total", 0] } }
-        }
-      }
-    ]);
-
-    // 2. Previous Stats (24h-48h ago for Growth)
-    const prevStats = await Order.aggregate([
-      { $match: { timestamp: { $gte: dayBefore, $lt: yesterday }, paymentStatus: 'paid' } },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: { $ifNull: ["$total", 0] } }
-        }
-      }
-    ]);
-
-    // 3. Active Tables (Any order not yet completed)
-    const activeTablesData = await Order.distinct('table', {
-      orderStatus: { $ne: 'completed' },
-      table: { $ne: null }
-    });
-
-    const currentRevenue = stats.length > 0 ? stats[0].totalRevenue : 0;
-    const prevRevenue = prevStats.length > 0 ? prevStats[0].totalRevenue : 0;
-    const totalOrdersToday = stats.length > 0 ? stats[0].totalOrders : 0;
-
-    // Calculate Growth %
-    let growth = 0;
-    if (prevRevenue > 0) {
-      growth = ((currentRevenue - prevRevenue) / prevRevenue) * 100;
-    } else if (currentRevenue > 0) {
-      growth = 100; // First sales!
-    }
-
-    console.log(`📈 Analytics Pulse | Today: ₹${currentRevenue}, Yesterday: ₹${prevRevenue}, Growth: ${growth.toFixed(1)}%`);
-
-    // Popular items
-    const popularItems = await Order.aggregate([
-      { $match: { timestamp: { $gte: yesterday }, paymentStatus: 'paid' } },
-      { $unwind: "$items" },
-      { $group: { _id: "$items.name", count: { $sum: "$items.quantity" } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
-
-    res.json({
-      totalOrdersToday,
-      revenue: parseFloat(currentRevenue || 0).toFixed(2),
-      activeTables: activeTablesData.length,
-      growth: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`,
-      popularItems
-    });
-  } catch (error) {
-    console.error('Analytics Error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics' });
-  }
-});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
