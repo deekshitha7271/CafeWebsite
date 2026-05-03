@@ -103,7 +103,7 @@ const AdminLayout = () => {
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 pb-8 border-t border-white/5">
         <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0">
@@ -127,11 +127,14 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex text-text font-sans">
+    <div className="min-h-screen bg-background flex text-text font-sans selection:bg-primary/20">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 sticky top-0 h-screen z-20 shadow-2xl flex-shrink-0">
+      <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl">
         <SidebarContent />
       </aside>
+
+      {/* COMPENSATE FOR FIXED SIDEBAR ON DESKTOP */}
+      <div className="hidden md:block w-72 shrink-0" />
 
       {/* Mobile Sidebar */}
       <AnimatePresence>

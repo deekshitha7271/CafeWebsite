@@ -6,6 +6,7 @@ import {
   Download, Upload, CheckCircle2, Package, Tag, ArrowUpDown,
   Loader2
 } from 'lucide-react';
+import { formatImageUrl, getFallbackImage } from '../../lib/utils';
 
 const debounce = (func, delay) => {
   let timeout;
@@ -19,6 +20,7 @@ const AdminMenu = () => {
   // State for data
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [allCategories, setAllCategories] = useState([]); // Full list for dropdowns
   const [dietaryTags, setDietaryTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('products'); // 'products' or 'categories'
@@ -68,18 +70,20 @@ const AdminMenu = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [catRes, itemRes, tagRes] = await Promise.all([
+      const [catRes, itemRes, tagRes, allCatRes] = await Promise.all([
         axios.get(`${import.meta.env.VITE_API_URL}/categories`, {
           params: { ...catFilters, page: catPagination.page, limit: catPagination.limit }
         }),
         axios.get(`${import.meta.env.VITE_API_URL}/menu-items`, {
           params: { ...filters, page: pagination.page, limit: pagination.limit }
         }),
-        axios.get(`${import.meta.env.VITE_API_URL}/menu-items/dietary-tags`)
+        axios.get(`${import.meta.env.VITE_API_URL}/menu-items/dietary-tags`),
+        axios.get(`${import.meta.env.VITE_API_URL}/categories`, { params: { limit: 1000 } })
       ]);
 
       // Category response is now an object with meta
       setCategories(catRes.data.categories || []);
+      setAllCategories(allCatRes.data.categories || []);
       setCatPagination(prev => ({
         ...prev,
         totalPages: catRes.data.totalPages || 1,
@@ -273,7 +277,7 @@ const AdminMenu = () => {
                   <label className="block text-[10px] uppercase font-black text-primary mb-2">Category</label>
                   <select required value={itemForm.categoryId} onChange={e => setItemForm({ ...itemForm, categoryId: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-primary">
                     <option value="">Select...</option>
-                    {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                    {allCategories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -381,7 +385,7 @@ const AdminMenu = () => {
                 onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value, page: 1 }))}
               >
                 <option value="">All Categories</option>
-                {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                {allCategories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
 
               <select className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#f59e0b] outline-none" value={filters.dietary} onChange={(e) => setFilters(prev => ({ ...prev, dietary: e.target.value, page: 1 }))}>
@@ -477,11 +481,21 @@ const AdminMenu = () => {
                         />
                       </td>
                       <td className="p-4">
-                        {item.image ? (
-                          <img src={item.image} alt={item.itemName} className="w-10 h-10 rounded-lg object-cover border border-white/10" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-white/5 border border-dashed border-white/10 flex items-center justify-center text-[10px] text-white/20">NO</div>
-                        )}
+                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                          {item.image ? (
+                            <img 
+                              src={formatImageUrl(item.image)} 
+                              alt={item.itemName} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = getFallbackImage('coffee');
+                              }}
+                            />
+                          ) : (
+                            <Package className="w-4 h-4 text-white/10" />
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <div
@@ -511,7 +525,7 @@ const AdminMenu = () => {
                           onChange={(e) => handleInlineUpdate(item._id, 'categoryId', e.target.value)}
                           className="bg-transparent text-xs text-white/40 hover:text-white outline-none cursor-pointer w-full transition-colors"
                         >
-                          {categories.map(c => <option key={c._id} value={c._id} className="bg-[#121214]">{c.name}</option>)}
+                          {allCategories.map(c => <option key={c._id} value={c._id} className="bg-[#121214]">{c.name}</option>)}
                         </select>
                       </td>
                       <td className="p-4">

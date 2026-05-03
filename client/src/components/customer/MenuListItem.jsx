@@ -3,6 +3,7 @@ import { Plus, Leaf, Flame, Sparkles, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import QuantitySelector from './QuantitySelector';
+import { formatImageUrl, getFallbackImage } from '../../lib/utils';
 
 const MenuListItem = ({ item }) => {
     const { dispatch } = useCart();
@@ -15,7 +16,15 @@ const MenuListItem = ({ item }) => {
         >
             <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-surface">
                 {item.image ? (
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <img 
+                        src={formatImageUrl(item.image)} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = getFallbackImage('coffee');
+                        }}
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface to-surface-dark relative">
                         <Coffee className="w-6 h-6 text-primary opacity-20 group-hover:opacity-40 transition-all duration-500" />

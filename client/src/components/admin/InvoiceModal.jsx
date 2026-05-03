@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { X, Printer, Download, Coffee } from 'lucide-react';
+import { X, Printer, Coffee } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const InvoiceModal = ({ isOpen, onClose, transaction }) => {
@@ -11,7 +11,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
         window.print();
     };
 
-    const subtotal = transaction.amount - (transaction.gst || 0);
+    const subtotal = (transaction.amount || 0) - (transaction.gst || 0);
 
     return (
         <AnimatePresence>
@@ -50,27 +50,27 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                     </div>
 
                     {/* Content - This is what gets printed */}
-                    <div ref={printRef} className="p-12 overflow-y-auto flex-1 invoice-container">
-                        <div className="flex justify-between items-start mb-12">
+                    <div ref={printRef} className="p-6 md:p-12 overflow-y-auto flex-1 invoice-container">
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
                             <div>
                                 <h1 className="text-3xl font-black text-slate-900 mb-1">Ca Phe Bistro</h1>
                                 <p className="text-sm text-slate-500 max-w-[200px]">123 Coffee Lane, Sanctuary Circle, Bengaluru, 560001</p>
                                 <p className="text-sm text-slate-500 mt-1">GSTIN: 29ABCDE1234F1Z5</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left md:text-right">
                                 <div className="inline-block px-4 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Original Receipt</div>
                                 <p className="text-sm font-bold text-slate-900">Date: {transaction.time}</p>
                                 <p className="text-sm text-slate-500">Order ID: {transaction.orderId}</p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8 mb-12 py-8 border-y border-slate-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 py-8 border-y border-slate-100">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Billed To</p>
                                 <p className="font-bold text-slate-900">{transaction.customer || 'Guest Customer'}</p>
                                 <p className="text-sm text-slate-500">Authenticated Session</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-left md:text-right">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Payment Status</p>
                                 <p className={`font-bold uppercase text-sm ${transaction.status === 'paid' ? 'text-emerald-600' : 'text-orange-600'}`}>
                                     {transaction.status} via {transaction.method}
@@ -78,29 +78,29 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                             </div>
                         </div>
 
-                        <table className="w-full mb-12">
-                            <thead>
-                                <tr className="border-b-2 border-slate-900/5">
-                                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
-                                    <th className="text-center py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</th>
-                                    <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Price</th>
-                                    <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {/* Note: Since we only have total amount in transaction, we might need to fetch items if we want a detailed view. 
-                                    For now, we'll show a summary line. */}
-                                <tr>
-                                    <td className="py-6">
-                                        <p className="font-bold text-slate-900">Food & Beverage Items</p>
-                                        <p className="text-xs text-slate-500">Consolidated order summary</p>
-                                    </td>
-                                    <td className="py-6 text-center text-slate-600 font-medium">1</td>
-                                    <td className="py-6 text-right text-slate-600 font-medium">₹{subtotal.toFixed(2)}</td>
-                                    <td className="py-6 text-right font-bold text-slate-900">₹{subtotal.toFixed(2)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div className="overflow-x-auto -mx-2 px-2">
+                            <table className="w-full mb-12 min-w-[500px] md:min-w-0">
+                                <thead>
+                                    <tr className="border-b-2 border-slate-900/5">
+                                        <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
+                                        <th className="text-center py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</th>
+                                        <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Price</th>
+                                        <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    <tr>
+                                        <td className="py-6">
+                                            <p className="font-bold text-slate-900">Food & Beverage Items</p>
+                                            <p className="text-xs text-slate-500">Consolidated order summary</p>
+                                        </td>
+                                        <td className="py-6 text-center text-slate-600 font-medium">1</td>
+                                        <td className="py-6 text-right text-slate-600 font-medium">₹{subtotal.toFixed(2)}</td>
+                                        <td className="py-6 text-right font-bold text-slate-900">₹{subtotal.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
                         <div className="flex justify-end">
                             <div className="w-full max-w-[240px] space-y-3">

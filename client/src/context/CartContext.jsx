@@ -7,11 +7,9 @@ const CartContext = createContext();
 const initialState = {
   items: [],
   isCartOpen: false,
-  orderType: 'takeaway', // Default
+  orderType: 'takeaway', 
   arrivalTime: '',
   lastOrderId: localStorage.getItem('lastOrderId') || null,
-  relatedOrderId: null,
-  shadowItems: [], // The "Shadow Cart" clone
 };
 
 const cartReducer = (state, action) => {
@@ -68,22 +66,6 @@ const cartReducer = (state, action) => {
         localStorage.removeItem('lastOrderId');
       }
       return { ...state, lastOrderId: action.payload };
-    case 'CLONE_TO_SHADOW':
-      return {
-        ...state,
-        shadowItems: [...state.items]
-      };
-    case 'RESTORE_FROM_SHADOW':
-      return {
-        ...state,
-        items: [...state.shadowItems],
-        isCartOpen: true
-      };
-    case 'SET_RELATED_ORDER':
-      return {
-        ...state,
-        relatedOrderId: action.payload
-      };
     default:
       return state;
   }
@@ -95,53 +77,55 @@ export const CartProvider = ({ children }) => {
   const userId = user ? (user._id || user.id) : 'guest';
   const initialLoadDone = useRef(false);
 
-  // Load from local storage when user changes
+  // 1. Initial Load (One time only)
   useEffect(() => {
-    const userCartKey = `cart_${userId}`;
     const guestCartKey = 'cart_guest';
-    
     let itemsToLoad = [];
-    const savedUserItems = localStorage.getItem(userCartKey);
     const savedGuestItems = localStorage.getItem(guestCartKey);
 
-    if (userId !== 'guest' && savedGuestItems) {
-      // User just logged in and had a guest cart.
-      // We overwrite any stale local user cart with the new guest cart they just built.
-      try {
-        itemsToLoad = JSON.parse(savedGuestItems);
-      } catch (e) {
-        itemsToLoad = [];
+    if (userId !== 'guest') {
+      // Migrating Guest to User if items exist in localStorage
+      if (savedGuestItems && savedGuestItems !== '[]') {
+        try {
+          itemsToLoad = JSON.parse(savedGuestItems);
+          localStorage.removeItem(guestCartKey);
+          // Sync migration to server
+          axios.put(`${import.meta.env.VITE_API_URL}/auth/cart`, { cart: itemsToLoad })
+            .catch(err => console.error('Migration failed', err));
+        } catch (e) { itemsToLoad = []; }
+      } else {
+        // Just load from server
+        itemsToLoad = user?.cart || [];
       }
-      
-      // Clear guest cart after transferring
-      localStorage.removeItem(guestCartKey);
-      // Save transferred cart to user key immediately
-      localStorage.setItem(userCartKey, JSON.stringify(itemsToLoad));
-    } else if (savedUserItems && userId !== 'guest') {
-      try {
-        itemsToLoad = JSON.parse(savedUserItems);
-      } catch (e) {
-        itemsToLoad = [];
-      }
-    } else if (savedGuestItems && userId === 'guest') {
-      try {
-        itemsToLoad = JSON.parse(savedGuestItems);
-      } catch (e) {
-        itemsToLoad = [];
+    } else {
+      // Guest Load
+      if (savedGuestItems) {
+        try { itemsToLoad = JSON.parse(savedGuestItems); } catch (e) { itemsToLoad = []; }
       }
     }
 
     dispatch({ type: 'SET_CART', payload: { items: itemsToLoad } });
-    initialLoadDone.current = true;
+    
+    // Enable saving after a short delay to prevent overwriting
+    setTimeout(() => {
+      initialLoadDone.current = true;
+    }, 500);
   }, [userId]);
 
-  // Save to local storage when items change
+  // 2. Save Sync (Whenever items change)
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    if (state.items.length > 0) {
-      localStorage.setItem(`cart_${userId}`, JSON.stringify(state.items));
+    
+    if (userId === 'guest') {
+      if (state.items.length > 0) {
+        localStorage.setItem('cart_guest', JSON.stringify(state.items));
+      } else {
+        localStorage.removeItem('cart_guest');
+      }
     } else {
-      localStorage.removeItem(`cart_${userId}`);
+      // Server Sync
+      axios.put(`${import.meta.env.VITE_API_URL}/auth/cart`, { cart: state.items })
+        .catch(err => console.error('Cloud sync failed', err));
     }
   }, [state.items, userId]);
 

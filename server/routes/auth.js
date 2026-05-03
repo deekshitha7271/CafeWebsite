@@ -21,7 +21,7 @@ router.post('/register', async (req, res) => {
 
     req.session.userId = user._id;
 
-    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart } });
   } catch (error) {
     console.error('Auth register error:', error);
     res.status(500).json({ error: 'Failed to register user.' });
@@ -46,7 +46,7 @@ router.post('/login', async (req, res) => {
     }
 
     req.session.userId = user._id;
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart } });
   } catch (error) {
     console.error('Auth login error:', error);
     res.status(500).json({ error: 'Failed to log in.' });
@@ -59,7 +59,7 @@ router.get('/me', async (req, res) => {
       return res.json({ user: null });
     }
 
-    const user = await User.findById(req.session.userId).select('name email role');
+    const user = await User.findById(req.session.userId).select('name email role cart');
     if (!user) {
       return res.json({ user: null });
     }
@@ -68,6 +68,20 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('Auth me error:', error);
     res.status(500).json({ error: 'Failed to fetch user session.' });
+  }
+});
+
+router.put('/cart', async (req, res) => {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: 'Not authorized' });
+    }
+    const { cart } = req.body;
+    const user = await User.findByIdAndUpdate(req.session.userId, { cart }, { new: true });
+    res.json({ success: true, cart: user.cart });
+  } catch (error) {
+    console.error('Save cart error:', error);
+    res.status(500).json({ error: 'Failed to save cart.' });
   }
 });
 

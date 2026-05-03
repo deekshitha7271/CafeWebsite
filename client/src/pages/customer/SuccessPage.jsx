@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { playOrderSuccessSound } from '../../lib/utils';
 
 const SuccessPage = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,9 @@ const SuccessPage = () => {
     // Clear cart upon successful checkout
     dispatch({ type: 'CLEAR_CART' });
     dispatch({ type: 'SET_CART_OPEN', payload: false });
+    
+    // Play success chime
+    playOrderSuccessSound();
 
     // Ensure Navbar recognizes the active order
     if (orderId) {

@@ -36,14 +36,13 @@ const CartDrawer = () => {
         arrivalDate = new Date(Date.now() + parseInt(arrivalTime, 10) * 60000).toISOString();
       }
 
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/checkout`, {
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/checkout`, {
         items: state.items,
         total: cartTotal,
         orderType: state.orderType,
         customerName: user?.name || '',
         customerPhone: '',
         arrivalTime: arrivalDate,
-        relatedOrderId: state.relatedOrderId
       });
       window.location.href = res.data.url;
     } catch (error) {
@@ -72,16 +71,15 @@ const CartDrawer = () => {
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200, mass: 0.8 }}
-            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto glass-panel rounded-t-[40px] z-[60] overflow-hidden flex flex-col max-h-[85vh] border-t border-white/20 border-x border-white/10"
+            className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto glass-panel rounded-t-[40px] z-[60] overflow-hidden flex flex-col max-h-[85dvh] border-t border-white/20 border-x border-white/10"
           >
             {/* Ambient inner glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-primary/20 rounded-full blur-[60px] pointer-events-none"></div>
 
-            <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-surface-dark/40 backdrop-blur-xl">
+            <div className="p-5 md:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 z-10 bg-surface-dark/40 backdrop-blur-xl">
               <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-serif font-bold text-white tracking-wide">Your Order</h2>
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+                <h2 className="text-xl md:text-2xl font-serif font-bold text-white tracking-wide">Your Order</h2>
               </div>
               <motion.button
                 whileHover={{ scale: 1.1, rotate: 90 }}
@@ -89,7 +87,7 @@ const CartDrawer = () => {
                 onClick={() => dispatch({ type: 'SET_CART_OPEN', payload: false })}
                 className="p-2 bg-surface border border-white/10 rounded-full text-text-muted hover:text-white transition-colors hover:bg-surface-light shadow-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 md:w-5 md:h-5" />
               </motion.button>
             </div>
 
@@ -102,7 +100,7 @@ const CartDrawer = () => {
                   <p className="font-serif text-lg tracking-wide">Your cart is empty.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   <AnimatePresence>
                     {state.items.map((item, index) => (
                       <motion.div
@@ -111,35 +109,35 @@ const CartDrawer = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20, scale: 0.9 }}
                         transition={{ delay: index * 0.05 }}
-                        className="flex items-center gap-4 bg-surface-light/40 backdrop-blur-md p-4 rounded-3xl border border-white/10 hover:border-primary/30 transition-colors shadow-lg"
+                        className="flex items-center gap-3 md:gap-4 bg-surface-light/40 backdrop-blur-md p-3 md:p-4 rounded-2xl md:rounded-3xl border border-white/10 hover:border-primary/30 transition-colors shadow-lg"
                       >
                         {item.image ? (
-                          <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-2xl shadow-inner border border-white/5" />
+                          <img src={item.image} alt={item.name} className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-xl md:rounded-2xl shadow-inner border border-white/5" />
                         ) : (
-                          <div className="w-16 h-16 rounded-2xl bg-surface-dark flex items-center justify-center border border-white/5">
+                          <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-surface-dark flex items-center justify-center border border-white/5">
                             <span className="opacity-30 text-xs">IMG</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-serif font-bold text-base text-white truncate">{item.name}</h4>
-                          <p className="text-primary font-black text-sm mt-0.5 tracking-wider">₹{(item.price * item.quantity).toFixed(2)}</p>
+                          <h4 className="font-serif font-bold text-sm md:text-base text-white truncate">{item.name}</h4>
+                          <p className="text-primary font-black text-xs md:text-sm mt-0.5 tracking-wider">₹{(item.price * item.quantity).toFixed(2)}</p>
                         </div>
 
-                        <div className="flex items-center gap-3 bg-surface-dark/80 px-2 py-1.5 rounded-full border border-white/5 shadow-inner">
+                        <div className="flex items-center gap-1 md:gap-3 bg-surface-dark/80 px-1 md:px-2 py-1 md:py-1.5 rounded-full border border-white/5 shadow-inner">
                           <motion.button
                             whileTap={{ scale: 0.8 }}
                             onClick={() => dispatch({ type: 'DECREMENT_ITEM', payload: item._id })}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-text-muted transition-colors"
+                            className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-text-muted transition-colors"
                           >
-                            <Minus className="w-4 h-4" />
+                            <Minus className="w-3 h-3 md:w-4 md:h-4" />
                           </motion.button>
-                          <span className="text-sm font-black w-4 text-center text-white">{item.quantity}</span>
+                          <span className="text-xs md:text-sm font-black w-4 text-center text-white">{item.quantity}</span>
                           <motion.button
                             whileTap={{ scale: 0.8 }}
                             onClick={() => dispatch({ type: 'ADD_ITEM', payload: item })}
-                            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-primary transition-colors"
+                            className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center rounded-full hover:bg-surface-light text-primary transition-colors"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3 h-3 md:w-4 md:h-4" />
                           </motion.button>
                         </div>
                       </motion.div>
@@ -170,17 +168,7 @@ const CartDrawer = () => {
                 </div>
               )}
 
-              {/* Shadow Cart Contextual Message */}
-              {state.relatedOrderId && (
-                <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-[2rem] flex items-center gap-3">
-                  <Activity className="w-5 h-5 text-primary animate-pulse" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Active Session</p>
-                    <p className="text-xs text-white/70">Your previous order is being prepared. We'll try to serve them together!</p>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
 
             <div className="p-6 bg-surface-dark/90 backdrop-blur-2xl border-t border-white/10 pb-10 shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
 

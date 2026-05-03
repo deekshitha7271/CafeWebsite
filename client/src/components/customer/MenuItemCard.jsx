@@ -4,6 +4,7 @@ import { Plus, Minus, Coffee, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import QuantitySelector from './QuantitySelector';
+import { formatImageUrl, getFallbackImage } from '../../lib/utils';
 
 const MenuItemCard = ({ item }) => {
   const { state, dispatch } = useCart();
@@ -52,10 +53,14 @@ const MenuItemCard = ({ item }) => {
 
         {item.image ? (
           <img
-            src={item.image}
+            src={formatImageUrl(item.image)}
             alt={item.name}
             className="w-full h-full object-cover relative z-10 group-hover:scale-110 group-hover:rotate-[1.5deg] transition-transform duration-700 ease-out"
             loading="lazy"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = getFallbackImage('coffee');
+            }}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-surface to-surface-dark relative z-10 scale-110">

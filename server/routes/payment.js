@@ -3,6 +3,8 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/Order');
 
+const User = require('../models/User');
+
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
@@ -48,6 +50,11 @@ router.post('/checkout', async (req, res) => {
         orderStatus: 'placed'
       });
       await targetOrder.save();
+
+      // IMPORTANT: Clear the user's persistent cart in the database
+      if (req.session?.userId) {
+        await User.findByIdAndUpdate(req.session.userId, { $set: { cart: [] } });
+      }
     }
 
     // Map items for Stripe using the order's items

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   shift: { type: String, default: '9AM - 6PM' },
   salary: { type: Number, default: 0 },
   status: { type: String, enum: ['present', 'absent'], default: 'present' },
+  cart: { type: Array, default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 module.exports = mongoose.model('User', userSchema);

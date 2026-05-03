@@ -59,16 +59,6 @@ const TrackingPage = () => {
             const verifyRes = await axios.get(`${import.meta.env.VITE_API_URL}/payment/verify-session/${orderId}`);
             if (verifyRes.data.order) {
               setOrder(verifyRes.data.order);
-              
-              // Track order placement with details
-              axios.post(`${import.meta.env.VITE_API_URL}/audit/record`, {
-                action: 'order_placed',
-                details: { 
-                  orderId, 
-                  items: verifyRes.data.order.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
-                  total: verifyRes.data.order.total
-                }
-              }).catch(() => {});
             }
           } catch (e) {
             console.error("Background verification failed:", e);
@@ -386,9 +376,7 @@ const TrackingPage = () => {
                   <div className="flex gap-4">
                     <button
                       disabled={order.paymentStatus !== 'paid'}
-                      onClick={() => {
-                        window.location.href = '/';
-                      }}
+                      onClick={() => navigate(`/repeat/${order._id}`)}
                       className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${order.paymentStatus === 'paid'
                         ? 'bg-surface-light border border-white/10 hover:border-white/30 text-white'
                         : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
@@ -434,7 +422,7 @@ const TrackingPage = () => {
               initial={{ scale: 0.8, y: 40, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.8, y: 40, opacity: 0 }}
-              className="relative max-w-md w-full bg-surface-dark border border-white/10 rounded-[50px] p-12 text-center shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden"
+              className="relative max-w-md w-full bg-surface-dark border border-white/10 rounded-[40px] md:rounded-[50px] p-6 md:p-12 text-center shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden"
             >
               {/* Background ambient light */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -z-10" />
