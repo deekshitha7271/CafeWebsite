@@ -68,7 +68,7 @@ const MenuPage = () => {
 
   // Parallax configuration (existing...)
   const { scrollY } = useScroll();
-  
+
   // Track scroll for sticky category header
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (menuHeaderRef.current) {
@@ -131,13 +131,13 @@ const MenuPage = () => {
   // Active Category State logic - REVERTED TO FILTERING
   const handleCategoryChange = (catId) => {
     setActiveCategory(catId);
-    
+
     // Snap scroll to the top of the menu grid
     const discoverSection = document.getElementById('discover');
     if (discoverSection) {
-      window.scrollTo({ 
-        top: discoverSection.offsetTop - 100, 
-        behavior: 'smooth' 
+      window.scrollTo({
+        top: discoverSection.offsetTop - 100,
+        behavior: 'smooth'
       });
     }
   };
@@ -221,7 +221,7 @@ const MenuPage = () => {
                 transition={{ duration: 1, delay: 0.2 }}
                 className="text-gradient-gold block mb-2 hero-text-glow"
               >
-                {settings?.heroHeadline?.split(' ')[0] || 'Ca Phe'}
+                {settings?.heroHeadline ? (settings.heroHeadline.split(' ').length >= 3 ? settings.heroHeadline.split(' ').slice(0, 2).join(' ') : settings.heroHeadline.split(' ')[0]) : 'Ca Phe'}
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, x: -30 }}
@@ -230,12 +230,12 @@ const MenuPage = () => {
                 className="text-white block"
                 style={{ textShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
               >
-                {settings?.heroHeadline?.split(' ').slice(1).join(' ') || 'Bistro.'}
+                {settings?.heroHeadline ? (settings.heroHeadline.split(' ').length >= 3 ? settings.heroHeadline.split(' ').slice(2).join(' ') : settings.heroHeadline.split(' ').slice(1).join(' ')) : 'Bistro.'}
               </motion.span>
             </h1>
             <p className="text-text-muted mt-6 text-sm md:text-xl max-w-md leading-relaxed border-l-[3px] border-primary/40 pl-6 tracking-wide font-light">
               <strong className="text-primary font-bold uppercase tracking-widest text-sm">Web Ordering Active</strong>
-               • {settings?.heroSubheadline || 'Indulge in our masterfully crafted culinary collection. Elevate your senses.'}
+              • {settings?.heroSubheadline || 'Indulge in our masterfully crafted culinary collection. Elevate your senses.'}
             </p>
 
             <div className="mt-10 flex flex-col gap-8">
@@ -409,11 +409,10 @@ const MenuPage = () => {
           {/* ── FIXED STICKY SHELL: Search bar + Category Strip (always on top) ── */}
           {/* ── HIGH-PERFORMANCE NAVIGATION SHELL ── */}
           <div ref={menuHeaderRef} className="h-[140px] md:h-[160px] relative">
-            <div className={`${
-              isHeaderSticky 
-                ? 'fixed top-[72px] md:top-[88px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/5 animate-in slide-in-from-top-4 duration-300' 
+            <div className={`${isHeaderSticky
+                ? 'fixed top-[72px] md:top-[88px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/5 animate-in slide-in-from-top-4 duration-300'
                 : 'relative'
-            }`}>
+              }`}>
               {/* Row 1: Search + View Toggle */}
               <div className="px-6 lg:px-20 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="relative w-full md:w-96 group">
@@ -486,21 +485,19 @@ const MenuPage = () => {
                 >
                   <button
                     onClick={() => handleCategoryChange('all')}
-                    className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-                      activeCategory === 'all'
+                    className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === 'all'
                         ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
                         : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
-                    }`}
+                      }`}
                   >All</button>
                   {itemsByCategory.map(cat => (
                     <button
                       key={cat._id}
                       onClick={() => handleCategoryChange(cat._id)}
-                      className={`shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-                        activeCategory === cat._id
+                      className={`shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === cat._id
                           ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
                           : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
-                      }`}
+                        }`}
                     >
                       {cat.icon && !cat.icon.startsWith('http') && <span className="text-xs">{cat.icon}</span>}
                       {cat.name}
@@ -527,52 +524,52 @@ const MenuPage = () => {
                     <div className="h-4 w-3/4 bg-surface rounded-full"></div>
                   </div>
                 ))}
-                </div>
-              ) : displayedCategories.length > 0 ? (
-                displayedCategories.map((section) => (
-                  <div key={section._id} id={`category-${section._id}`} className="scroll-mt-48">
-                    <div className="flex items-end gap-6 mb-16 group flex-wrap">
-                      <div className="flex flex-col min-w-[200px]">
-                        <span className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-2 opacity-50 group-hover:opacity-100 transition-opacity">Discover</span>
-                        <h4 className="font-serif text-3xl md:text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">{section.name}</h4>
-                      </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-primary/40 to-transparent mb-4 hidden md:block" />
-                      <div className="text-right mb-4 flex-shrink-0">
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] block">Volume</span>
-                        <span className="text-primary font-black text-xs">{section.items.length} PCS</span>
-                      </div>
+              </div>
+            ) : displayedCategories.length > 0 ? (
+              displayedCategories.map((section) => (
+                <div key={section._id} id={`category-${section._id}`} className="scroll-mt-48">
+                  <div className="flex items-end gap-6 mb-16 group flex-wrap">
+                    <div className="flex flex-col min-w-[200px]">
+                      <span className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-2 opacity-50 group-hover:opacity-100 transition-opacity">Discover</span>
+                      <h4 className="font-serif text-3xl md:text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">{section.name}</h4>
                     </div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-primary/40 to-transparent mb-4 hidden md:block" />
+                    <div className="text-right mb-4 flex-shrink-0">
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] block">Volume</span>
+                      <span className="text-primary font-black text-xs">{section.items.length} PCS</span>
+                    </div>
+                  </div>
 
-                    <div className={viewMode === 'grid'
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-                      : "flex flex-col gap-4 overflow-x-hidden"
-                    }>
-                      {section.items.map((item, i) => (
-                        <motion.div
-                          key={item._id}
-                          initial={{ opacity: 0, y: 20 }}
-                          whileInView={{ opacity: 1, y: 0 }}
-                          viewport={{ once: true, margin: "-50px" }}
-                          transition={{ duration: 0.4, delay: i % 4 * 0.05 }}
-                        >
-                          {viewMode === 'grid'
-                            ? <MenuItemCard item={item} />
-                            : <MenuListItem item={item} />
-                          }
-                        </motion.div>
-                      ))}
-                    </div>
+                  <div className={viewMode === 'grid'
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                    : "flex flex-col gap-4 overflow-x-hidden"
+                  }>
+                    {section.items.map((item, i) => (
+                      <motion.div
+                        key={item._id}
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-50px" }}
+                        transition={{ duration: 0.4, delay: i % 4 * 0.05 }}
+                      >
+                        {viewMode === 'grid'
+                          ? <MenuItemCard item={item} />
+                          : <MenuListItem item={item} />
+                        }
+                      </motion.div>
+                    ))}
                   </div>
-                ))
-              ) : (
-                <div className="py-40 text-center space-y-6">
-                  <div className="w-20 h-20 bg-surface-dark border border-white/5 rounded-full flex items-center justify-center mx-auto mb-8">
-                    <Search className="w-8 h-8 text-white/10" />
-                  </div>
-                  <h5 className="text-2xl font-serif text-white opacity-40 italic">No delicacies found in this selection.</h5>
-                  <button onClick={() => { setSearchQuery(''); setDietaryFilter('all'); setActiveCategory('all'); }} className="text-primary text-[10px] uppercase font-black tracking-widest hover:underline transition-all">Clear All Filters</button>
                 </div>
-              )}
+              ))
+            ) : (
+              <div className="py-40 text-center space-y-6">
+                <div className="w-20 h-20 bg-surface-dark border border-white/5 rounded-full flex items-center justify-center mx-auto mb-8">
+                  <Search className="w-8 h-8 text-white/10" />
+                </div>
+                <h5 className="text-2xl font-serif text-white opacity-40 italic">No delicacies found in this selection.</h5>
+                <button onClick={() => { setSearchQuery(''); setDietaryFilter('all'); setActiveCategory('all'); }} className="text-primary text-[10px] uppercase font-black tracking-widest hover:underline transition-all">Clear All Filters</button>
+              </div>
+            )}
           </div>
         </section>
 

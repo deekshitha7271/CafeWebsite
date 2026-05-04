@@ -7,7 +7,7 @@ const CartContext = createContext();
 const initialState = {
   items: [],
   isCartOpen: false,
-  orderType: 'takeaway', 
+  orderType: 'takeaway',
   arrivalTime: '',
   lastOrderId: localStorage.getItem('lastOrderId') || null,
   activeOrders: JSON.parse(localStorage.getItem('activeOrders') || '[]'),
@@ -146,8 +146,24 @@ export const CartProvider = ({ children }) => {
       try { activeOrdersToLoad = JSON.parse(savedActiveOrders); } catch (e) { activeOrdersToLoad = []; }
     }
 
-    dispatch({ type: 'SET_CART', payload: { items: itemsToLoad, activeOrders: activeOrdersToLoad } });
-    
+    const cartDetailsKey = 'cart_details';
+    let loadedDetails = { coupon: null, arrivalTime: '', orderType: 'takeaway' };
+    const savedDetails = localStorage.getItem(cartDetailsKey);
+    if (savedDetails) {
+      try { Object.assign(loadedDetails, JSON.parse(savedDetails)); } catch (e) { }
+    }
+
+    dispatch({
+      type: 'SET_CART',
+      payload: {
+        items: itemsToLoad,
+        activeOrders: activeOrdersToLoad,
+        coupon: loadedDetails.coupon,
+        arrivalTime: loadedDetails.arrivalTime,
+        orderType: loadedDetails.orderType
+      }
+    });
+
     const fetchSessionData = async () => {
       if (userId === 'guest') {
         // For guests, use the public status endpoint (no auth required)
@@ -176,11 +192,11 @@ export const CartProvider = ({ children }) => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/session-summary`);
         dispatch({ type: 'SET_SESSION_DATA', payload: res.data });
-        
+
         // Also verify active orders from the user profile returned by session-summary or similar
         // For now, let's just use the activeOrders from the user object if they exist
         if (res.data.activeOrders) {
-           dispatch({ type: 'SET_CART', payload: { activeOrders: res.data.activeOrders } });
+          dispatch({ type: 'SET_CART', payload: { activeOrders: res.data.activeOrders } });
         }
       } catch (err) {
         console.error('Failed to fetch session data', err);
@@ -188,7 +204,7 @@ export const CartProvider = ({ children }) => {
     };
 
     fetchSessionData();
-    
+
     // Enable saving after a short delay to prevent overwriting
     setTimeout(() => {
       initialLoadDone.current = true;
@@ -198,7 +214,7 @@ export const CartProvider = ({ children }) => {
   // 2. Save Sync (Whenever items change)
   useEffect(() => {
     if (!initialLoadDone.current) return;
-    
+
     if (userId === 'guest') {
       if (state.items.length > 0) {
         localStorage.setItem('cart_guest', JSON.stringify(state.items));
@@ -219,8 +235,19 @@ export const CartProvider = ({ children }) => {
       .catch(err => console.error('Active orders sync failed', err));
   }, [state.activeOrders, userId]);
 
+  // 4. Save Cart Details persistently (for both guests and users across login)
+  useEffect(() => {
+    if (!initialLoadDone.current) return;
+    const detailsToSave = {
+      coupon: state.coupon,
+      arrivalTime: state.arrivalTime,
+      orderType: state.orderType
+    };
+    localStorage.setItem('cart_details', JSON.stringify(detailsToSave));
+  }, [state.coupon, state.arrivalTime, state.orderType]);
+
   const rawCartTotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-  
+
   // Calculate discount
   let discount = 0;
   if (state.coupon) {
@@ -234,7 +261,7 @@ export const CartProvider = ({ children }) => {
 
   const cartTotal = Math.max(0, rawCartTotal - discount);
   const cartCount = state.items.reduce((count, item) => count + item.quantity, 0);
-  
+
   // Calculate combined summary
   const sessionStats = {
     itemsCount: cartCount + state.sessionOrders.reduce((sum, order) => sum + order.items.reduce((s, i) => s + i.quantity, 0), 0),

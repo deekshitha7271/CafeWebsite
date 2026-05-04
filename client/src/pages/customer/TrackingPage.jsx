@@ -21,7 +21,7 @@ const TrackingPage = () => {
   const navigate = useNavigate();
   const socket = useSocket();
   const { state: cartState, dispatch: cartDispatch } = useCart();
-  
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(primaryOrderId);
@@ -38,7 +38,7 @@ const TrackingPage = () => {
       cartDispatch({ type: 'CLEAR_CART' });
       cartDispatch({ type: 'SET_CART_OPEN', payload: false });
       const timer = setTimeout(() => setShowOrderConfirmed(false), 10000);
-      
+
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
       return () => clearTimeout(timer);
@@ -57,13 +57,13 @@ const TrackingPage = () => {
 
         const requests = orderIds.map(id => axios.get(`${import.meta.env.VITE_API_URL}/orders/${id}`));
         const responses = await Promise.allSettled(requests);
-        
+
         const fetchedOrders = responses
           .filter(r => r.status === 'fulfilled')
           .map(r => r.value.data);
 
         setOrders(fetchedOrders);
-        
+
         // Ensure current active orders are tracked in state for the Navbar
         fetchedOrders.forEach(o => {
           if (o.orderStatus !== 'completed' && !cartState.activeOrders.includes(o._id)) {
@@ -90,9 +90,9 @@ const TrackingPage = () => {
     });
 
     const handleStatusUpdate = (data) => {
-      setOrders(prev => prev.map(o => 
-        o._id === data.orderId 
-          ? { ...o, orderStatus: data.status, estimatedReadyTime: data.estimatedReadyTime || o.estimatedReadyTime } 
+      setOrders(prev => prev.map(o =>
+        o._id === data.orderId
+          ? { ...o, orderStatus: data.status, estimatedReadyTime: data.estimatedReadyTime || o.estimatedReadyTime }
           : o
       ));
     };
@@ -181,12 +181,16 @@ const TrackingPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(`/repeat/${activeOrder._id}`)}
+                onClick={() => {
+                  cartDispatch({ type: 'CLEAR_CART' });
+                  cartDispatch({ type: 'REMOVE_COUPON' });
+                  navigate('/');
+                }}
                 className="group relative inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-primary text-background font-black uppercase text-xs tracking-[0.2em] hover:bg-primary-light transition-all shadow-[0_20px_50px_rgba(245,158,11,0.4)] overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 <Sparkles className="w-4 h-4 animate-pulse" />
-                <span className="relative z-10">Order Again</span>
+                <span className="relative z-10">New Order</span>
                 <ArrowRight className="w-4 h-4 relative z-10" />
               </motion.button>
             </div>
@@ -201,11 +205,10 @@ const TrackingPage = () => {
                 <button
                   key={o._id}
                   onClick={() => setActiveTab(o._id)}
-                  className={`flex-shrink-0 px-6 py-3 rounded-2xl transition-all flex items-center gap-3 ${
-                    activeTab === o._id 
-                      ? 'bg-primary text-background shadow-[0_10px_30px_rgba(245,158,11,0.3)]' 
-                      : 'text-text-muted hover:text-white hover:bg-white/5'
-                  }`}
+                  className={`flex-shrink-0 px-6 py-3 rounded-2xl transition-all flex items-center gap-3 ${activeTab === o._id
+                    ? 'bg-primary text-background shadow-[0_10px_30px_rgba(245,158,11,0.3)]'
+                    : 'text-text-muted hover:text-white hover:bg-white/5'
+                    }`}
                 >
                   <div className={`w-2 h-2 rounded-full ${o.orderStatus === 'completed' ? 'bg-emerald-500' : 'bg-orange-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]'}`} />
                   <span className="font-black text-[10px] uppercase tracking-widest">
@@ -307,10 +310,14 @@ const TrackingPage = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate(`/repeat/${activeOrder._id}`)}
+                      onClick={() => {
+                        cartDispatch({ type: 'CLEAR_CART' });
+                        cartDispatch({ type: 'REMOVE_COUPON' });
+                        navigate('/');
+                      }}
                       className="flex-1 bg-primary text-background font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20 hover:bg-primary-light transition-all"
                     >
-                      Order Again
+                      New Order
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -318,7 +325,7 @@ const TrackingPage = () => {
                       onClick={() => {
                         cartDispatch({ type: 'REMOVE_ACTIVE_ORDER', payload: activeOrder._id });
                         cartDispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
-                        
+
                         const remainingOrders = orders.filter(o => o._id !== activeOrder._id);
                         if (remainingOrders.length > 0) {
                           // If there are other orders, stay on tracking but switch to the first remaining one
@@ -326,7 +333,7 @@ const TrackingPage = () => {
                           setActiveTab(remainingOrders[0]._id);
                         } else {
                           // Last order finished, go home
-                          window.location.href = '/';
+                          navigate('/');
                         }
                       }}
                       className="flex-1 bg-surface-dark border border-white/10 text-white/40 font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] hover:text-white hover:border-white/20 transition-all"
@@ -404,9 +411,8 @@ const LiveTracker = ({ order }) => {
             const Icon = step.icon;
             return (
               <div key={step.id} className="flex items-center gap-8">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 relative ${
-                  isCompleted ? 'bg-primary text-background' : 'bg-surface-dark text-text-muted border border-white/5'
-                }`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 relative ${isCompleted ? 'bg-primary text-background' : 'bg-surface-dark text-text-muted border border-white/5'
+                  }`}>
                   {isActive && (
                     <motion.div
                       layoutId="pulse"
