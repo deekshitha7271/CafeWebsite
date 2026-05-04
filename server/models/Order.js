@@ -26,4 +26,10 @@ const orderSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 });
 
+// Indices for production performance
+orderSchema.index({ user: 1 });
+orderSchema.index({ orderStatus: 1 });
+orderSchema.index({ timestamp: -1 });
+orderSchema.index({ stripeSessionId: 1 });
+
 module.exports = mongoose.model('Order', orderSchema);

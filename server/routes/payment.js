@@ -2,14 +2,23 @@ const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
 
 const User = require('../models/User');
+
+const Coupon = require('../models/Coupon');
 
 // Create checkout session
 router.post('/checkout', async (req, res) => {
   try {
-    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime } = req.body;
+    const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime, couponCode } = req.body;
     let targetOrder;
+    let discountAmount = 0;
+    let appliedCoupon = null;
+
+    if (couponCode) {
+      appliedCoupon = await Coupon.findOne({ code: couponCode.toUpperCase(), active: true });
+    }
 
     if (orderId) {
       targetOrder = await Order.findById(orderId);
@@ -69,6 +78,36 @@ router.post('/checkout', async (req, res) => {
       quantity: item.quantity,
     }));
 
+    // Apply Discount if valid
+    if (appliedCoupon) {
+      const rawTotal = targetOrder.total;
+      if (appliedCoupon.type === 'percent') {
+        discountAmount = rawTotal * (appliedCoupon.value / 100);
+      } else if (appliedCoupon.type === 'flat') {
+        discountAmount = Math.min(appliedCoupon.value, rawTotal);
+      }
+
+      if (discountAmount > 0) {
+        line_items.push({
+          price_data: {
+            currency: 'inr',
+            product_data: {
+              name: `Discount (${appliedCoupon.code})`,
+            },
+            unit_amount: -Math.round(discountAmount * 100),
+          },
+          quantity: 1,
+        });
+        
+        // Update order total in DB
+        targetOrder.total = rawTotal - discountAmount;
+        await targetOrder.save();
+
+        // Increment usage
+        await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { uses: 1 } });
+      }
+    }
+
     // Create Stripe session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -117,6 +156,17 @@ router.get('/verify-session/:orderId', async (req, res) => {
           io.emit('order:new', order);
           io.emit('order:update', order);
         }
+
+        // Create system notification
+        try {
+          await new Notification({
+            type: 'payment',
+            title: 'Payment Received',
+            body: `Online payment of ₹${order.total} received for order #${order._id.toString().slice(-6)}.`,
+          }).save();
+        } catch (nErr) {
+          console.warn('Notification failed:', nErr.message);
+        }
         return res.json({ paid: true, order });
       }
     }
@@ -161,6 +211,17 @@ router.post('/webhook', async (req, res) => {
         const io = req.app.get('io');
         if (io) {
           io.emit('order:new', order);
+        }
+
+        // Create system notification
+        try {
+          await new Notification({
+            type: 'payment',
+            title: 'Payment Received (Webhook)',
+            body: `Online payment of ₹${order.total} verified for order #${order._id.toString().slice(-6)}.`,
+          }).save();
+        } catch (nErr) {
+          console.warn('Notification failed:', nErr.message);
         }
       }
     } catch (err) {

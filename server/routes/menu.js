@@ -10,8 +10,11 @@ const { protect, authorize } = require('../middleware/auth');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Normalization function: Handles spaces and inconsistent casing
-const normalizeHeader = (header) => _.camelCase(header.trim());
+// Normalization function: Handles spaces, inconsistent casing, and invisible BOM characters
+const normalizeHeader = (header) => {
+  const cleanHeader = header.trim().replace(/[^\x20-\x7E]/g, ''); // Strip non-printable chars
+  return _.camelCase(cleanHeader);
+};
 
 router.get('/', async (req, res) => {
   try {
@@ -114,6 +117,16 @@ router.patch('/bulk-update', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// Wipe All Items (Admin Only)
+router.delete('/all', protect, authorize('admin'), async (req, res) => {
+  try {
+    await MenuItem.deleteMany({});
+    res.json({ message: 'All menu items have been cleared' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Inline Single Field Update
 router.patch('/:id', protect, authorize('admin'), async (req, res) => {
   try {
@@ -154,6 +167,7 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
           'itemId': 'itemId',
           'sku': 'itemId',
           'categoryName': 'categoryName',
+          'category': 'categoryName',
           'itemName': 'itemName',
           'itemOnline': 'itemOnlineDisplayName',
           'itemOnlineDisplayName': 'itemOnlineDisplayName',
@@ -162,8 +176,13 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
           'onlinePrice': 'itemOnlinePrice',
           'rankOrder': 'rankOrder',
           'rank': 'rankOrder',
+          'rankOrde': 'rankOrder',
           'allowVariation': 'allowVariation',
-          'dietaryTag': 'dietaryTag'
+          'allowVaria': 'allowVariation',
+          'dietaryTag': 'dietaryTag',
+          'image': 'image',
+          'imageUrl': 'image',
+          'imageUrls': 'image'
         };
         return mapping[normalized] || normalized;
       }
@@ -182,7 +201,11 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
           // 1. Data Normalization & Validation
           const itemName = row.itemName?.trim();
           const categoryName = row.categoryName?.trim();
-          const itemOnlinePrice = parseFloat(row.itemOnlinePrice);
+          
+          // Robust price parsing: Remove currency symbols and commas
+          let priceRaw = String(row.itemOnlinePrice || '').replace(/[₹$,]/g, '').trim();
+          const itemOnlinePrice = parseFloat(priceRaw);
+          
           const itemOnlineDisplayName = row.itemOnlineDisplayName?.trim() || itemName;
           const rankOrder = parseInt(row.rankOrder) || 0;
 
@@ -192,6 +215,7 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
 
           const dietaryTag = row.dietaryTag?.trim() || '';
           const itemId = row.itemId?.trim();
+          const image = row.image?.trim() || '';
 
           if (!itemName || !categoryName || isNaN(itemOnlinePrice)) {
             results.itemsFailed++;
@@ -218,11 +242,16 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
             await category.save();
           }
 
-          // 3. Smart Update/Insert Logic
-          const filter = {
-            itemName: { $regex: new RegExp(`^${itemName}$`, 'i') },
-            categoryId: category._id
-          };
+          // 3. Smart Update/Insert Logic: Match by SKU if provided, otherwise by name
+          let filter;
+          if (itemId) {
+            filter = { itemId };
+          } else {
+            filter = {
+              itemName: { $regex: new RegExp(`^${itemName}$`, 'i') },
+              categoryId: category._id
+            };
+          }
 
           const update = {
             itemId,
@@ -236,6 +265,7 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
             rankOrder,
             allowVariation,
             dietaryTag,
+            image,
             isAvailable: true
           };
 

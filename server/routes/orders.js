@@ -1,39 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
-
-// Create new order (for Cash/Pay Later)
-router.post('/cash', async (req, res) => {
-  try {
-    const { items, total, orderType, customerName, customerPhone, arrivalTime } = req.body;
-
-    const newOrder = new Order({
-      user: req.session?.userId,
-      orderType: orderType || 'takeaway',
-      items,
-      total,
-      customerName,
-      customerPhone,
-      arrivalTime: arrivalTime ? new Date(arrivalTime) : undefined,
-      paymentStatus: 'pending',
-      orderStatus: 'placed'
-    });
-
-    const savedOrder = await newOrder.save();
-
-    // Emit socket event for admin dashboard
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('order:new', savedOrder);
-    }
-
-    res.status(201).json(savedOrder);
-  } catch (error) {
-    console.error('❌ ORDER CREATION ERROR:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
+const Notification = require('../models/Notification');
 
 // Get all orders (for admin)
 router.get('/', async (req, res) => {

@@ -5,6 +5,9 @@ const cors = require('cors');
 const http = require('http');
 const session = require('express-session');
 const { Server } = require('socket.io');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const { protect, authorize } = require('./middleware/auth');
@@ -16,9 +19,7 @@ const server = http.createServer(app);
 const clientUrl = process.env.CLIENT_URL?.trim().replace(/\/$/, "");
 const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:3000"].filter(Boolean);
 
-console.log("🔒 Trusted Origins:", allowedOrigins);
-
-// 1. Move CORS to the TOP
+// 1. CORS MUST BE FIRST
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -31,6 +32,32 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }));
+
+// 2. Production Security & Performance
+app.use(helmet({
+  contentSecurityPolicy: false, 
+  crossOriginResourcePolicy: { policy: "cross-origin" } // Allow resources to be loaded across origins
+}));
+app.use(compression()); // Gzip compression for all responses
+
+// 3. Global Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Limit each IP to 500 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+app.use('/api/', limiter);
+
+// Stricter limiter for sensitive routes
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 50, // Limit each IP to 50 requests per window
+  message: 'Too many auth attempts, please try again after an hour'
+});
+app.use('/api/auth/', authLimiter);
+app.use('/api/payment/checkout', authLimiter);
 
 const io = new Server(server, {
   cors: {
@@ -93,6 +120,7 @@ const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payment');
 const adminRoutes = require('./routes/admin');
+const couponRoutes = require('./routes/coupons');
 
 // Models for Public combined API
 const Category = require('./models/Category');
@@ -112,9 +140,24 @@ app.get('/api/menu', async (req, res) => {
   }
 });
 
+const CafeSettings = require('./models/CafeSettings');
+app.get('/api/settings', async (req, res) => {
+  try {
+    let settings = await CafeSettings.findOne();
+    if (!settings) {
+      settings = new CafeSettings();
+      await settings.save();
+    }
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+});
+
 // Category and Menu items have internal protection for mutation routes
 app.use('/api/categories', categoryRoutes);
 app.use('/api/menu-items', menuRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // Protected routes
 app.use('/api/orders', protect, orderRoutes);
@@ -195,4 +238,27 @@ app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`));
+
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});

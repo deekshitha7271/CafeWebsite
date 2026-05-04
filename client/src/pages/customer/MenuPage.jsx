@@ -22,6 +22,7 @@ const MenuPage = () => {
   const [items, setItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState(null);
 
   // New State for High-Velocity UI
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,19 +87,23 @@ const MenuPage = () => {
   const textOpacity = useTransform(scrollY, [0, 300], [1, 0]);
 
   useEffect(() => {
-    const fetchMenu = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/menu`);
-        setCategories(res.data.categories);
-        setItems(res.data.items);
+        const [menuRes, settingsRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/menu`),
+          axios.get(`${import.meta.env.VITE_API_URL}/settings`)
+        ]);
+        setCategories(menuRes.data.categories);
+        setItems(menuRes.data.items);
+        setSettings(settingsRes.data);
       } catch (error) {
-        console.error('Failed to fetch menu:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMenu();
+    fetchData();
   }, [dispatch]);
 
   // Refined filtering for 200+ items - Hard filtering for high-density focus
@@ -206,7 +211,7 @@ const MenuPage = () => {
             <div className="flex items-center gap-2 mb-8">
               <Crown className="w-5 h-5 text-primary" />
               <span className="text-primary font-bold tracking-[0.2em] text-[10px] md:text-xs uppercase bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
-                Ca Phe Bistro • Signature
+                {settings?.cafeName || 'Ca Phe Bistro'} • {settings?.tagline || 'Signature'}
               </span>
             </div>
             <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold font-serif leading-[0.95] mt-2 mb-8 tracking-[-0.02em]">
@@ -216,7 +221,7 @@ const MenuPage = () => {
                 transition={{ duration: 1, delay: 0.2 }}
                 className="text-gradient-gold block mb-2 hero-text-glow"
               >
-                Ca Phe
+                {settings?.heroHeadline?.split(' ')[0] || 'Ca Phe'}
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, x: -30 }}
@@ -225,12 +230,12 @@ const MenuPage = () => {
                 className="text-white block"
                 style={{ textShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
               >
-                Bistro.
+                {settings?.heroHeadline?.split(' ').slice(1).join(' ') || 'Bistro.'}
               </motion.span>
             </h1>
             <p className="text-text-muted mt-6 text-sm md:text-xl max-w-md leading-relaxed border-l-[3px] border-primary/40 pl-6 tracking-wide font-light">
               <strong className="text-primary font-bold uppercase tracking-widest text-sm">Web Ordering Active</strong>
-               • Indulge in our masterfully crafted culinary collection. Elevate your senses.
+               • {settings?.heroSubheadline || 'Indulge in our masterfully crafted culinary collection. Elevate your senses.'}
             </p>
 
             <div className="mt-10 flex flex-col gap-8">
@@ -241,7 +246,7 @@ const MenuPage = () => {
                 className="bg-gradient-to-r from-primary to-primary-dark text-background px-12 py-5 rounded-full font-black uppercase tracking-[0.2em] text-sm transition-all relative overflow-hidden group border border-primary-light/30 w-fit"
               >
                 <span className="relative z-10 flex items-center gap-3">
-                  Start Your Order <ArrowRight className="w-4 h-4" />
+                  {settings?.heroCta || 'Start Your Order'} <ArrowRight className="w-4 h-4" />
                 </span>
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
               </motion.button>
@@ -312,13 +317,16 @@ const MenuPage = () => {
             {/* Left — Address + timings */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <div className="w-14 h-14 bg-primary/15 border border-primary/20 rounded-2xl flex items-center justify-center shrink-0">
-                <span className="text-background font-serif font-black text-xl text-primary">C.</span>
+                <span className="text-background font-serif font-black text-xl text-primary">{settings?.cafeName?.[0] || 'C'}.</span>
               </div>
               <div>
-                <h2 className="text-xl font-serif font-black text-white mb-1">Ca Phe <span className="text-primary italic">Bistro</span></h2>
+                <h2 className="text-xl font-serif font-black text-white mb-1">
+                  {settings?.cafeName?.split(' ')[0] || 'Ca Phe'}{' '}
+                  <span className="text-primary italic">{settings?.cafeName?.split(' ').slice(1).join(' ') || 'Bistro'}</span>
+                </h2>
                 <p className="text-text-muted text-xs flex items-center gap-1.5 font-light">
                   <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                  Financial District, Nanakramguda, Makthakousarali, Telangana 500032
+                  {settings?.address || 'Financial District, Nanakramguda, Makthakousarali, Telangana 500032'}
                 </p>
               </div>
             </div>
@@ -326,28 +334,28 @@ const MenuPage = () => {
             {/* Middle — Info Chips */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
-                <Clock className="w-3 h-3 text-primary" /> 08:30 AM – 11:00 PM
+                <Clock className="w-3 h-3 text-primary" /> {settings?.weekdayHours || '08:30 AM – 11:00 PM'}
                 <span className="ml-1 text-green-400 font-black">(Open)</span>
               </div>
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
-                <Phone className="w-3 h-3 text-primary" /> +91 123 456 7890
+                <Phone className="w-3 h-3 text-primary" /> {settings?.phone || '+91 123 456 7890'}
               </div>
             </div>
 
             {/* Right — Action Buttons */}
             <div className="flex items-center gap-3">
               <a
-                href="https://maps.app.goo.gl/4iQhPwpcW323YQFt9"
+                href={settings?.googleMaps || "https://maps.app.goo.gl/4iQhPwpcW323YQFt9"}
                 target="_blank" rel="noreferrer"
                 className="bg-primary text-background px-6 py-2.5 rounded-full font-black uppercase tracking-[0.15em] text-[9px] hover:bg-primary-light transition-all flex items-center gap-2 shadow-[0_8px_24px_rgba(245,158,11,0.3)] whitespace-nowrap"
               >
                 <Navigation className="w-3.5 h-3.5" /> Directions
               </a>
-              <a href="https://www.instagram.com/caphe_bistro?igsh=M3p2cWw1eGEzcGs5" target="_blank" rel="noreferrer"
+              <a href={settings?.instagram || "https://www.instagram.com/caphe_bistro?igsh=M3p2cWw1eGEzcGs5"} target="_blank" rel="noreferrer"
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <Camera className="w-4 h-4" />
               </a>
-              <a href="https://wa.me/911234567890?text=Hi%20Ca%20Phe%20Bistro" target="_blank" rel="noreferrer"
+              <a href={`https://wa.me/${settings?.phone?.replace(/\D/g, '') || '911234567890'}?text=Hi%20${settings?.cafeName || 'Ca Phe Bistro'}`} target="_blank" rel="noreferrer"
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <MessageCircle className="w-4 h-4" />
               </a>
@@ -745,7 +753,9 @@ const MenuPage = () => {
               viewport={{ once: true }}
             >
               <h5 className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-6 border-b border-primary/40 inline-block pb-3">Established 2024</h5>
-              <h3 className="text-6xl lg:text-8xl font-serif font-black text-white leading-tight">Beyond The <br /> <span className="text-gradient-gold">Daily Grind.</span></h3>
+              <h3 className="text-6xl lg:text-8xl font-serif font-black text-white leading-tight">
+                {settings?.aboutTitle || 'Beyond The Daily Grind.'}
+              </h3>
             </motion.div>
 
             <motion.div
@@ -756,10 +766,10 @@ const MenuPage = () => {
               className="space-y-8"
             >
               <p className="text-text-muted text-xl font-light leading-relaxed italic border-l-2 border-primary/30 pl-10">
-                "We didn't just build a café. We cultivated a sanctuary where artisan mastery meets digital evolution."
+                {settings?.aboutDescription?.slice(0, 100) || "We didn't just build a café. We cultivated a sanctuary where artisan mastery meets digital evolution."}
               </p>
               <p className="text-text-muted/80 text-base leading-relaxed font-light pl-10">
-                Founded on the principle that coffee is more than a beverage—it's a ritual—Artisan Café brings together world-class baristas, sustainable growers, and state-of-the-art tech to serve perfection on every table.
+                {settings?.aboutDescription || "Founded on the principle that coffee is more than a beverage—it's a ritual—Ca Phe Bistro brings together world-class baristas, sustainable growers, and state-of-the-art tech to serve perfection on every table."}
               </p>
             </motion.div>
 

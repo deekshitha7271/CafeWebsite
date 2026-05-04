@@ -17,12 +17,24 @@ const SuccessPage = () => {
     dispatch({ type: 'CLEAR_CART' });
     dispatch({ type: 'SET_CART_OPEN', payload: false });
     
+    // Refresh session data to move items from cart to history
+    const refreshSession = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/session-summary`);
+        dispatch({ type: 'SET_SESSION_DATA', payload: res.data });
+      } catch (err) {
+        console.error('Failed to refresh session', err);
+      }
+    };
+    refreshSession();
+    
     // Play success chime
     playOrderSuccessSound();
 
     // Ensure Navbar recognizes the active order
     if (orderId) {
       dispatch({ type: 'SET_LAST_ORDER_ID', payload: orderId });
+      dispatch({ type: 'ADD_ACTIVE_ORDER', payload: orderId });
       
       // Track order placement
       axios.post(`${import.meta.env.VITE_API_URL}/audit/record`, {

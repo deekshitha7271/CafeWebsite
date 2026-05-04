@@ -10,6 +10,12 @@ const initialState = {
   orderType: 'takeaway', 
   arrivalTime: '',
   lastOrderId: localStorage.getItem('lastOrderId') || null,
+  activeOrders: JSON.parse(localStorage.getItem('activeOrders') || '[]'),
+  sessionOrders: [], // Orders placed in this visit (today)
+  paidTotal: 0,
+  sessionTotal: 0,
+  coupon: null, // { code, type, value }
+  discount: 0,
 };
 
 const cartReducer = (state, action) => {
@@ -66,6 +72,34 @@ const cartReducer = (state, action) => {
         localStorage.removeItem('lastOrderId');
       }
       return { ...state, lastOrderId: action.payload };
+    case 'ADD_ACTIVE_ORDER': {
+      const newOrders = [...new Set([...state.activeOrders, action.payload])];
+      localStorage.setItem('activeOrders', JSON.stringify(newOrders));
+      return { ...state, activeOrders: newOrders };
+    }
+    case 'REMOVE_ACTIVE_ORDER': {
+      const filteredOrders = state.activeOrders.filter(id => id !== action.payload);
+      localStorage.setItem('activeOrders', JSON.stringify(filteredOrders));
+      return { ...state, activeOrders: filteredOrders };
+    }
+    case 'SET_SESSION_DATA':
+      return {
+        ...state,
+        sessionOrders: action.payload.orders || [],
+        paidTotal: action.payload.paidTotal || 0,
+        sessionTotal: action.payload.sessionTotal || 0,
+      };
+    case 'APPLY_COUPON':
+      return {
+        ...state,
+        coupon: action.payload,
+      };
+    case 'REMOVE_COUPON':
+      return {
+        ...state,
+        coupon: null,
+        discount: 0
+      };
     default:
       return state;
   }
@@ -104,13 +138,33 @@ export const CartProvider = ({ children }) => {
       }
     }
 
-    dispatch({ type: 'SET_CART', payload: { items: itemsToLoad } });
+    const savedActiveOrders = localStorage.getItem('activeOrders');
+    let activeOrdersToLoad = [];
+    if (userId !== 'guest') {
+      activeOrdersToLoad = user?.activeOrders || [];
+    } else if (savedActiveOrders) {
+      try { activeOrdersToLoad = JSON.parse(savedActiveOrders); } catch (e) { activeOrdersToLoad = []; }
+    }
+
+    dispatch({ type: 'SET_CART', payload: { items: itemsToLoad, activeOrders: activeOrdersToLoad } });
+    
+    const fetchSessionData = async () => {
+      if (userId === 'guest') return;
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/session-summary`);
+        dispatch({ type: 'SET_SESSION_DATA', payload: res.data });
+      } catch (err) {
+        console.error('Failed to fetch session data', err);
+      }
+    };
+
+    fetchSessionData();
     
     // Enable saving after a short delay to prevent overwriting
     setTimeout(() => {
       initialLoadDone.current = true;
     }, 500);
-  }, [userId]);
+  }, [userId, user?.activeOrders]);
 
   // 2. Save Sync (Whenever items change)
   useEffect(() => {
@@ -129,14 +183,49 @@ export const CartProvider = ({ children }) => {
     }
   }, [state.items, userId]);
 
-  const cartTotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  // 3. Sync Active Orders to Cloud
+  useEffect(() => {
+    if (!initialLoadDone.current || userId === 'guest') return;
+    axios.put(`${import.meta.env.VITE_API_URL}/auth/active-orders`, { activeOrders: state.activeOrders })
+      .catch(err => console.error('Active orders sync failed', err));
+  }, [state.activeOrders, userId]);
+
+  const rawCartTotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+  
+  // Calculate discount
+  let discount = 0;
+  if (state.coupon) {
+    const couponVal = Number(state.coupon.value);
+    if (state.coupon.type === 'percent') {
+      discount = rawCartTotal * (couponVal / 100);
+    } else if (state.coupon.type === 'flat') {
+      discount = Math.min(couponVal, rawCartTotal);
+    }
+  }
+
+  const cartTotal = Math.max(0, rawCartTotal - discount);
   const cartCount = state.items.reduce((count, item) => count + item.quantity, 0);
+  
+  // Calculate combined summary
+  const sessionStats = {
+    itemsCount: cartCount + state.sessionOrders.reduce((sum, order) => sum + order.items.reduce((s, i) => s + i.quantity, 0), 0),
+    paidAmount: state.paidTotal,
+    pendingAmount: cartTotal,
+    totalSpend: state.paidTotal + cartTotal
+  };
 
   return (
-    <CartContext.Provider value={{ state, dispatch, cartTotal, cartCount }}>
+    <CartContext.Provider value={{ state, dispatch, cartTotal, cartCount, sessionStats, discount, rawCartTotal }}>
       {children}
     </CartContext.Provider>
   );
 };
 
-export const useCart = () => useContext(CartContext);
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+

@@ -19,7 +19,6 @@ const allLinks = [
   { to: '/admin/staff', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments & Billing', roles: ['admin'] },
   { to: '/admin/offers', icon: Tag, label: 'Offers & Coupons', roles: ['admin'] },
-  { to: '/admin/reviews', icon: Star, label: 'Reviews & Feedback', roles: ['admin'] },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['admin'], badge: 3 },
   { to: '/admin/cms', icon: Globe, label: 'Website CMS', roles: ['admin'] },
   { to: '/admin/settings', icon: Settings, label: 'Settings', roles: ['admin'] },

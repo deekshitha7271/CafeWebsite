@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
+const Order = require('../models/Order');
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
@@ -21,7 +22,7 @@ router.post('/register', async (req, res) => {
 
     req.session.userId = user._id;
 
-    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart } });
+    res.status(201).json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart, activeOrders: user.activeOrders } });
   } catch (error) {
     console.error('Auth register error:', error);
     res.status(500).json({ error: 'Failed to register user.' });
@@ -46,7 +47,7 @@ router.post('/login', async (req, res) => {
     }
 
     req.session.userId = user._id;
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart } });
+    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, cart: user.cart, activeOrders: user.activeOrders } });
   } catch (error) {
     console.error('Auth login error:', error);
     res.status(500).json({ error: 'Failed to log in.' });
@@ -59,7 +60,7 @@ router.get('/me', async (req, res) => {
       return res.json({ user: null });
     }
 
-    const user = await User.findById(req.session.userId).select('name email role cart');
+    const user = await User.findById(req.session.userId).select('name email role cart activeOrders');
     if (!user) {
       return res.json({ user: null });
     }
@@ -85,6 +86,18 @@ router.put('/cart', async (req, res) => {
   }
 });
 
+router.put('/active-orders', async (req, res) => {
+  try {
+    if (!req.session?.userId) return res.status(401).json({ error: 'Not authorized' });
+    const { activeOrders } = req.body;
+    const user = await User.findByIdAndUpdate(req.session.userId, { activeOrders }, { new: true });
+    res.json({ success: true, activeOrders: user.activeOrders });
+  } catch (error) {
+    console.error('Save active orders error:', error);
+    res.status(500).json({ error: 'Failed to save active orders.' });
+  }
+});
+
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
     if (err) {
@@ -94,6 +107,33 @@ router.post('/logout', (req, res) => {
     res.clearCookie('connect.sid');
     res.json({ success: true });
   });
+});
+
+router.get('/session-summary', async (req, res) => {
+  try {
+    if (!req.session?.userId) return res.status(401).json({ error: 'Not authorized' });
+
+    // Define session as orders placed in the last 24 hours
+    const yesterday = new Date();
+    yesterday.setHours(yesterday.getHours() - 24);
+
+    const orders = await Order.find({
+      user: req.session.userId,
+      timestamp: { $gte: yesterday },
+      paymentStatus: 'paid'
+    }).sort({ timestamp: -1 });
+
+    const paidTotal = orders.reduce((sum, order) => sum + order.total, 0);
+    
+    res.json({
+      orders,
+      paidTotal,
+      sessionTotal: paidTotal // For now same, but could include pending in future
+    });
+  } catch (error) {
+    console.error('Session summary error:', error);
+    res.status(500).json({ error: 'Failed to fetch session summary.' });
+  }
 });
 
 module.exports = router;

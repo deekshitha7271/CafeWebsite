@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   salary: { type: Number, default: 0 },
   status: { type: String, enum: ['present', 'absent'], default: 'present' },
   cart: { type: Array, default: [] },
+  activeOrders: { type: Array, default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 module.exports = mongoose.model('User', userSchema);

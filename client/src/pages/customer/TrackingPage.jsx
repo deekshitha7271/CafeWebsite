@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { useCart } from '../../context/CartContext';
-import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight } from 'lucide-react';
+import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, LayoutDashboard, History, PackageCheck, Utensils } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
 
@@ -12,143 +12,127 @@ import { playOrderSuccessSound } from '../../lib/utils';
 const STATUS_STEPS = [
   { id: 'placed', label: 'Order Received', icon: Coffee },
   { id: 'preparing', label: 'Preparing', icon: ChefHat },
-  { id: 'ready', label: 'Ready to Serve', icon: Check },
-  { id: 'completed', label: 'Enjoying Meal', icon: Check },
+  { id: 'ready', label: 'Ready to Serve', icon: PackageCheck },
+  { id: 'completed', label: 'Enjoying Meal', icon: Utensils },
 ];
 
 const TrackingPage = () => {
-  const { orderId } = useParams();
+  const { orderId: primaryOrderId } = useParams();
   const navigate = useNavigate();
   const socket = useSocket();
-  const { dispatch } = useCart();
-  const [order, setOrder] = useState(null);
+  const { state: cartState, dispatch: cartDispatch } = useCart();
+  
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(primaryOrderId);
   const [loadingPayment, setLoadingPayment] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(null);
-  const [showTimeNotification, setShowTimeNotification] = useState(false);
   const [showOrderConfirmed, setShowOrderConfirmed] = useState(false);
 
-  // Success Notification & Fetch Effect
+  // Success Notification Effect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const isSuccess = urlParams.get('success') === 'true';
 
     if (isSuccess) {
-      console.log("🎯 Success detected, triggering notification...");
       setShowOrderConfirmed(true);
-      
-      // Clear cart upon successful payment
-      dispatch({ type: 'CLEAR_CART' });
-      dispatch({ type: 'SET_CART_OPEN', payload: false });
-      
+      cartDispatch({ type: 'CLEAR_CART' });
+      cartDispatch({ type: 'SET_CART_OPEN', payload: false });
       const timer = setTimeout(() => setShowOrderConfirmed(false), 10000);
       
-      // Remove query param from URL without refreshing
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
+      return () => clearTimeout(timer);
     }
+  }, [cartDispatch]);
 
-    const fetchOrder = async () => {
+  // Fetch all tracked orders
+  useEffect(() => {
+    const fetchOrders = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`);
-        setOrder(res.data);
-        
-        // Background verification if it's a success landing
-        if (isSuccess) {
-          try {
-            const verifyRes = await axios.get(`${import.meta.env.VITE_API_URL}/payment/verify-session/${orderId}`);
-            if (verifyRes.data.order) {
-              setOrder(verifyRes.data.order);
-            }
-          } catch (e) {
-            console.error("Background verification failed:", e);
-          }
+        const orderIds = [...new Set([primaryOrderId, ...cartState.activeOrders])].filter(Boolean);
+        if (orderIds.length === 0) {
+          setLoading(false);
+          return;
         }
+
+        const requests = orderIds.map(id => axios.get(`${import.meta.env.VITE_API_URL}/orders/${id}`));
+        const responses = await Promise.allSettled(requests);
+        
+        const fetchedOrders = responses
+          .filter(r => r.status === 'fulfilled')
+          .map(r => r.value.data);
+
+        setOrders(fetchedOrders);
+        
+        // Ensure current active orders are tracked in state for the Navbar
+        fetchedOrders.forEach(o => {
+          if (o.orderStatus !== 'completed' && !cartState.activeOrders.includes(o._id)) {
+            cartDispatch({ type: 'ADD_ACTIVE_ORDER', payload: o._id });
+          }
+        });
+
       } catch (error) {
-        console.error('Failed to fetch order:', error);
+        console.error('Failed to fetch orders:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchOrder();
+    fetchOrders();
+  }, [primaryOrderId, cartState.activeOrders]);
 
-    if (socket) {
-      socket.emit('join:order', orderId);
+  // Socket listener for all tracked orders
+  useEffect(() => {
+    if (!socket) return;
 
-      socket.on('order:statusUpdate', (data) => {
-        if (data.orderId === orderId) {
-          setOrder(prev => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              orderStatus: data.status,
-              estimatedReadyTime: data.estimatedReadyTime || prev.estimatedReadyTime
-            };
-          });
-        }
-      });
+    orders.forEach(order => {
+      socket.emit('join:order', order._id);
+    });
 
-      socket.on('order:update', (updatedOrder) => {
-        if (updatedOrder._id === orderId) {
-          setOrder(updatedOrder);
-        }
-      });
-    }
+    const handleStatusUpdate = (data) => {
+      setOrders(prev => prev.map(o => 
+        o._id === data.orderId 
+          ? { ...o, orderStatus: data.status, estimatedReadyTime: data.estimatedReadyTime || o.estimatedReadyTime } 
+          : o
+      ));
+    };
+
+    const handleOrderUpdate = (updatedOrder) => {
+      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+    };
+
+    socket.on('order:statusUpdate', handleStatusUpdate);
+    socket.on('order:update', handleOrderUpdate);
 
     return () => {
-      if (socket) {
-        socket.off('order:statusUpdate');
-        socket.off('order:update');
-      }
+      socket.off('order:statusUpdate', handleStatusUpdate);
+      socket.off('order:update', handleOrderUpdate);
     };
-  }, [orderId, socket]); // Run when orderId or socket changes
+  }, [socket, orders.length]);
 
-  useEffect(() => {
-    if (!order?.estimatedReadyTime) return;
+  const activeOrder = orders.find(o => o._id === activeTab) || orders[0];
 
-    // Show notification when estimation changes
-    setShowTimeNotification(true);
-    const timer = setTimeout(() => setShowTimeNotification(false), 5000);
-
-    const interval = setInterval(() => {
-      const now = new Date();
-      const readyTime = new Date(order.estimatedReadyTime);
-      const diff = readyTime - now;
-
-      if (diff <= 0) {
-        setTimeLeft('Ready!');
-        clearInterval(interval);
-      } else {
-        const mins = Math.floor(diff / 1000 / 60);
-        const secs = Math.floor((diff / 1000) % 60);
-        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [order?.estimatedReadyTime]);
-
-  const handleStripePayment = async () => {
+  const handleStripePayment = async (orderToPay) => {
     setLoadingPayment(true);
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
-        orderId: order._id
+        orderId: orderToPay._id
       });
       window.location.href = res.data.url;
     } catch (error) {
       console.error('Payment error:', error);
-      const errorMsg = error.response?.data?.details || error.message || 'Unknown error';
-      alert(`❌ Payment Failed: ${errorMsg}`);
+      alert(`❌ Payment Failed: ${error.message}`);
     } finally {
       setLoadingPayment(false);
     }
   };
 
-  const handleOrderReceived = async () => {
+  const handleOrderReceived = async (id) => {
     try {
-      await axios.put(`${import.meta.env.VITE_API_URL}/orders/${orderId}/status`, { orderStatus: 'completed' });
-      setOrder(prev => ({ ...prev, orderStatus: 'completed' }));
+      await axios.put(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, { orderStatus: 'completed' });
+      setOrders(prev => prev.map(o => o._id === id ? { ...o, orderStatus: 'completed' } : o));
+      // Remove from active tracking list
+      cartDispatch({ type: 'REMOVE_ACTIVE_ORDER', payload: id });
     } catch (error) {
       console.error('Failed to update order status:', error);
     }
@@ -162,247 +146,184 @@ const TrackingPage = () => {
     );
   }
 
-  if (!order) {
-    return <div className="text-center mt-20 text-text-muted">Order not found.</div>;
+  if (orders.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex flex-col items-center justify-center pt-40">
+          <History className="w-16 h-16 text-text-muted/20 mb-4" />
+          <h2 className="text-2xl font-serif text-white opacity-50">No active orders found</h2>
+          <button onClick={() => navigate('/')} className="mt-6 text-primary font-black uppercase tracking-widest text-xs">Back to Menu</button>
+        </div>
+      </div>
+    );
   }
-
-  const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === order.orderStatus);
 
   return (
     <div className="relative min-h-screen bg-background font-sans overflow-x-hidden">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto p-8 pt-24">
-        <header className="py-10 text-center relative">
+      <div className="max-w-6xl mx-auto p-4 md:p-8 pt-24">
+        <header className="py-6 md:py-10 text-center relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -z-10" />
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-5xl md:text-7xl font-serif font-black text-white mb-2">Order Journey</h1>
+            <h1 className="text-4xl md:text-7xl font-serif font-black text-white mb-2">Order Journey</h1>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
               <span className="text-primary-light text-[10px] font-black uppercase tracking-[0.4em] bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
-                {order.orderType === 'takeaway' ? '🥡 Takeaway' : '🪑 Dine-in'}
+                {activeOrder.orderType === 'takeaway' ? '🥡 Takeaway' : '🪑 Dine-in'}
               </span>
-              <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {order._id.slice(-6)}</span>
-              {order.customerName && (
-                <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] border-l border-white/10 pl-4">{order.customerName}</span>
+              <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {activeOrder._id.slice(-6)}</span>
+              {activeOrder.customerName && (
+                <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] border-l border-white/10 pl-4">{activeOrder.customerName}</span>
               )}
             </div>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <button
-                onClick={() => navigate(`/repeat/${order._id}`)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-background font-black uppercase text-[10px] tracking-[0.3em] hover:bg-primary-light transition-all shadow-lg"
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/')}
+                className="group relative inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-primary text-background font-black uppercase text-xs tracking-[0.2em] hover:bg-primary-light transition-all shadow-[0_20px_50px_rgba(245,158,11,0.4)] overflow-hidden"
               >
-                Repeat Order
-              </button>
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <Sparkles className="w-4 h-4 animate-pulse" />
+                <span className="relative z-10">Order Again</span>
+                <ArrowRight className="w-4 h-4 relative z-10" />
+              </motion.button>
             </div>
           </motion.div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-12">
+        {/* Multi-Order Tab Selector - Moved here for better UX */}
+        {orders.length > 1 && (
+          <div className="flex items-center justify-center gap-3 overflow-x-auto pb-4 hide-scrollbar mb-10 border-b border-white/5 pt-4">
+            <div className="flex items-center gap-3 bg-surface-dark/50 p-2 rounded-3xl border border-white/5 backdrop-blur-md">
+              {orders.map((o, idx) => (
+                <button
+                  key={o._id}
+                  onClick={() => setActiveTab(o._id)}
+                  className={`flex-shrink-0 px-6 py-3 rounded-2xl transition-all flex items-center gap-3 ${
+                    activeTab === o._id 
+                      ? 'bg-primary text-background shadow-[0_10px_30px_rgba(245,158,11,0.3)]' 
+                      : 'text-text-muted hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className={`w-2 h-2 rounded-full ${o.orderStatus === 'completed' ? 'bg-emerald-500' : 'bg-orange-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]'}`} />
+                  <span className="font-black text-[10px] uppercase tracking-widest">
+                    Track #{o._id.slice(-4)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10 mt-12">
           {/* Status Column */}
           <div className="lg:col-span-4 space-y-8">
-            <div className="glass-card p-10 relative overflow-hidden">
-              <h3 className="font-serif font-bold text-2xl mb-10 text-white flex items-center gap-3">
-                <Activity className="w-5 h-5 text-primary" />
-                Live Tracker
-              </h3>
-
-              <AnimatePresence>
-                {showTimeNotification && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl text-center"
-                  >
-                    <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                      <Sparkles className="w-3 h-3" /> Preparation Time Updated!
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {timeLeft && order.orderStatus === 'preparing' && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-[30px] text-center"
-                >
-                  <p className="text-text-muted/60 text-[10px] font-black uppercase tracking-widest mb-1">Estimated Ready In</p>
-                  <p className="text-4xl font-serif font-black text-primary tracking-tighter">{timeLeft}</p>
-                </motion.div>
-              )}
-
-              <div className="relative">
-                {/* Connecting line */}
-                <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-white/5 -ml-px z-0">
-                  <motion.div
-                    className="absolute top-0 w-full bg-primary shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                    initial={{ height: 0 }}
-                    animate={{ height: `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
-                    transition={{ duration: 1, ease: "easeInOut" }}
-                  />
-                </div>
-
-                <div className="space-y-12 relative z-10">
-                  {STATUS_STEPS.map((step, index) => {
-                    const isCompleted = index <= currentStepIndex;
-                    const isActive = index === currentStepIndex;
-                    const Icon = step.icon;
-
-                    return (
-                      <div key={step.id} className="flex items-center gap-8">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 ${isCompleted ? 'bg-primary text-background shadow-[0_0_30px_rgba(245,158,11,0.3)] rotate-0' : 'bg-surface-dark text-text-muted border border-white/5 rotate-[-10deg]'
-                          }`}>
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div className="flex flex-col">
-                          <h3 className={`text-xl font-bold font-serif ${isCompleted ? 'text-white' : 'text-text-muted opacity-40'}`}>
-                            {step.label}
-                          </h3>
-                          {isActive && (
-                            <motion.span
-                              animate={{ opacity: [1, 0.4, 1] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                              className="text-primary text-[9px] font-black uppercase tracking-[0.2em] mt-1"
-                            >
-                              Live Update
-                            </motion.span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <LiveTracker order={activeOrder} />
           </div>
 
           {/* Payment & Receipt Column */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Payment Options Section (Only if Pending and Case is QR/Table) */}
-            {order.paymentStatus === 'pending' && order.orderType === 'dinein-qr' && (
+            {/* Payment Options Section */}
+            {activeOrder.paymentStatus === 'pending' && activeOrder.orderType === 'dinein-qr' && (
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-10 border-primary/20 relative overflow-hidden"
+                className="glass-card p-6 md:p-10 border-primary/20 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -z-10" />
                 <div className="flex items-center justify-between mb-10">
                   <div>
-                    <h3 className="font-serif font-black text-3xl text-white mb-2">Complete Payment</h3>
-                    <p className="text-text-muted/60 text-xs uppercase tracking-widest font-bold">Choose your preferred method</p>
+                    <h3 className="font-serif font-black text-2xl md:text-3xl text-white mb-2">Complete Payment</h3>
+                    <p className="text-text-muted/60 text-[10px] uppercase tracking-widest font-bold">Secure your meal session</p>
                   </div>
-                  <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                  <CreditCard className="w-8 h-8 text-primary animate-pulse" />
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                  {/* Stripe Card */}
-                  <div
-                    className="group relative p-8 rounded-[35px] bg-white/5 border border-white/10 hover:border-primary/40 transition-all hover:bg-primary/5 flex flex-col"
-                  >
-                    <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-background transition-colors duration-500">
-                      <CreditCard className="w-7 h-7 text-primary group-hover:text-background" />
-                    </div>
-                    <h4 className="text-white font-serif text-2xl mb-2">Online Payment</h4>
-                    <p className="text-text-muted text-[10px] uppercase font-black tracking-widest opacity-60 mb-8">Secure UPI, Card, NetBanking</p>
-
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleStripePayment}
-                      disabled={loadingPayment}
-                      className="mt-auto w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-2"
-                    >
-                      {loadingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Pay Now <ArrowRight className="w-3 h-3" /></>}
-                    </motion.button>
-                  </div>
-                </div>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleStripePayment(activeOrder)}
+                  disabled={loadingPayment}
+                  className="w-full bg-primary text-background font-black py-4 md:py-5 rounded-2xl uppercase tracking-widest text-[10px] shadow-xl flex items-center justify-center gap-3"
+                >
+                  {loadingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Pay Online Now <ArrowRight className="w-4 h-4" /></>}
+                </motion.button>
               </motion.div>
             )}
 
             {/* Receipt Summary */}
-            <div className="glass-card p-10">
+            <div className="glass-card p-6 md:p-10">
               <div className="flex items-center justify-between mb-10 border-b border-white/10 pb-6">
-                <h3 className="font-serif font-black text-3xl text-white">Receipt Summary</h3>
-                {order.paymentStatus === 'paid' ? (
-                  <span className="bg-emerald-500/20 text-emerald-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-emerald-500/20 flex items-center gap-2">
-                    <Check className="w-3 h-3" /> Paid In Full
+                <h3 className="font-serif font-black text-2xl md:text-3xl text-white">Receipt Summary</h3>
+                {activeOrder.paymentStatus === 'paid' ? (
+                  <span className="bg-emerald-500/20 text-emerald-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-emerald-500/20 flex items-center gap-2">
+                    <Check className="w-3 h-3" /> Paid
                   </span>
                 ) : (
-                  <span className="bg-orange-500/20 text-orange-400 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-orange-500/20 animate-pulse">
-                    Payment Pending
+                  <span className="bg-orange-500/20 text-orange-400 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-orange-500/20 animate-pulse">
+                    Pending
                   </span>
                 )}
               </div>
 
               <div className="space-y-6">
-                {order.items.map(item => (
+                {activeOrder.items.map(item => (
                   <div key={item._id} className="flex justify-between items-center group">
                     <div className="flex flex-col">
-                      <span className="text-white font-serif text-xl group-hover:text-primary transition-colors cursor-default">{item.name}</span>
-                      <span className="text-primary text-[10px] font-black uppercase tracking-widest">Quantity: {item.quantity}</span>
+                      <span className="text-white font-serif text-lg group-hover:text-primary transition-colors cursor-default">{item.name}</span>
+                      <span className="text-primary text-[10px] font-black uppercase tracking-widest">Qty: {item.quantity}</span>
                     </div>
-                    <span className="font-black text-2xl text-white">₹{(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-black text-xl text-white">₹{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
 
               <div className="mt-12 pt-8 border-t-2 border-dashed border-white/10 flex justify-between items-center">
-                <div>
-                  <span className="font-serif text-4xl text-white font-black">Grand Total</span>
-                  <p className="text-text-muted/40 text-[9px] font-black uppercase tracking-[0.4em] mt-1">Includes all service charges</p>
-                </div>
-                <span className="font-black text-5xl text-primary drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">₹{order.total.toFixed(2)}</span>
+                <span className="font-serif text-3xl text-white font-black">Total</span>
+                <span className="font-black text-4xl text-primary drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">₹{activeOrder.total.toFixed(2)}</span>
               </div>
 
-              {order.orderStatus === 'ready' && (
+              {activeOrder.orderStatus === 'ready' && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={handleOrderReceived}
-                  className="mt-8 w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest shadow-[0_10px_25px_rgba(245,158,11,0.3)] hover:shadow-[0_15px_35px_rgba(245,158,11,0.5)] transition-all"
+                  onClick={() => handleOrderReceived(activeOrder._id)}
+                  className="mt-8 w-full bg-primary text-background font-black py-4 rounded-2xl uppercase tracking-widest shadow-xl transition-all"
                 >
                   I've Received my Order!
                 </motion.button>
               )}
 
-              {order.orderStatus === 'completed' && (
+              {activeOrder.orderStatus === 'completed' && (
                 <div className="mt-8 space-y-4">
                   <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
                     <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
-                    <p className="text-emerald-400/60 text-xs uppercase tracking-widest font-black">Thank you for visiting</p>
+                    <p className="text-emerald-400/60 text-[10px] uppercase tracking-widest font-black">Thank you for visiting</p>
                   </div>
 
-                  <div className="flex gap-4">
-                    <button
-                      disabled={order.paymentStatus !== 'paid'}
-                      onClick={() => navigate(`/repeat/${order._id}`)}
-                      className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${order.paymentStatus === 'paid'
-                        ? 'bg-surface-light border border-white/10 hover:border-white/30 text-white'
-                        : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
-                        }`}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => navigate('/')}
+                      className="flex-1 bg-primary text-background font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20 hover:bg-primary-light transition-all"
                     >
-                      Order Again?
-                    </button>
-                    <button
-                      disabled={order.paymentStatus !== 'paid'}
+                      Order Again
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        dispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
+                        cartDispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
                         window.location.href = '/';
                       }}
-                      className={`flex-1 font-bold py-4 rounded-xl uppercase tracking-widest text-[10px] transition-all ${order.paymentStatus === 'paid'
-                        ? 'bg-surface border border-white/10 hover:bg-surface-dark text-text-muted hover:text-white'
-                        : 'bg-white/5 text-white/20 border border-white/5 cursor-not-allowed'
-                        }`}
+                      className="flex-1 bg-surface-dark border border-white/10 text-white/40 font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] hover:text-white hover:border-white/20 transition-all"
                     >
                       I'm Done
-                    </button>
+                    </motion.button>
                   </div>
-                  {order.paymentStatus !== 'paid' && (
-                    <p className="text-center text-[10px] text-orange-400/60 font-black uppercase tracking-[0.2em] animate-pulse pt-2">
-                      Please settle your bill to finalize order
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -412,80 +333,125 @@ const TrackingPage = () => {
 
       <AnimatePresence>
         {showOrderConfirmed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-background/60 backdrop-blur-3xl"
-          >
-            <motion.div
-              initial={{ scale: 0.8, y: 40, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.8, y: 40, opacity: 0 }}
-              className="relative max-w-md w-full bg-surface-dark border border-white/10 rounded-[40px] md:rounded-[50px] p-6 md:p-12 text-center shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] overflow-hidden"
-            >
-              {/* Background ambient light */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -z-10" />
-              
-              <div className="relative mb-10">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
-                  className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(245,158,11,0.4)]"
-                >
-                  <Check className="w-12 h-12 text-background stroke-[4px]" />
-                </motion.div>
-                
-                {/* Floating sparkles */}
-                {[...Array(6)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ 
-                      y: [-10, -30, -10],
-                      x: [0, (i % 2 === 0 ? 20 : -20), 0],
-                      opacity: [0, 1, 0]
-                    }}
-                    transition={{ 
-                      duration: 2 + Math.random(), 
-                      repeat: Infinity,
-                      delay: i * 0.2
-                    }}
-                    className="absolute text-primary text-xl"
-                    style={{ 
-                      top: '20%', 
-                      left: `${15 + i * 15}%` 
-                    }}
-                  >
-                    ✨
-                  </motion.div>
-                ))}
-              </div>
-
-              <h2 className="text-4xl font-serif font-black text-white mb-4">Order Placed!</h2>
-              <p className="text-text-muted text-sm leading-relaxed mb-10 font-light italic">
-                Your culinary journey has begun. Our master chefs are now preparing your delicacies with artisan soul.
-              </p>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  playOrderSuccessSound();
-                  setShowOrderConfirmed(false);
-                }}
-                className="w-full bg-white text-background font-black py-5 rounded-3xl uppercase tracking-[0.2em] text-[10px] shadow-2xl hover:bg-primary transition-colors"
-              >
-                Track My Journey
-              </motion.button>
-              
-              <p className="mt-6 text-[9px] text-white/30 font-black uppercase tracking-[0.4em]">Ca Phe Bistro Sanctuary</p>
-            </motion.div>
-          </motion.div>
+          <OrderConfirmedOverlay onClose={() => setShowOrderConfirmed(false)} />
         )}
       </AnimatePresence>
     </div>
   );
 };
+
+// Helper Components for Cleaner Rendering
+const LiveTracker = ({ order }) => {
+  const [timeLeft, setTimeLeft] = useState(null);
+  const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === order.orderStatus);
+
+  useEffect(() => {
+    if (!order?.estimatedReadyTime) return;
+    const interval = setInterval(() => {
+      const now = new Date();
+      const readyTime = new Date(order.estimatedReadyTime);
+      const diff = readyTime - now;
+      if (diff <= 0) {
+        setTimeLeft('Ready!');
+        clearInterval(interval);
+      } else {
+        const mins = Math.floor(diff / 1000 / 60);
+        const secs = Math.floor((diff / 1000) % 60);
+        setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [order?.estimatedReadyTime]);
+
+  return (
+    <div className="glass-card p-6 md:p-10 relative overflow-hidden">
+      <h3 className="font-serif font-bold text-2xl mb-10 text-white flex items-center gap-3">
+        <Activity className="w-5 h-5 text-primary" />
+        Live Tracker
+      </h3>
+
+      {timeLeft && order.orderStatus === 'preparing' && (
+        <div className="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-[30px] text-center">
+          <p className="text-text-muted/60 text-[10px] font-black uppercase tracking-widest mb-1">Estimated Ready In</p>
+          <p className="text-4xl font-serif font-black text-primary tracking-tighter">{timeLeft}</p>
+        </div>
+      )}
+
+      <div className="relative">
+        <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-white/5 -ml-px z-0">
+          <motion.div
+            className="absolute top-0 w-full bg-primary"
+            initial={{ height: 0 }}
+            animate={{ height: `${(currentStepIndex / (STATUS_STEPS.length - 1)) * 100}%` }}
+            transition={{ duration: 1, ease: "circOut" }}
+          />
+        </div>
+
+        <div className="space-y-12 relative z-10">
+          {STATUS_STEPS.map((step, index) => {
+            const isCompleted = index <= currentStepIndex;
+            const isActive = index === currentStepIndex;
+            const Icon = step.icon;
+            return (
+              <div key={step.id} className="flex items-center gap-8">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 relative ${
+                  isCompleted ? 'bg-primary text-background' : 'bg-surface-dark text-text-muted border border-white/5'
+                }`}>
+                  {isActive && (
+                    <motion.div
+                      layoutId="pulse"
+                      className="absolute inset-0 rounded-2xl bg-primary"
+                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  )}
+                  <Icon className={`w-6 h-6 relative z-10 ${isActive ? 'animate-bounce' : ''}`} />
+                </div>
+                <div>
+                  <h3 className={`text-xl font-bold font-serif ${isCompleted ? 'text-white' : 'text-text-muted opacity-40'}`}>
+                    {step.label}
+                  </h3>
+                  {isActive && (
+                    <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-primary text-[9px] font-black uppercase tracking-widest mt-1">
+                      Live Update
+                    </motion.span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OrderConfirmedOverlay = ({ onClose }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-background/60 backdrop-blur-3xl"
+  >
+    <motion.div
+      initial={{ scale: 0.8, y: 40, opacity: 0 }}
+      animate={{ scale: 1, y: 0, opacity: 1 }}
+      exit={{ scale: 0.8, y: 40, opacity: 0 }}
+      className="relative max-w-md w-full bg-surface-dark border border-white/10 rounded-[40px] md:rounded-[50px] p-6 md:p-12 text-center shadow-2xl overflow-hidden"
+    >
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -z-10" />
+      <div className="relative mb-10">
+        <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center mx-auto">
+          <Check className="w-12 h-12 text-background stroke-[4px]" />
+        </div>
+      </div>
+      <h2 className="text-4xl font-serif font-black text-white mb-4">Order Placed!</h2>
+      <p className="text-text-muted text-sm mb-10">Our master chefs are now preparing your delicacies with artisan soul.</p>
+      <button onClick={() => { playOrderSuccessSound(); onClose(); }} className="w-full bg-white text-background font-black py-5 rounded-3xl uppercase tracking-widest text-[10px] shadow-2xl hover:bg-primary transition-colors">
+        Track My Journey
+      </button>
+    </motion.div>
+  </motion.div>
+);
 
 export default TrackingPage;

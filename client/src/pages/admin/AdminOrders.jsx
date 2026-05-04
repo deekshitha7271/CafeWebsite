@@ -134,7 +134,7 @@ const AdminOrders = () => {
             ) : (
               <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-                CASH PENDING
+                PAYMENT PENDING
               </p>
             )}
           </div>
@@ -200,7 +200,7 @@ const AdminOrders = () => {
               onClick={() => updateStatus(order._id, null, 'paid')}
               className="w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-background py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all mt-2"
             >
-              Confirm Cash Payment Received
+              Confirm Payment (Override)
             </button>
           )}
         </div>

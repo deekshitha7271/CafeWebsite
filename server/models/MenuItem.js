@@ -29,4 +29,9 @@ menuItemSchema.pre('save', function (next) {
   next();
 });
 
+// Indices for production performance
+menuItemSchema.index({ categoryId: 1 });
+menuItemSchema.index({ rankOrder: 1 });
+menuItemSchema.index({ isAvailable: 1 });
+
 module.exports = mongoose.model('MenuItem', menuItemSchema);

@@ -359,6 +359,24 @@ const AdminMenu = () => {
                   <Upload className="w-4 h-4" /> Import CSV
                 </button>
                 <button
+                  className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl font-bold text-[10px] uppercase tracking-wider hover:bg-red-500 hover:text-white transition-all"
+                  onClick={async () => {
+                    if (window.confirm('🚨 DANGER: This will delete ALL current menu items. This cannot be undone. Are you sure?')) {
+                      try {
+                        setLoading(true);
+                        await axios.delete(`${import.meta.env.VITE_API_URL}/menu-items/all`);
+                        fetchData();
+                      } catch (err) {
+                        alert('Failed to clear menu');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" /> Wipe Menu
+                </button>
+                <button
                   onClick={() => { setEditingItem(null); setItemForm({ itemName: '', itemOnlinePrice: '', itemOnlineDisplayName: '', itemId: '', categoryId: '', dietaryTag: '', image: '', rankOrder: 1, allowVariations: false }); setItemModalOpen(true); }}
                   className="flex items-center gap-2 px-5 py-2.5 bg-primary text-black rounded-xl font-black text-xs uppercase tracking-wider hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all"
                 >
@@ -851,7 +869,8 @@ const AdminMenu = () => {
               fetchData();
             } catch (err) {
               console.error(err);
-              alert('CSV format error. Please check your columns.');
+              const detail = err.response?.data?.detail || err.response?.data?.error || err.message;
+              alert(`CSV Import Failed: ${detail}\n\nPlease ensure your file is a valid .csv and headers match.`);
             } finally {
               setLoading(false);
               e.target.value = '';

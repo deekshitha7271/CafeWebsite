@@ -18,7 +18,8 @@ const Navbar = () => {
     setIsScrolled(latest > 50);
   });
 
-  const activeOrderId = state.lastOrderId;
+  const hasActiveOrders = state.activeOrders && state.activeOrders.length > 0;
+  const activeOrderId = hasActiveOrders ? state.activeOrders[0] : state.lastOrderId;
 
   const handleOrderTypeChange = (type) => {
     dispatch({ type: 'SET_ORDER_TYPE', payload: type });
