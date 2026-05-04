@@ -54,7 +54,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
                             <div>
                                 <h1 className="text-3xl font-black text-slate-900 mb-1">Ca Phe Bistro</h1>
-                                <p className="text-sm text-slate-500 max-w-[200px]">123 Coffee Lane, Sanctuary Circle, Bengaluru, 560001</p>
+                                <p className="text-sm text-slate-500 max-w-[200px]">Financial District, Nanakramguda, Makthakousarali, Telangana 500032</p>
                                 <p className="text-sm text-slate-500 mt-1">GSTIN: 29ABCDE1234F1Z5</p>
                             </div>
                             <div className="text-left md:text-right">
@@ -73,7 +73,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                             <div className="text-left md:text-right">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Payment Status</p>
                                 <p className={`font-bold uppercase text-sm ${transaction.status === 'paid' ? 'text-emerald-600' : 'text-orange-600'}`}>
-                                    {transaction.status} via {transaction.method}
+                                    {transaction.status} via Online
                                 </p>
                             </div>
                         </div>
@@ -121,7 +121,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
 
                         <div className="mt-20 pt-8 border-t border-slate-100 text-center">
                             <p className="text-sm font-serif italic text-slate-400">Thank you for your visit! Hope to see you again.</p>
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mt-4">Ca Phe Bistro Sanctuary - Experience the Artisan Soul</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mt-4">Ca Phe Bistro - Financial District - Experience the Artisan Soul</p>
                         </div>
                     </div>
                 </motion.div>

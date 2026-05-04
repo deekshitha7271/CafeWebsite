@@ -50,11 +50,11 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Stricter limiter for sensitive routes
+// Stricter limiter for sensitive routes (Relaxed for development/testing)
 const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // Limit each IP to 50 requests per window
-  message: 'Too many auth attempts, please try again after an hour'
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Allow 100 attempts per 15 mins (400 per hour)
+  message: 'Too many login attempts, please try again after 15 minutes'
 });
 app.use('/api/auth/', authLimiter);
 app.use('/api/payment/checkout', authLimiter);
@@ -158,6 +158,17 @@ app.get('/api/settings', async (req, res) => {
 app.use('/api/categories', categoryRoutes);
 app.use('/api/menu-items', menuRoutes);
 app.use('/api/coupons', couponRoutes);
+
+// Public order status check (for guest tracking - no auth needed)
+app.get('/api/orders/status/:id', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).select('orderStatus paymentStatus _id');
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json({ _id: order._id, orderStatus: order.orderStatus, paymentStatus: order.paymentStatus });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Protected routes
 app.use('/api/orders', protect, orderRoutes);

@@ -149,10 +149,39 @@ export const CartProvider = ({ children }) => {
     dispatch({ type: 'SET_CART', payload: { items: itemsToLoad, activeOrders: activeOrdersToLoad } });
     
     const fetchSessionData = async () => {
-      if (userId === 'guest') return;
+      if (userId === 'guest') {
+        // For guests, use the public status endpoint (no auth required)
+        const activeIds = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+        if (activeIds.length > 0) {
+          try {
+            const results = await Promise.all(
+              activeIds.map(id =>
+                axios.get(`${import.meta.env.VITE_API_URL}/orders/status/${id}`).catch(() => null)
+              )
+            );
+            // Keep only orders that still exist and are not completed/cancelled
+            const validIds = results
+              .filter(r => r && r.data && r.data.orderStatus !== 'completed' && r.data.orderStatus !== 'cancelled')
+              .map(r => r.data._id);
+            // If any were removed, update state + localStorage
+            if (validIds.length !== activeIds.length) {
+              dispatch({ type: 'SET_CART', payload: { activeOrders: validIds } });
+              localStorage.setItem('activeOrders', JSON.stringify(validIds));
+            }
+          } catch (e) { console.error('Guest order verification failed', e); }
+        }
+        return;
+      }
+
       try {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/session-summary`);
         dispatch({ type: 'SET_SESSION_DATA', payload: res.data });
+        
+        // Also verify active orders from the user profile returned by session-summary or similar
+        // For now, let's just use the activeOrders from the user object if they exist
+        if (res.data.activeOrders) {
+           dispatch({ type: 'SET_CART', payload: { activeOrders: res.data.activeOrders } });
+        }
       } catch (err) {
         console.error('Failed to fetch session data', err);
       }

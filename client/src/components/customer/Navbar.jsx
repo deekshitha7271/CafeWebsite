@@ -18,8 +18,7 @@ const Navbar = () => {
     setIsScrolled(latest > 50);
   });
 
-  const hasActiveOrders = state.activeOrders && state.activeOrders.length > 0;
-  const activeOrderId = hasActiveOrders ? state.activeOrders[0] : state.lastOrderId;
+  const activeOrderId = (state.activeOrders && state.activeOrders.length > 0) ? state.activeOrders[0] : null;
 
   const handleOrderTypeChange = (type) => {
     dispatch({ type: 'SET_ORDER_TYPE', payload: type });
@@ -90,7 +89,7 @@ const Navbar = () => {
             disabled={!activeOrderId}
             className={`flex items-center gap-2 transition-all px-3 py-2 md:px-4 md:py-2.5 rounded-full border ${activeOrderId
               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer'
-              : 'bg-surface-light border-white/5 text-text-muted opacity-50 cursor-not-allowed hidden md:flex'
+              : 'hidden'
               }`}
           >
             {activeOrderId ? (

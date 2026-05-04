@@ -78,33 +78,38 @@ router.post('/checkout', async (req, res) => {
       quantity: item.quantity,
     }));
 
-    // Apply Discount if valid
+    // Calculate Discount Amount
     if (appliedCoupon) {
       const rawTotal = targetOrder.total;
       if (appliedCoupon.type === 'percent') {
-        discountAmount = rawTotal * (appliedCoupon.value / 100);
+        discountAmount = rawTotal * (Number(appliedCoupon.value) / 100);
       } else if (appliedCoupon.type === 'flat') {
-        discountAmount = Math.min(appliedCoupon.value, rawTotal);
+        discountAmount = Math.min(Number(appliedCoupon.value), rawTotal);
       }
+    }
 
-      if (discountAmount > 0) {
-        line_items.push({
-          price_data: {
-            currency: 'inr',
-            product_data: {
-              name: `Discount (${appliedCoupon.code})`,
-            },
-            unit_amount: -Math.round(discountAmount * 100),
-          },
-          quantity: 1,
+    // Handle Discounts using Stripe Coupons
+    let stripeCouponId = null;
+    if (appliedCoupon && discountAmount > 0) {
+      try {
+        const stripeCoupon = await stripe.coupons.create({
+          amount_off: Math.round(discountAmount * 100),
+          currency: 'inr',
+          duration: 'once',
+          name: `Discount: ${appliedCoupon.code}`
         });
-        
+        stripeCouponId = stripeCoupon.id;
+
         // Update order total in DB
-        targetOrder.total = rawTotal - discountAmount;
+        const rawTotal = targetOrder.total;
+        targetOrder.total = Math.max(0, rawTotal - discountAmount);
         await targetOrder.save();
 
         // Increment usage
         await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { uses: 1 } });
+      } catch (couponErr) {
+        console.error('Stripe Coupon Creation Failed:', couponErr);
+        // Fallback: Continue without discount or handle error
       }
     }
 
@@ -112,6 +117,7 @@ router.post('/checkout', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
+      discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : [],
       mode: 'payment',
       success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?success=true`,
       cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?canceled=true`,

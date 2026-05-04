@@ -181,7 +181,7 @@ const TrackingPage = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/')}
+                onClick={() => navigate(`/repeat/${activeOrder._id}`)}
                 className="group relative inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-primary text-background font-black uppercase text-xs tracking-[0.2em] hover:bg-primary-light transition-all shadow-[0_20px_50px_rgba(245,158,11,0.4)] overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -307,7 +307,7 @@ const TrackingPage = () => {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate('/')}
+                      onClick={() => navigate(`/repeat/${activeOrder._id}`)}
                       className="flex-1 bg-primary text-background font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20 hover:bg-primary-light transition-all"
                     >
                       Order Again
@@ -316,8 +316,18 @@ const TrackingPage = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
+                        cartDispatch({ type: 'REMOVE_ACTIVE_ORDER', payload: activeOrder._id });
                         cartDispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
-                        window.location.href = '/';
+                        
+                        const remainingOrders = orders.filter(o => o._id !== activeOrder._id);
+                        if (remainingOrders.length > 0) {
+                          // If there are other orders, stay on tracking but switch to the first remaining one
+                          setOrders(remainingOrders);
+                          setActiveTab(remainingOrders[0]._id);
+                        } else {
+                          // Last order finished, go home
+                          window.location.href = '/';
+                        }
                       }}
                       className="flex-1 bg-surface-dark border border-white/10 text-white/40 font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] hover:text-white hover:border-white/20 transition-all"
                     >

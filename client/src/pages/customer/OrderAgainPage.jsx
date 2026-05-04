@@ -30,15 +30,13 @@ const OrderAgainPage = () => {
           category: item.category
         }));
 
-        // 2. Set the new cart in a single atomic operation
-        dispatch({
-          type: 'SET_CART',
-          payload: {
-            items: cartItems,
-            orderType: order.orderType || 'takeaway',
-            isCartOpen: true // Open the cart so the user sees the items added
-          }
+        // 2. Append to existing cart
+        cartItems.forEach(item => {
+          dispatch({ type: 'ADD_ITEM', payload: item });
         });
+
+        // Open cart to show success
+        dispatch({ type: 'SET_CART_OPEN', payload: true });
 
         // 3. Track the repeat action for analytics
         axios.post(`${import.meta.env.VITE_API_URL}/audit/record`, {

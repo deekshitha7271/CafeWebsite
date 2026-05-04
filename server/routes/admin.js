@@ -306,7 +306,7 @@ router.get('/payments', async (req, res) => {
             orderId: `#${o._id.toString().slice(-4).toUpperCase()}`,
             customer: o.customerName || o.user?.name || 'Walk-in',
             amount: o.total,
-            method: o.paymentStatus === 'paid' && o.stripeSessionId ? 'Online' : o.paymentMethod || 'Cash',
+            method: 'Online', // Always Online as we only use Stripe for this setup
             status: o.paymentStatus,
             time: new Date(o.timestamp).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }),
             gst: parseFloat((o.total * 0.05).toFixed(2))
