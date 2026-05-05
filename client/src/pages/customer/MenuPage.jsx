@@ -410,8 +410,8 @@ const MenuPage = () => {
           {/* ── HIGH-PERFORMANCE NAVIGATION SHELL ── */}
           <div ref={menuHeaderRef} className="h-[140px] md:h-[160px] relative">
             <div className={`${isHeaderSticky
-                ? 'fixed top-[72px] md:top-[88px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/5 animate-in slide-in-from-top-4 duration-300'
-                : 'relative'
+              ? 'fixed top-[72px] md:top-[88px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/5 animate-in slide-in-from-top-4 duration-300'
+              : 'relative'
               }`}>
               {/* Row 1: Search + View Toggle */}
               <div className="px-6 lg:px-20 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -486,8 +486,8 @@ const MenuPage = () => {
                   <button
                     onClick={() => handleCategoryChange('all')}
                     className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === 'all'
-                        ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
-                        : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
+                      ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                      : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
                       }`}
                   >All</button>
                   {itemsByCategory.map(cat => (
@@ -495,8 +495,8 @@ const MenuPage = () => {
                       key={cat._id}
                       onClick={() => handleCategoryChange(cat._id)}
                       className={`shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === cat._id
-                          ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
-                          : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
+                        ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                        : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
                         }`}
                     >
                       {cat.icon && !cat.icon.startsWith('http') && <span className="text-xs">{cat.icon}</span>}
@@ -663,7 +663,7 @@ const MenuPage = () => {
               viewport={{ once: true }}
               className="md:col-span-7 h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
             >
-              <img src="/ca phe bistro website images/image 1.jpeg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
+              <img src="https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
               <div className="absolute bottom-12 left-12">
                 <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">Ambience</span>
