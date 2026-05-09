@@ -17,8 +17,8 @@ const server = http.createServer(app);
 
 // ─── HEALTH CHECK ────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
+  res.status(200).json({
+    status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
@@ -26,7 +26,14 @@ app.get('/health', (req, res) => {
 
 // Clean up the CLIENT_URL to handle accidental trailing slashes or spaces
 const clientUrl = process.env.CLIENT_URL?.trim().replace(/\/$/, "");
-const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"].filter(Boolean);
+const allowedOrigins = [
+  clientUrl,
+  "https://cafe-website-psi-bice.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:3000"
+].filter(Boolean);
 
 // 1. CORS MUST BE FIRST
 app.use(cors({
@@ -44,7 +51,7 @@ app.use(cors({
 
 // 2. Production Security & Performance
 app.use(helmet({
-  contentSecurityPolicy: false, 
+  contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow resources to be loaded across origins
 }));
 app.use(compression()); // Gzip compression for all responses
@@ -315,10 +322,10 @@ app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res
 // ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('🔥 Server Error:', err.stack);
-  
+
   const status = err.status || 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'An unexpected error occurred' 
+  const message = process.env.NODE_ENV === 'production'
+    ? 'An unexpected error occurred'
     : err.message;
 
   res.status(status).json({
@@ -371,5 +378,5 @@ function gracefulShutdown(signal) {
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
