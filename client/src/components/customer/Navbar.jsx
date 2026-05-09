@@ -137,7 +137,9 @@ const Navbar = () => {
           {state.settings && (
             <div className="flex flex-col items-end mr-2 text-white/80">
               <a
-                href={`tel:${(state.settings.phone || '+91 79811 44753').replace(/\s/g, '')}`}
+                href={`https://wa.me/${(state.settings.phone || '+91 79811 44753').replace(/\D/g, '')}?text=Hi%20C%C3%A1%20Ph%C3%AA%20Bistro`}
+                target="_blank"
+                rel="noreferrer"
                 className="text-[9px] md:text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 hover:text-primary transition-colors text-white/90"
               >
                 <Phone className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />

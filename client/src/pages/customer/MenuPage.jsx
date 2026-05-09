@@ -377,9 +377,14 @@ const MenuPage = () => {
                 <Clock className="w-3 h-3 text-primary" /> {settings?.weekdayHours || '08:30 AM – 11:00 PM'}
                 <span className="ml-1 text-green-400 font-black">(Open)</span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
-                <Phone className="w-3 h-3 text-primary" /> {settings?.phone || '+91 123 456 7890'}
-              </div>
+              <a
+                href={`https://wa.me/${(settings?.phone || '+91 79811 44753').replace(/\D/g, '')}?text=Hi%20C%C3%A1%20Ph%C3%AA%20Bistro`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8 hover:border-primary/40 hover:bg-primary/5 transition-all"
+              >
+                <Phone className="w-3 h-3 text-primary" /> {settings?.phone || '+91 79811 44753'}
+              </a>
             </div>
 
             {/* Right — Action Buttons */}
@@ -395,7 +400,7 @@ const MenuPage = () => {
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <Camera className="w-4 h-4" />
               </a>
-              <a href={`https://wa.me/${settings?.phone?.replace(/\D/g, '') || '911234567890'}?text=Hi%20${settings?.cafeName?.replace('Ca Phe', 'Cá Phê') || 'Cá Phê Bistro'}`} target="_blank" rel="noreferrer"
+              <a href={`https://wa.me/${(settings?.phone || '+91 79811 44753').replace(/\D/g, '')}?text=Hi%20${settings?.cafeName?.replace('Ca Phe', 'Cá Phê') || 'Cá Phê Bistro'}`} target="_blank" rel="noreferrer"
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <MessageCircle className="w-4 h-4" />
               </a>
@@ -834,7 +839,7 @@ const MenuPage = () => {
       < footer id="footer" className="bg-[#080402] border-t border-white/5 relative pt-40 pb-20 overflow-hidden" >
         {/* Giant Logo Background */}
         < div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[40vw] font-serif font-black text-white/[0.02] pointer-events-none select-none uppercase" >
-          CA PHE
+          CÁ PHÊ
         </div >
 
         <div className="max-w-[1600px] mx-auto px-8 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-20 relative z-10 mb-40">
@@ -844,7 +849,7 @@ const MenuPage = () => {
                 <span className="text-background font-serif font-black text-3xl">C.</span>
               </div>
               <div>
-                <h2 className="text-4xl font-serif font-black text-white tracking-tight">Ca Phe</h2>
+                <h2 className="text-4xl font-serif font-black text-white tracking-tight">Cá Phê</h2>
                 <p className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">Bistro</p>
               </div>
             </div>
@@ -888,7 +893,7 @@ const MenuPage = () => {
               <h6 className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">Connect</h6>
               <div className="space-y-6 text-sm text-text-muted font-light">
                 <a href="https://www.instagram.com/caphe_bistro?igsh=M3p2cWw1eGEzcGs5" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">Instagram</a>
-                <a href="https://wa.me/911234567890?text=Hi%20Ca%20Phe%20Bistro" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">WhatsApp</a>
+                <a href="https://wa.me/917981144753?text=Hi%20C%C3%A1%20Ph%C3%AA%20Bistro" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">WhatsApp</a>
                 <a href="https://maps.app.goo.gl/4iQhPwpcW323YQFt9" target="_blank" rel="noreferrer" className="hover:text-white transition-colors block capitalize">Google Maps</a>
               </div>
             </div>
