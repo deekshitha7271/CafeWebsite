@@ -6,7 +6,7 @@ import {
 import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2, Power, Lock, X, Download, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx'; // XLSX for reports export
 
 const COLORS = ['#F59E0B', '#FBBF24', '#D97706', '#92400E', '#78350F'];
 
@@ -202,7 +202,7 @@ const AdminDashboard = () => {
       XLSX.utils.book_append_sheet(wb, makeSheet(monthRows), '🗓️ By Month');
 
       const today = new Date().toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
-      XLSX.writeFile(wb, `CaPhe-Bistro-Report-${today}.xlsx`);
+      XLSX.writeFile(wb, `Ca-Phe-Bistro-Report-${today}.xlsx`);
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export report. Please try again.');
@@ -244,7 +244,7 @@ const AdminDashboard = () => {
               exit={{ scale: 0.9, y: 20 }}
               className="bg-surface-dark border border-white/10 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center"
             >
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${ isOrdering ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isOrdering ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
                 <Lock className={`w-7 h-7 ${isOrdering ? 'text-red-400' : 'text-emerald-400'}`} />
               </div>
               <h3 className="text-white font-serif font-black text-2xl mb-1">
@@ -277,7 +277,7 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   onClick={handlePinSubmit}
-                  className={`flex-1 font-black text-[11px] uppercase tracking-widest py-3.5 rounded-xl transition-all ${ isOrdering ? 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white' : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white' }`}
+                  className={`flex-1 font-black text-[11px] uppercase tracking-widest py-3.5 rounded-xl transition-all ${isOrdering ? 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white' : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white'}`}
                 >
                   Confirm
                 </button>
@@ -299,11 +299,10 @@ const AdminDashboard = () => {
             whileTap={{ scale: 0.97 }}
             onClick={handleToggleRequest}
             disabled={togglingOrder}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border font-black text-[11px] uppercase tracking-widest transition-all ${
-              isOrdering
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
-                : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
-            } disabled:opacity-50`}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border font-black text-[11px] uppercase tracking-widest transition-all ${isOrdering
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+              : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+              } disabled:opacity-50`}
           >
             {togglingOrder
               ? <Loader2 className="w-4 h-4 animate-spin" />

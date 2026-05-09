@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  optimizeDeps: {
+    include: ['xlsx']
+  },
   plugins: [
     tailwindcss(),
     react(),
@@ -46,6 +49,10 @@ export default defineConfig({
           // Axios
           if (id.includes('node_modules/axios')) {
             return 'vendor-axios';
+          }
+          // Excel export
+          if (id.includes('node_modules/xlsx')) {
+            return 'vendor-excel';
           }
           // All other node_modules → vendor bundle
           if (id.includes('node_modules')) {

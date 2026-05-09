@@ -25,6 +25,7 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
     };
 
     const isGrid = variant === 'grid';
+    const isCompact = variant === 'compact';
 
     if (quantity === 0) {
         return (
@@ -36,20 +37,20 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
                     e.stopPropagation();
                     handleUpdate('add');
                 }}
-                className={`flex items-center justify-center rounded-full bg-primary text-background shadow-lg shadow-primary/20 transition-all ${isGrid ? 'w-10 h-10' : 'w-8 h-8'
+                className={`flex items-center justify-center rounded-full bg-primary text-background shadow-lg shadow-primary/20 transition-all ${isGrid ? 'w-10 h-10' : isCompact ? 'w-8 h-8' : 'w-8 h-8'
                     }`}
             >
                 {loadingType === 'add' ? (
-                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={3} />
+                    <Loader2 className={isCompact ? "w-3 h-3 animate-spin" : "w-4 h-4 animate-spin"} strokeWidth={3} />
                 ) : (
-                    <Plus className={isGrid ? "w-5 h-5" : "w-4 h-4"} strokeWidth={3} />
+                    <Plus className={isGrid ? "w-5 h-5" : isCompact ? "w-4 h-4" : "w-4 h-4"} strokeWidth={3} />
                 )}
             </motion.button>
         );
     }
 
     return (
-        <div className={`flex items-center gap-3 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full px-1.5 py-1.5 shadow-xl transition-all ${isGrid ? 'scale-110' : 'scale-100'
+        <div className={`flex items-center gap-2 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full shadow-xl transition-all ${isGrid ? 'scale-110 px-1.5 py-1.5' : isCompact ? 'scale-90 px-1 py-1' : 'scale-100 px-1.5 py-1.5'
             }`} onClick={e => e.stopPropagation()}>
             <motion.button
                 whileTap={{ scale: 0.8 }}

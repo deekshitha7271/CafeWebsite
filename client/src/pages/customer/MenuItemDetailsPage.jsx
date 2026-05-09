@@ -62,7 +62,7 @@ const MenuItemDetailsPage = () => {
                     <ArrowLeft className="w-5 h-5" />
                 </motion.button>
                 <div className="text-primary text-[10px] uppercase tracking-[0.4em] font-black">
-                    Ca Phe Bistro Experience
+                    Cá Phê Bistro Experience
                 </div>
             </nav>
 

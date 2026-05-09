@@ -22,7 +22,7 @@ const LoginPage = () => {
 
     try {
       const loggedInUser = await login(email, password);
-      
+
       const from = location.state?.from?.pathname || '/admin';
       navigate(from, { replace: true });
     } catch (err) {
@@ -76,7 +76,7 @@ const LoginPage = () => {
         </form>
 
         <div className="mt-8 text-xs text-white/20">
-          <p>© {new Date().getFullYear()} Ca Phe Bistro. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Cá Phê Bistro. All rights reserved.</p>
         </div>
       </div>
     </div>

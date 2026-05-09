@@ -50,7 +50,7 @@ const AdminLayout = () => {
               {isAdmin ? 'Admin' : 'Worker'}
               <span className="ml-2 text-[9px] text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 font-sans">Portal</span>
             </h1>
-            <p className="text-[9px] text-primary/70 uppercase font-black tracking-widest">Ca Phe Bistro</p>
+            <p className="text-[9px] text-primary/70 uppercase font-black tracking-widest">Cá Phê Bistro</p>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ const AdminLayout = () => {
           </button>
           <div className="flex items-center gap-2">
             <Crown className="w-4 h-4 text-primary" />
-            <span className="text-sm font-serif font-bold text-white">Ca Phe Bistro</span>
+            <span className="text-sm font-serif font-bold text-white">Cá Phê Bistro</span>
           </div>
           <button onClick={logout} className="p-2 text-white/40 hover:text-red-400">
             <LogOut className="w-4 h-4" />

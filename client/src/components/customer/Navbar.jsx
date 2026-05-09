@@ -48,33 +48,33 @@ const Navbar = () => {
             <Crown className="w-6 h-6 md:w-8 md:h-8 text-primary" />
           </motion.div>
           <div className="text-left hidden lg:block">
-            <h1 className="font-serif font-bold text-2xl leading-none text-white tracking-wide">Ca Phe</h1>
+            <h1 className="font-serif font-bold text-2xl leading-none text-white tracking-wide">Cá Phê</h1>
             <span className="text-[10px] uppercase font-bold text-primary tracking-widest mt-1 block">Bistro</span>
           </div>
         </button>
 
         {/* Global Order Type Selector */}
-        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10 shrink-1 hidden sm:flex">
+        <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10 shrink-1 flex">
           <button
             onClick={() => handleOrderTypeChange('dinein-web')}
-            className={`flex items-center gap-2 px-3 py-2 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
               ? 'bg-primary text-background shadow-lg md:scale-105'
               : 'text-text-muted hover:text-white'
               }`}
           >
-            <ChefHat className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Dine In</span>
+            <ChefHat className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden md:block">Dine In</span>
           </button>
 
           <button
             onClick={() => handleOrderTypeChange('takeaway')}
-            className={`flex items-center gap-2 px-3 py-2 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
               ? 'bg-primary text-background shadow-lg md:scale-105'
               : 'text-text-muted hover:text-white'
               }`}
           >
-            <Package className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Takeaway</span>
+            <Package className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden md:block">Takeaway</span>
           </button>
         </div>
 
@@ -137,7 +137,7 @@ const Navbar = () => {
           {state.settings && (
             <div className="hidden lg:flex flex-col items-end mr-2 text-white/80">
               <span className="text-[10px] font-black tracking-widest uppercase flex items-center gap-1">
-                {state.settings.phone || '+91 123 456 7890'}
+                {state.settings.phone || '+91 79811 44753'}
               </span>
               <span className="text-[9px] font-bold tracking-widest text-primary flex items-center gap-1">
                 {state.settings.weekdayHours || '08:30 AM – 11:00 PM'}
@@ -146,28 +146,39 @@ const Navbar = () => {
             </div>
           )}
 
+          {/* Directions Button */}
+          <a
+            href="https://maps.google.com/?q=Ca+Phe+Bistro+Financial+District"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 md:gap-2 bg-primary text-background px-3 py-2 md:px-6 md:py-3.5 rounded-full font-black text-[9px] md:text-[10px] tracking-widest uppercase transition-all hover:scale-105 shadow-[0_5px_15px_rgba(245,158,11,0.3)] border border-primary-light/50"
+          >
+            <Navigation className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            <span className="hidden sm:block">Directions</span>
+          </a>
+
           {/* Premium Cart Button */}
           {state.isOrderingActive && (
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => dispatch({ type: 'TOGGLE_CART' })}
-            className="flex items-center gap-2 md:gap-3 bg-gradient-to-tr from-primary-dark to-primary hover:to-primary-light text-background px-3 py-2 md:px-7 md:py-3.5 rounded-full transition-all font-bold shadow-[0_10px_25px_-5px_rgba(245,158,11,0.5)] border border-primary-light/50"
-          >
-            <div className="relative">
-              <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
-              {cartCount > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-white text-primary text-[9px] md:text-[10px] font-black w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full shadow-lg"
-                >
-                  {cartCount}
-                </motion.span>
-              )}
-            </div>
-            <span className="text-xs font-black tracking-widest uppercase hidden sm:block ml-1">Cart</span>
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => dispatch({ type: 'TOGGLE_CART' })}
+              className="flex items-center gap-2 md:gap-3 bg-gradient-to-tr from-primary-dark to-primary hover:to-primary-light text-background px-3 py-2 md:px-7 md:py-3.5 rounded-full transition-all font-bold shadow-[0_10px_25px_-5px_rgba(245,158,11,0.5)] border border-primary-light/50"
+            >
+              <div className="relative">
+                <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" />
+                {cartCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-2 -right-2 md:-top-3 md:-right-3 bg-white text-primary text-[9px] md:text-[10px] font-black w-4 h-4 md:w-5 md:h-5 flex items-center justify-center rounded-full shadow-lg"
+                  >
+                    {cartCount}
+                  </motion.span>
+                )}
+              </div>
+              <span className="text-xs font-black tracking-widest uppercase hidden sm:block ml-1">Cart</span>
+            </motion.button>
           )}
         </div>
       </div>

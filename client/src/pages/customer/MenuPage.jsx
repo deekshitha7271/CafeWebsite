@@ -15,6 +15,111 @@ import {
 } from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValueEvent } from 'framer-motion';
 
+// ── Sub-component for Category Sections to handle Hooks safely ────────────
+const MenuCategorySection = ({ section, viewMode }) => {
+  // NORMALIZE NAME TO STRIP ACCENTS (e.g. Cá Phê -> Ca Phe)
+  const normalizedName = section.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // BROAD DETECTION DNA
+  const isSpecial = normalizedName.includes('special') ||
+    normalizedName.includes('vietnam') ||
+    normalizedName.includes('bistro') ||
+    normalizedName.includes('chef') ||
+    normalizedName.includes('ca phe');
+
+  const carouselRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (carouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+      setCanScrollLeft(scrollLeft > 20);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 20);
+    }
+  };
+
+  const scroll = (dir) => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: dir * (window.innerWidth > 768 ? 600 : 300), behavior: 'smooth' });
+      setTimeout(checkScroll, 500);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
+
+  return (
+    <div id={`category-${section._id}`} className="scroll-mt-48 relative group/section">
+      <div className="flex items-end justify-between gap-6 mb-12 group flex-wrap">
+        <div className="flex flex-col min-w-[200px]">
+          <span className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-2 opacity-50">
+            {isSpecial ? "Chef's Recommendations" : "Discover Our Menu"}
+          </span>
+          <h4 className="font-serif text-3xl md:text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">
+            {section.name}
+          </h4>
+        </div>
+      </div>
+
+      <div className="relative">
+        {/* Modern Floating Navigation for Carousels */}
+        {isSpecial && (
+          <>
+            <button
+              onClick={() => scroll(-1)}
+              disabled={!canScrollLeft}
+              className={`absolute left-2 lg:-left-6 top-[40%] -translate-y-1/2 z-50 w-12 h-12 md:w-20 md:h-20 rounded-full bg-surface-dark border-2 border-white/20 flex items-center justify-center text-white transition-all shadow-[0_15px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl ${canScrollLeft ? 'opacity-100 scale-100 hover:bg-primary hover:text-background active:scale-95' : 'opacity-10 scale-90 pointer-events-none'
+                }`}
+            >
+              <ChevronLeft className="w-8 h-8 md:w-12 md:h-12" />
+            </button>
+
+            <button
+              onClick={() => scroll(1)}
+              disabled={!canScrollRight}
+              className={`absolute right-2 lg:-right-6 top-[40%] -translate-y-1/2 z-50 w-12 h-12 md:w-20 md:h-20 rounded-full bg-surface-dark border-2 border-white/20 flex items-center justify-center text-white transition-all shadow-[0_15px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl ${canScrollRight ? 'opacity-100 scale-100 hover:bg-primary hover:text-background active:scale-95' : 'opacity-10 scale-90 pointer-events-none'
+                }`}
+            >
+              <ChevronRight className="w-8 h-8 md:w-12 md:h-12" />
+            </button>
+          </>
+        )}
+
+        <div
+          ref={isSpecial ? carouselRef : null}
+          onScroll={isSpecial ? checkScroll : undefined}
+          className={viewMode === 'grid'
+            ? isSpecial
+              ? "flex gap-4 lg:gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x snap-mandatory px-4"
+              : "grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8"
+            : "flex flex-col gap-4 overflow-x-hidden"
+          }
+        >
+          {section.items.map((item, i) => (
+            <motion.div
+              key={item._id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i % 5 * 0.05 }}
+              className={isSpecial ? "shrink-0 w-[200px] md:w-[280px] snap-start" : ""}
+            >
+              {viewMode === 'grid'
+                ? <MenuItemCard item={item} variant={isSpecial ? 'compact' : 'standard'} />
+                : <MenuListItem item={item} />
+              }
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MenuPage = () => {
   const { dispatch } = useCart();
 
@@ -125,8 +230,8 @@ const MenuPage = () => {
     }, []);
   }, [categories, filteredItems]);
 
-  const comboCategory = useMemo(() => categories.find(c => c.name.toLowerCase().includes('combo')), [categories]);
-  const comboItems = useMemo(() => comboCategory ? items.filter(i => String(i.categoryId?._id || i.categoryId) === String(comboCategory._id)) : [], [comboCategory, items]);
+  const specialCategory = useMemo(() => categories.find(c => c.name.toLowerCase().includes('ca phe bistro special')), [categories]);
+  const specialItems = useMemo(() => specialCategory ? items.filter(i => String(i.categoryId?._id || i.categoryId) === String(specialCategory._id)) : [], [specialCategory, items]);
 
   // Active Category State logic - REVERTED TO FILTERING
   const handleCategoryChange = (catId) => {
@@ -211,7 +316,7 @@ const MenuPage = () => {
             <div className="flex items-center gap-2 mb-8">
               <Crown className="w-5 h-5 text-primary" />
               <span className="text-primary font-bold tracking-[0.2em] text-[10px] md:text-xs uppercase bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
-                {settings?.cafeName || 'Ca Phe Bistro'} • {settings?.tagline || 'Signature'}
+                {(settings?.cafeName || 'Cá Phê Bistro').replace('Ca Phe', 'Cá Phê')} • {settings?.tagline || 'Signature'}
               </span>
             </div>
             <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold font-serif leading-[0.95] mt-2 mb-8 tracking-[-0.02em]">
@@ -221,7 +326,7 @@ const MenuPage = () => {
                 transition={{ duration: 1, delay: 0.2 }}
                 className="text-gradient-gold block mb-2 hero-text-glow"
               >
-                {settings?.heroHeadline ? (settings.heroHeadline.split(' ').length >= 3 ? settings.heroHeadline.split(' ').slice(0, 2).join(' ') : settings.heroHeadline.split(' ')[0]) : 'Ca Phe'}
+                {settings?.heroHeadline ? (settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ').length >= 3 ? settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ').slice(0, 2).join(' ') : settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ')[0]) : 'Cá Phê'}
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, x: -30 }}
@@ -230,12 +335,12 @@ const MenuPage = () => {
                 className="text-white block"
                 style={{ textShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
               >
-                {settings?.heroHeadline ? (settings.heroHeadline.split(' ').length >= 3 ? settings.heroHeadline.split(' ').slice(2).join(' ') : settings.heroHeadline.split(' ').slice(1).join(' ')) : 'Bistro.'}
+                {settings?.heroHeadline ? (settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ').length >= 3 ? settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ').slice(2).join(' ') : settings.heroHeadline.replace('Ca Phe', 'Cá Phê').split(' ').slice(1).join(' ')) : 'Bistro.'}
               </motion.span>
             </h1>
-            <p className="text-text-muted mt-6 text-sm md:text-xl max-w-md leading-relaxed border-l-[3px] border-primary/40 pl-6 tracking-wide font-light">
-              <strong className="text-primary font-bold uppercase tracking-widest text-sm">Web Ordering Active</strong>
-              • {settings?.heroSubheadline || 'Indulge in our masterfully crafted culinary collection. Elevate your senses.'}
+            <p className="text-text-muted/70 mt-6 text-xs md:text-sm max-w-lg leading-relaxed border-l-[2px] border-primary/20 pl-4 tracking-wide font-light">
+              At Cá Phê Bistro, every cup tells a story.<br className="mb-2" />
+              From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space.
             </p>
 
             <div className="mt-10 flex flex-col gap-8">
@@ -321,8 +426,8 @@ const MenuPage = () => {
               </div>
               <div>
                 <h2 className="text-xl font-serif font-black text-white mb-1">
-                  {settings?.cafeName?.split(' ')[0] || 'Ca Phe'}{' '}
-                  <span className="text-primary italic">{settings?.cafeName?.split(' ').slice(1).join(' ') || 'Bistro'}</span>
+                  {settings?.cafeName?.replace('Ca Phe', 'Cá Phê').split(' ')[0] || 'Cá Phê'}{' '}
+                  <span className="text-primary italic">{settings?.cafeName?.replace('Ca Phe', 'Cá Phê').split(' ').slice(1).join(' ') || 'Bistro'}</span>
                 </h2>
                 <p className="text-text-muted text-xs flex items-center gap-1.5 font-light">
                   <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -355,7 +460,7 @@ const MenuPage = () => {
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <Camera className="w-4 h-4" />
               </a>
-              <a href={`https://wa.me/${settings?.phone?.replace(/\D/g, '') || '911234567890'}?text=Hi%20${settings?.cafeName || 'Ca Phe Bistro'}`} target="_blank" rel="noreferrer"
+              <a href={`https://wa.me/${settings?.phone?.replace(/\D/g, '') || '911234567890'}?text=Hi%20${settings?.cafeName?.replace('Ca Phe', 'Cá Phê') || 'Cá Phê Bistro'}`} target="_blank" rel="noreferrer"
                 className="w-9 h-9 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-primary hover:bg-white/10 transition-all">
                 <MessageCircle className="w-4 h-4" />
               </a>
@@ -363,12 +468,12 @@ const MenuPage = () => {
           </motion.div>
         </div>
 
-        {/* TIER 1: CURATED COMBOS */}
-        {comboItems.length > 0 && (
+        {/* TIER 1: CA PHE BISTRO SPECIAL */}
+        {specialItems.length > 0 && (
           <section className="mt-20 px-8 lg:px-20 relative overflow-hidden">
             {/* Background branding text */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 text-[15vw] font-serif font-black text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
-              COMBOS • COMBOS • COMBOS
+              SPECIALS • SPECIALS • SPECIALS
             </div>
 
             <motion.div
@@ -378,16 +483,16 @@ const MenuPage = () => {
               className="flex items-end justify-between mb-16 relative z-10"
             >
               <div>
-                <h3 className="font-serif text-5xl lg:text-7xl font-bold text-white mb-4">Curated <span className="text-primary italic">Combos.</span></h3>
+                <h3 className="font-serif text-5xl lg:text-7xl font-bold text-white mb-4">Cá Phê Bistro <span className="text-primary italic">Special.</span></h3>
                 <div className="flex items-center gap-4">
                   <div className="h-[2px] w-12 bg-primary"></div>
-                  <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Perfect pairings</p>
+                  <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Chef's Recommendations</p>
                 </div>
               </div>
             </motion.div>
 
             <div className="flex overflow-x-auto hide-scrollbar gap-12 pb-20 -mx-4 px-4 snap-x snap-mandatory relative z-10">
-              {comboItems.map((item, idx) => (
+              {specialItems.map((item, idx) => (
                 <motion.div
                   key={item._id}
                   initial={{ opacity: 0, y: 30 }}
@@ -500,7 +605,7 @@ const MenuPage = () => {
                         }`}
                     >
                       {cat.icon && !cat.icon.startsWith('http') && <span className="text-xs">{cat.icon}</span>}
-                      {cat.name}
+                      {cat.name.replace('Ca Phe', 'Cá Phê')}
                     </button>
                   ))}
                   <button
@@ -527,39 +632,11 @@ const MenuPage = () => {
               </div>
             ) : displayedCategories.length > 0 ? (
               displayedCategories.map((section) => (
-                <div key={section._id} id={`category-${section._id}`} className="scroll-mt-48">
-                  <div className="flex items-end gap-6 mb-16 group flex-wrap">
-                    <div className="flex flex-col min-w-[200px]">
-                      <span className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-2 opacity-50 group-hover:opacity-100 transition-opacity">Discover</span>
-                      <h4 className="font-serif text-3xl md:text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">{section.name}</h4>
-                    </div>
-                    <div className="h-px flex-1 bg-gradient-to-r from-primary/40 to-transparent mb-4 hidden md:block" />
-                    <div className="text-right mb-4 flex-shrink-0">
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] block">Volume</span>
-                      <span className="text-primary font-black text-xs">{section.items.length} PCS</span>
-                    </div>
-                  </div>
-
-                  <div className={viewMode === 'grid'
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-                    : "flex flex-col gap-4 overflow-x-hidden"
-                  }>
-                    {section.items.map((item, i) => (
-                      <motion.div
-                        key={item._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true, margin: "-50px" }}
-                        transition={{ duration: 0.4, delay: i % 4 * 0.05 }}
-                      >
-                        {viewMode === 'grid'
-                          ? <MenuItemCard item={item} />
-                          : <MenuListItem item={item} />
-                        }
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
+                <MenuCategorySection
+                  key={section._id}
+                  section={section}
+                  viewMode={viewMode}
+                />
               ))
             ) : (
               <div className="py-40 text-center space-y-6">
@@ -602,7 +679,7 @@ const MenuPage = () => {
               <div className="flex flex-wrap gap-4 mt-8">
                 <div className="flex items-center gap-4 text-text-muted text-sm bg-background/50 px-6 py-4 rounded-3xl border border-white/5 inline-flex w-fit shadow-lg">
                   <MapPin className="w-4 h-4 text-primary" />
-                  <span className="font-medium tracking-wide">Ca Phe Bistro</span>
+                  <span className="font-medium tracking-wide">Cá Phê Bistro</span>
                 </div>
                 <div className="flex items-center gap-4 text-text-muted text-sm bg-background/50 px-6 py-4 rounded-3xl border border-white/5 inline-flex w-fit shadow-lg">
                   <Clock className="w-4 h-4 text-primary" />
@@ -766,7 +843,8 @@ const MenuPage = () => {
                 {settings?.aboutDescription?.slice(0, 100) || "We didn't just build a café. We cultivated a sanctuary where artisan mastery meets digital evolution."}
               </p>
               <p className="text-text-muted/80 text-base leading-relaxed font-light pl-10">
-                {settings?.aboutDescription || "Founded on the principle that coffee is more than a beverage—it's a ritual—Ca Phe Bistro brings together world-class baristas, sustainable growers, and state-of-the-art tech to serve perfection on every table."}
+                At Cá Phê Bistro, every cup tells a story.<br className="mb-2" />
+                From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space.
               </p>
             </motion.div>
 
@@ -823,7 +901,7 @@ const MenuPage = () => {
                 <Camera className="w-6 h-6" />
               </motion.a>
               <motion.a
-                href="https://wa.me/911234567890?text=Hi%20Ca%20Phe%20Bistro"
+                href="https://wa.me/917981144753?text=Hi%20C%C3%A1%20Ph%C3%AA%20Bistro"
                 target="_blank"
                 rel="noreferrer"
                 whileHover={{ y: -5 }}
@@ -879,7 +957,7 @@ const MenuPage = () => {
         </div>
 
         <div className="max-w-[1600px] mx-auto px-8 lg:px-20 pt-16 border-t border-white/5 flex flex-col md:flex-row justify-between gap-8 relative z-10 opacity-30 group hover:opacity-100 transition-opacity duration-1000">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white">© 2026 Ca Phe Bistro</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white">© 2026 Cá Phê Bistro</p>
           <div className="flex gap-12 text-[10px] font-black uppercase tracking-[0.4em] text-white">
             <span>Privacy</span>
             <span>Terms</span>

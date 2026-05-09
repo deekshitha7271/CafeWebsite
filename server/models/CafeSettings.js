@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const cafeSettingsSchema = new mongoose.Schema({
-    cafeName: { type: String, default: 'Ca Phe Bistro' },
+    cafeName: { type: String, default: 'Cá Phê Bistro' },
     tagline: { type: String, default: 'Sip, Savour & Stay' },
     gstNumber: { type: String, default: '' },
-    phone: { type: String, default: '' },
+    phone: { type: String, default: '+91 79811 44753' },
     email: { type: String, default: '' },
     address: { type: String, default: '' },
     weekdayHours: { type: String, default: '8:30 AM – 11:00 PM' },
@@ -20,7 +20,7 @@ const cafeSettingsSchema = new mongoose.Schema({
     heroSubheadline: { type: String, default: 'Your neighbourhood café in Financial District' },
     heroCta: { type: String, default: 'Order Now' },
     aboutTitle: { type: String, default: 'Our Story' },
-    aboutDescription: { type: String, default: 'Ca Phe Bistro was born from a love of Vietnamese coffee culture.' },
+    aboutDescription: { type: String, default: 'Cá Phê Bistro was born from a love of Vietnamese coffee culture.' },
     offerBannerText: { type: String, default: '☕ Happy Hours: 15% off from 3PM – 6PM' },
     offerBannerActive: { type: Boolean, default: true },
     // Ordering & Timings Controls

@@ -19,14 +19,18 @@ const KitchenPrintPage = () => {
   const [orders, setOrders] = useState([]);
   const [currentPrint, setCurrentPrint] = useState(null);
   const [autoPrint, setAutoPrint] = useState(true);
+  const [isReady, setIsReady] = useState(false);
   const printFrameRef = useRef(null);
   const socketRef = useRef(null);
   const audioRef = useRef(null);
 
   // ── Play notification sound ────────────────────────────────────────────────
   const playBeep = useCallback(() => {
+    if (!isReady) return; // Browser blocks audio until interaction
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -35,19 +39,20 @@ const KitchenPrintPage = () => {
       gain.gain.value = 0.3;
       osc.start();
       osc.stop(ctx.currentTime + 0.3);
-      // Second beep
+      // Double beep
       setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
+        const ctx2 = new AudioCtx();
+        const osc2 = ctx2.createOscillator();
+        const gain2 = ctx2.createGain();
         osc2.connect(gain2);
-        gain2.connect(ctx.destination);
+        gain2.connect(ctx2.destination);
         osc2.frequency.value = 1000;
         gain2.gain.value = 0.3;
         osc2.start();
-        osc2.stop(ctx.currentTime + 0.2);
+        osc2.stop(ctx2.currentTime + 0.2);
       }, 350);
     } catch (e) { /* audio not available */ }
-  }, []);
+  }, [isReady]);
 
   // ── Build printable receipt HTML ───────────────────────────────────────────
   const buildReceiptHTML = useCallback((order) => {
@@ -69,80 +74,44 @@ const KitchenPrintPage = () => {
 
     const itemRows = items.map(i => `
       <tr>
-        <td style="padding:2px 0;text-align:left">${i.name}</td>
-        <td style="padding:2px 4px;text-align:center">${i.quantity || 1}</td>
-        <td style="padding:2px 0;text-align:right">₹${((i.price || 0) * (i.quantity || 1)).toFixed(0)}</td>
+        <td style="padding:4px 0;text-align:left;font-weight:bold">${i.name}</td>
+        <td style="padding:4px;text-align:center">x${i.quantity || 1}</td>
+        <td style="padding:4px 0;text-align:right">₹${((i.price || 0) * (i.quantity || 1)).toFixed(0)}</td>
       </tr>
     `).join('');
 
     return `
-      <!DOCTYPE html>
       <html>
       <head>
-        <meta charset="utf-8">
-        <title>KOT - ${billNo}</title>
         <style>
           @page { margin: 0; size: 80mm auto; }
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            width: 80mm;
-            padding: 4mm;
-            color: #000;
-          }
+          body { font-family: 'Courier New', monospace; font-size: 13px; width: 72mm; padding: 2mm; }
           .center { text-align: center; }
           .bold { font-weight: bold; }
-          .title { font-size: 18px; font-weight: 900; margin-bottom: 2px; }
-          .subtitle { font-size: 11px; margin-bottom: 6px; }
-          .divider { border-top: 1px dashed #000; margin: 6px 0; }
-          .meta-row { display: flex; justify-content: space-between; padding: 1px 0; font-size: 11px; }
-          table { width: 100%; border-collapse: collapse; font-size: 11px; }
-          th { text-align: left; border-bottom: 1px solid #000; padding: 3px 0; font-size: 10px; }
-          .total-row { font-size: 14px; font-weight: 900; }
+          .divider { border-top: 1px dashed #000; margin: 8px 0; }
+          table { width: 100%; border-collapse: collapse; }
+          .total { font-size: 16px; font-weight: 900; }
         </style>
       </head>
       <body>
         <div class="center">
-          <div class="title">CAPHE BISTRO</div>
-          <div class="subtitle">** KITCHEN ORDER TICKET **</div>
+          <div style="font-size:20px;font-weight:900">CÁ PHÊ BISTRO</div>
+          <div style="font-size:10px">** KITCHEN ORDER TICKET **</div>
         </div>
         <div class="divider"></div>
-
-        <div class="meta-row"><span>Bill No:</span><span class="bold">${billNo}</span></div>
-        <div class="meta-row"><span>Date:</span><span>${dateStr}</span></div>
-        <div class="meta-row"><span>Time:</span><span>${timeStr}</span></div>
-        <div class="meta-row"><span>Type:</span><span class="bold">${orderType}</span></div>
-        ${order.table ? `<div class="meta-row"><span>Table:</span><span>${order.table}</span></div>` : ''}
-        ${order.customerName ? `<div class="meta-row"><span>Customer:</span><span>${order.customerName}</span></div>` : ''}
-
+        <div style="display:flex;justify-content:space-between"><span>Bill: <b>${billNo}</b></span> <span>${timeStr}</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Type: <b>${orderType}</b></span> ${order.table ? `<span>Table: <b>${order.table}</b></span>` : ''}</div>
+        ${order.customerName ? `<div>Cust: ${order.customerName}</div>` : ''}
         <div class="divider"></div>
-
         <table>
-          <thead>
-            <tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amt</th></tr>
-          </thead>
-          <tbody>
-            ${itemRows || '<tr><td colspan="3" style="text-align:center;padding:8px">(no items)</td></tr>'}
-          </tbody>
+          <thead><tr><th align="left">Item</th><th align="center">Qty</th><th align="right">Amt</th></tr></thead>
+          <tbody>${itemRows}</tbody>
         </table>
-
         <div class="divider"></div>
-
-        <div class="meta-row"><span>Subtotal:</span><span>₹${itemSubtotal.toFixed(0)}</span></div>
-        ${svcCharge > 0 ? `<div class="meta-row"><span>Service (5%):</span><span>₹${svcCharge.toFixed(0)}</span></div>` : ''}
-        ${tkFee > 0 ? `<div class="meta-row"><span>Takeaway Fee:</span><span>₹${tkFee}</span></div>` : ''}
-
+        <div style="display:flex;justify-content:space-between" class="total"><span>TOTAL:</span><span>₹${grandTotal.toFixed(0)}</span></div>
         <div class="divider"></div>
-        <div class="meta-row total-row"><span>TOTAL:</span><span>₹${grandTotal.toFixed(0)}</span></div>
-        <div class="divider"></div>
-
-        <div class="center" style="margin-top:8px;font-size:10px">--- END OF KOT ---</div>
-        <div style="height:20px"></div>
-
-        <script>
-          window.onload = function() { window.print(); };
-        </script>
+        <div class="center" style="font-size:10px;margin-top:10px">--- END OF TICKET ---</div>
+        <script>window.onload = () => { window.print(); }</script>
       </body>
       </html>
     `;
@@ -150,15 +119,14 @@ const KitchenPrintPage = () => {
 
   // ── Print an order ─────────────────────────────────────────────────────────
   const triggerPrint = useCallback((order) => {
+    if (!isReady) return;
     const receiptHTML = buildReceiptHTML(order);
-
     const iframe = printFrameRef.current;
     if (iframe) {
       const doc = iframe.contentDocument || iframe.contentWindow.document;
       doc.open();
       doc.write(receiptHTML);
       doc.close();
-      // Give it a moment to render, then print
       setTimeout(() => {
         try {
           iframe.contentWindow.focus();
@@ -168,24 +136,27 @@ const KitchenPrintPage = () => {
         }
       }, 500);
     }
-  }, [buildReceiptHTML]);
+  }, [buildReceiptHTML, isReady]);
 
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin.replace(':5173', ':5001');
     const socket = io(SOCKET_URL, {
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
       reconnectionAttempts: Infinity,
-      reconnectionDelay: 2000,
-      autoConnect: true,
+      query: { clientType: 'kitchen_bridge' }, // 👈 CRITICAL: Identify as printer
       withCredentials: true,
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
+    socket.on('connect', () => {
+      console.log('✅ Printer Socket Connected');
+      setConnected(true);
+    });
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new_kitchen_order', (order) => {
+      console.log('📥 New Order Received:', order);
       setOrders(prev => {
         if (prev.some(o => o._id === order._id)) return prev;
         return [{ ...order, receivedAt: new Date().toISOString() }, ...prev].slice(0, 50);
@@ -195,6 +166,7 @@ const KitchenPrintPage = () => {
     });
 
     socket.on('admin_reprint_order', (order) => {
+      console.log('🔄 Reprint Requested:', order);
       setCurrentPrint(order);
       playBeep();
     });
@@ -204,11 +176,11 @@ const KitchenPrintPage = () => {
 
   // ── Auto-print when a new order arrives ────────────────────────────────────
   useEffect(() => {
-    if (currentPrint && autoPrint) {
+    if (currentPrint && autoPrint && isReady) {
       triggerPrint(currentPrint);
       setCurrentPrint(null);
     }
-  }, [currentPrint, autoPrint, triggerPrint]);
+  }, [currentPrint, autoPrint, triggerPrint, isReady]);
 
   // ── Manual print ───────────────────────────────────────────────────────────
   const handleManualPrint = (order) => {
@@ -283,6 +255,40 @@ const KitchenPrintPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Browser Interaction Requirement Overlay */}
+      {!isReady && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(10,10,10,0.9)', backdropFilter: 'blur(10px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          textAlign: 'center', padding: '40px'
+        }}>
+          <div style={{ fontSize: '64px', marginBottom: '24px' }}>🔥</div>
+          <h2 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '16px' }}>Ready to Cook?</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: '400px', marginBottom: '32px', lineHeight: 1.6 }}>
+            To enable <b>Auto-Print</b> and <b>Alert Sounds</b>, browsers require a manual interaction. Click the button below to activate the kitchen station.
+          </p>
+          <button
+            onClick={() => {
+              setIsReady(true);
+              if (currentPrint && autoPrint) triggerPrint(currentPrint);
+            }}
+            style={{
+              padding: '20px 48px', borderRadius: '24px',
+              background: '#f59e0b', color: '#000',
+              fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px',
+              border: 'none', cursor: 'pointer',
+              boxShadow: '0 10px 40px rgba(245,158,11,0.3)',
+              transition: 'all 0.3s'
+            }}
+            onMouseOver={e => e.target.style.transform = 'scale(1.05)'}
+            onMouseOut={e => e.target.style.transform = 'scale(1)'}
+          >
+            Start Kitchen Session
+          </button>
+        </div>
+      )}
 
       {/* Instructions (show when no orders yet) */}
       {orders.length === 0 && (

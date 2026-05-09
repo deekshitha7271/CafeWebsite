@@ -16,10 +16,10 @@ const MenuListItem = ({ item }) => {
         >
             <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-surface">
                 {item.image ? (
-                    <img 
-                        src={formatImageUrl(item.image)} 
-                        alt={item.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    <img
+                        src={formatImageUrl(item.image)}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = getFallbackImage('coffee');
@@ -39,7 +39,7 @@ const MenuListItem = ({ item }) => {
                     {item.isPopular && <Flame className="w-3 h-3 text-orange-400" />}
                 </div>
                 <p className="text-text-muted text-[10px] line-clamp-1 opacity-60 leading-relaxed">
-                    {item.description || 'Crafted with passion by Ca Phe Bistro.'}
+                    {item.description || 'Crafted with passion by Cá Phê Bistro.'}
                 </p>
             </div>
 

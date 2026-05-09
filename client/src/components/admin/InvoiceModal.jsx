@@ -67,7 +67,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                     <div ref={printRef} className="p-6 md:p-12 overflow-y-auto flex-1 invoice-container">
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
                             <div>
-                                <h1 className="text-3xl font-black text-slate-900 mb-1">Ca Phe Bistro</h1>
+                                <h1 className="text-3xl font-black text-slate-900 mb-1">Cá Phê Bistro</h1>
                                 <p className="text-sm text-slate-500 max-w-[200px]">Financial District, Nanakramguda, Makthakousarali, Telangana 500032</p>
                                 <p className="text-sm text-slate-500 mt-1">GSTIN: 29ABCDE1234F1Z5</p>
                             </div>
@@ -167,7 +167,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
 
                         <div className="mt-20 pt-8 border-t border-slate-100 text-center">
                             <p className="text-sm font-serif italic text-slate-400">Thank you for your visit! Hope to see you again.</p>
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mt-4">Ca Phe Bistro - Financial District - Experience the Artisan Soul</p>
+                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mt-4">Cá Phê Bistro - Financial District - Experience the Artisan Soul</p>
                         </div>
                     </div>
                 </motion.div>
