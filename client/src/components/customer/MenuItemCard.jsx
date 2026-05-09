@@ -111,7 +111,13 @@ const MenuItemCard = ({ item }) => {
               </span>
             )}
           </div>
-          <QuantitySelector item={item} variant="grid" />
+          {state.isOrderingActive ? (
+            <QuantitySelector item={item} variant="grid" />
+          ) : (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-[9px] font-black uppercase px-3 py-2 rounded-full tracking-widest">
+              Closed
+            </div>
+          )}
         </div>
       </div>
     </motion.div>

@@ -87,9 +87,13 @@ const AdminSettings = () => {
                     <Field label="Address" field="address" />
                 </SettingsSection>
 
-                <SettingsSection title="Operating Hours" icon={Clock}>
-                    <Field label="Weekday Hours" field="weekdayHours" />
-                    <Field label="Weekend Hours" field="weekendHours" />
+                <SettingsSection title="Operating Hours & Ordering" icon={Clock}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Opening Time" field="openingTime" type="time" />
+                        <Field label="Closing Time" field="closingTime" type="time" />
+                    </div>
+                    <Field label="Weekday Hours (Display Text)" field="weekdayHours" />
+                    <Field label="Weekend Hours (Display Text)" field="weekendHours" />
                 </SettingsSection>
 
                 <SettingsSection title="Social Media" icon={AtSign}>

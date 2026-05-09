@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { Loader2, Activity, Bell, History } from 'lucide-react';
@@ -14,8 +14,8 @@ const KDSDashboard = () => {
     const fetchOrders = async () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders`);
-            // Only keep non-completed orders for KDS
-            setOrders(res.data.filter(o => o.orderStatus !== 'completed'));
+            // ✅ FIXED: Only show PAID orders in KDS (not just non-completed)
+            setOrders(res.data.filter(o => o.paymentStatus === 'paid' && o.orderStatus !== 'completed'));
         } catch (error) {
             console.error('Failed to fetch orders:', error);
         } finally {
@@ -26,12 +26,13 @@ const KDSDashboard = () => {
     useEffect(() => {
         fetchOrders();
 
-        // Init notification sound
         notificationSound.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         if (socket) {
             socket.on('order:new', (newOrder) => {
-                notificationSound.current.play().catch(e => console.log('Sound blocked by browser'));
+                // ✅ Only add to KDS if it's a paid order
+                if (newOrder.paymentStatus !== 'paid') return;
+                notificationSound.current?.play().catch(e => console.log('Sound blocked'));
                 setOrders(prev => {
                     if (prev.some(o => o._id === newOrder._id)) return prev;
                     return [newOrder, ...prev];
@@ -41,6 +42,15 @@ const KDSDashboard = () => {
             socket.on('order:update', (updatedOrder) => {
                 setOrders(prev => {
                     if (updatedOrder.orderStatus === 'completed') {
+                        return prev.filter(o => o._id !== updatedOrder._id);
+                    }
+                    // If order becomes paid, add it if not present
+                    if (updatedOrder.paymentStatus === 'paid') {
+                        const exists = prev.some(o => o._id === updatedOrder._id);
+                        if (!exists) return [updatedOrder, ...prev];
+                    }
+                    // If order payment reverted, remove it
+                    if (updatedOrder.paymentStatus !== 'paid') {
                         return prev.filter(o => o._id !== updatedOrder._id);
                     }
                     return prev.map(o => o._id === updatedOrder._id ? updatedOrder : o);
@@ -58,12 +68,10 @@ const KDSDashboard = () => {
 
     const updateStatus = async (orderId, newStatus) => {
         try {
-            // Optimistic Update
             setOrders(prev => {
                 if (newStatus === 'completed') return prev.filter(o => o._id !== orderId);
                 return prev.map(o => o._id === orderId ? { ...o, orderStatus: newStatus } : o);
             });
-
             await axios.put(`${import.meta.env.VITE_API_URL}/orders/${orderId}/status`, { orderStatus: newStatus });
         } catch (error) {
             console.error('Failed to update status:', error);
@@ -72,16 +80,29 @@ const KDSDashboard = () => {
     };
 
     const undoAction = async (orderId) => {
-        // Basic undo: move back to previous status
         const order = orders.find(o => o._id === orderId);
         if (!order) return;
-
         let prevStatus;
         if (order.orderStatus === 'preparing') prevStatus = 'placed';
         if (order.orderStatus === 'ready') prevStatus = 'preparing';
-
         if (prevStatus) updateStatus(orderId, prevStatus);
     };
+
+    // Lane Filtering — only paid orders reach here
+    const { priorityOrders, preparingOrders, readyOrders } = useMemo(() => {
+        return {
+            priorityOrders: orders
+                .filter(o => o.orderStatus === 'placed')
+                .sort((a, b) => new Date(a.arrivalTime) - new Date(b.arrivalTime))
+                .slice(0, 20),
+            preparingOrders: orders
+                .filter(o => o.orderStatus === 'preparing')
+                .slice(0, 20),
+            readyOrders: orders
+                .filter(o => o.orderStatus === 'ready')
+                .slice(0, 20)
+        };
+    }, [orders]);
 
     if (loading) {
         return (
@@ -91,20 +112,6 @@ const KDSDashboard = () => {
             </div>
         );
     }
-
-    // Lane Filtering
-    const priorityOrders = orders
-        .filter(o => o.orderStatus === 'placed')
-        .sort((a, b) => new Date(a.arrivalTime) - new Date(b.arrivalTime))
-        .slice(0, 20);
-
-    const preparingOrders = orders
-        .filter(o => o.orderStatus === 'preparing')
-        .slice(0, 20);
-
-    const readyOrders = orders
-        .filter(o => o.orderStatus === 'ready')
-        .slice(0, 20);
 
     return (
         <div className="h-full flex flex-col pt-4">
@@ -118,7 +125,7 @@ const KDSDashboard = () => {
                         <h2 className="text-5xl font-serif font-black text-white tracking-tight">KDS <span className="opacity-40 font-light">Matrix.</span></h2>
                         <div className="flex items-center gap-3 mt-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 w-fit">
                             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">System Operational • High Velocity Active</p>
+                            <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">System Operational • Paid Orders Only</p>
                         </div>
                     </div>
                 </div>
@@ -148,12 +155,7 @@ const KDSDashboard = () => {
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                         <AnimatePresence mode="popLayout">
                             {priorityOrders.map(order => (
-                                <KDSOrderCard
-                                    key={order._id}
-                                    order={order}
-                                    onStatusUpdate={updateStatus}
-                                    onUndo={undoAction}
-                                />
+                                <KDSOrderCard key={order._id} order={order} onStatusUpdate={updateStatus} onUndo={undoAction} />
                             ))}
                             {priorityOrders.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center opacity-20 py-20">
@@ -177,12 +179,7 @@ const KDSDashboard = () => {
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                         <AnimatePresence mode="popLayout">
                             {preparingOrders.map(order => (
-                                <KDSOrderCard
-                                    key={order._id}
-                                    order={order}
-                                    onStatusUpdate={updateStatus}
-                                    onUndo={undoAction}
-                                />
+                                <KDSOrderCard key={order._id} order={order} onStatusUpdate={updateStatus} onUndo={undoAction} />
                             ))}
                             {preparingOrders.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center opacity-20 py-20">
@@ -206,12 +203,7 @@ const KDSDashboard = () => {
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                         <AnimatePresence mode="popLayout">
                             {readyOrders.map(order => (
-                                <KDSOrderCard
-                                    key={order._id}
-                                    order={order}
-                                    onStatusUpdate={updateStatus}
-                                    onUndo={undoAction}
-                                />
+                                <KDSOrderCard key={order._id} order={order} onStatusUpdate={updateStatus} onUndo={undoAction} />
                             ))}
                             {readyOrders.length === 0 && (
                                 <div className="h-full flex flex-col items-center justify-center opacity-20 py-20">

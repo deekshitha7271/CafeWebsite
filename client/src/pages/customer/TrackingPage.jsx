@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { useCart } from '../../context/CartContext';
-import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, LayoutDashboard, History, PackageCheck, Utensils } from 'lucide-react';
+import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, History, PackageCheck, Utensils, AlertCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
-
 import { playOrderSuccessSound } from '../../lib/utils';
 
 const STATUS_STEPS = [
@@ -18,6 +17,7 @@ const STATUS_STEPS = [
 
 const TrackingPage = () => {
   const { orderId: primaryOrderId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const socket = useSocket();
   const { state: cartState, dispatch: cartDispatch } = useCart();
@@ -27,25 +27,33 @@ const TrackingPage = () => {
   const [activeTab, setActiveTab] = useState(primaryOrderId);
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [showOrderConfirmed, setShowOrderConfirmed] = useState(false);
+  // Payment canceled toast
+  const [showCanceledToast, setShowCanceledToast] = useState(false);
 
-  // Success Notification Effect
+  // Handle ?success=true and ?canceled=true query params from Stripe redirects
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const isSuccess = urlParams.get('success') === 'true';
+    const isSuccess = searchParams.get('success') === 'true';
+    const isCanceled = searchParams.get('canceled') === 'true';
 
     if (isSuccess) {
       setShowOrderConfirmed(true);
       cartDispatch({ type: 'CLEAR_CART' });
       cartDispatch({ type: 'SET_CART_OPEN', payload: false });
       const timer = setTimeout(() => setShowOrderConfirmed(false), 10000);
-
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
       return () => clearTimeout(timer);
     }
-  }, [cartDispatch]);
 
-  // Fetch all tracked orders
+    if (isCanceled) {
+      setShowCanceledToast(true);
+      const timer = setTimeout(() => setShowCanceledToast(false), 8000);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, cartDispatch]);
+
+  // Fetch all tracked orders — uses PUBLIC endpoint so guests can access without login
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -55,7 +63,10 @@ const TrackingPage = () => {
           return;
         }
 
-        const requests = orderIds.map(id => axios.get(`${import.meta.env.VITE_API_URL}/orders/${id}`));
+        // Use the public /orders/public/:id endpoint (no auth required)
+        const requests = orderIds.map(id =>
+          axios.get(`${import.meta.env.VITE_API_URL}/orders/public/${id}`)
+        );
         const responses = await Promise.allSettled(requests);
 
         const fetchedOrders = responses
@@ -64,7 +75,6 @@ const TrackingPage = () => {
 
         setOrders(fetchedOrders);
 
-        // Ensure current active orders are tracked in state for the Navbar
         fetchedOrders.forEach(o => {
           if (o.orderStatus !== 'completed' && !cartState.activeOrders.includes(o._id)) {
             cartDispatch({ type: 'ADD_ACTIVE_ORDER', payload: o._id });
@@ -110,12 +120,12 @@ const TrackingPage = () => {
     };
   }, [socket, orders.length]);
 
-  const activeOrder = orders.find(o => o._id === activeTab) || orders[0];
+  const activeOrder = useMemo(() => orders.find(o => o._id === activeTab) || orders[0], [orders, activeTab]);
 
   const handleStripePayment = async (orderToPay) => {
     setLoadingPayment(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/checkout`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/checkout`, {
         orderId: orderToPay._id
       });
       window.location.href = res.data.url;
@@ -131,7 +141,6 @@ const TrackingPage = () => {
     try {
       await axios.put(`${import.meta.env.VITE_API_URL}/orders/${id}/status`, { orderStatus: 'completed' });
       setOrders(prev => prev.map(o => o._id === id ? { ...o, orderStatus: 'completed' } : o));
-      // Remove from active tracking list
       cartDispatch({ type: 'REMOVE_ACTIVE_ORDER', payload: id });
     } catch (error) {
       console.error('Failed to update order status:', error);
@@ -163,6 +172,26 @@ const TrackingPage = () => {
     <div className="relative min-h-screen bg-background font-sans overflow-x-hidden">
       <Navbar />
 
+      {/* Payment Canceled Toast */}
+      <AnimatePresence>
+        {showCanceledToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -80 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -80 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[99999] w-full max-w-md px-4"
+          >
+            <div className="flex items-center gap-4 bg-red-500 text-white px-6 py-4 rounded-2xl shadow-[0_20px_60px_rgba(239,68,68,0.5)] border border-red-400">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p className="font-black uppercase tracking-widest text-sm flex-1">Payment did not go through.</p>
+              <button onClick={() => setShowCanceledToast(false)} className="opacity-70 hover:opacity-100 transition-opacity">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-6xl mx-auto p-4 md:p-8 pt-24">
         <header className="py-6 md:py-10 text-center relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -z-10" />
@@ -172,7 +201,7 @@ const TrackingPage = () => {
               <span className="text-primary-light text-[10px] font-black uppercase tracking-[0.4em] bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
                 {activeOrder.orderType === 'takeaway' ? '🥡 Takeaway' : '🪑 Dine-in'}
               </span>
-              <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {activeOrder._id.slice(-6)}</span>
+              <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em]">ID: {activeOrder.billNumber || activeOrder._id.slice(-6)}</span>
               {activeOrder.customerName && (
                 <span className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em] border-l border-white/10 pl-4">{activeOrder.customerName}</span>
               )}
@@ -197,11 +226,11 @@ const TrackingPage = () => {
           </motion.div>
         </header>
 
-        {/* Multi-Order Tab Selector - Moved here for better UX */}
+        {/* Multi-Order Tab Selector */}
         {orders.length > 1 && (
           <div className="flex items-center justify-center gap-3 overflow-x-auto pb-4 hide-scrollbar mb-10 border-b border-white/5 pt-4">
             <div className="flex items-center gap-3 bg-surface-dark/50 p-2 rounded-3xl border border-white/5 backdrop-blur-md">
-              {orders.map((o, idx) => (
+              {orders.map((o) => (
                 <button
                   key={o._id}
                   onClick={() => setActiveTab(o._id)}
@@ -212,7 +241,7 @@ const TrackingPage = () => {
                 >
                   <div className={`w-2 h-2 rounded-full ${o.orderStatus === 'completed' ? 'bg-emerald-500' : 'bg-orange-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]'}`} />
                   <span className="font-black text-[10px] uppercase tracking-widest">
-                    Track #{o._id.slice(-4)}
+                    {o.billNumber || `Track #${o._id.slice(-4)}`}
                   </span>
                 </button>
               ))}
@@ -226,9 +255,9 @@ const TrackingPage = () => {
             <LiveTracker order={activeOrder} />
           </div>
 
-          {/* Payment & Receipt Column */}
+          {/* Receipt Column */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Payment Options Section */}
+            {/* Payment Options Section (for dinein-qr orders only) */}
             {activeOrder.paymentStatus === 'pending' && activeOrder.orderType === 'dinein-qr' && (
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -243,7 +272,6 @@ const TrackingPage = () => {
                   </div>
                   <CreditCard className="w-8 h-8 text-primary animate-pulse" />
                 </div>
-
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -271,6 +299,7 @@ const TrackingPage = () => {
                 )}
               </div>
 
+              {/* Itemized list */}
               <div className="space-y-6">
                 {activeOrder.items.map(item => (
                   <div key={item._id} className="flex justify-between items-center group">
@@ -282,6 +311,29 @@ const TrackingPage = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Fee breakdown */}
+              {(() => {
+                const subtotal = activeOrder.items.reduce((s, i) => s + i.price * i.quantity, 0);
+                const isDineIn = activeOrder.orderType === 'dinein-web';
+                const isTakeaway = activeOrder.orderType === 'takeaway';
+                const totalItems = activeOrder.items.reduce((s, i) => s + i.quantity, 0);
+                const fee = isDineIn ? subtotal * 0.05 : isTakeaway ? totalItems * 10 : 0;
+                return fee > 0 ? (
+                  <div className="mt-6 pt-6 border-t border-white/5 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/50">Subtotal</span>
+                      <span className="text-white/70">₹{subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/50">
+                        {isDineIn ? 'Service Charge (5%)' : `Takeaway Handling (₹10 × ${totalItems})`}
+                      </span>
+                      <span className="text-primary font-bold">₹{fee.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               <div className="mt-12 pt-8 border-t-2 border-dashed border-white/10 flex justify-between items-center">
                 <span className="font-serif text-3xl text-white font-black">Total</span>
@@ -305,16 +357,11 @@ const TrackingPage = () => {
                     <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
                     <p className="text-emerald-400/60 text-[10px] uppercase tracking-widest font-black">Thank you for visiting</p>
                   </div>
-
                   <div className="flex flex-col md:flex-row gap-4">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        cartDispatch({ type: 'CLEAR_CART' });
-                        cartDispatch({ type: 'REMOVE_COUPON' });
-                        navigate('/');
-                      }}
+                      onClick={() => { cartDispatch({ type: 'CLEAR_CART' }); cartDispatch({ type: 'REMOVE_COUPON' }); navigate('/'); }}
                       className="flex-1 bg-primary text-background font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-primary/20 hover:bg-primary-light transition-all"
                     >
                       New Order
@@ -325,14 +372,11 @@ const TrackingPage = () => {
                       onClick={() => {
                         cartDispatch({ type: 'REMOVE_ACTIVE_ORDER', payload: activeOrder._id });
                         cartDispatch({ type: 'SET_LAST_ORDER_ID', payload: null });
-
                         const remainingOrders = orders.filter(o => o._id !== activeOrder._id);
                         if (remainingOrders.length > 0) {
-                          // If there are other orders, stay on tracking but switch to the first remaining one
                           setOrders(remainingOrders);
                           setActiveTab(remainingOrders[0]._id);
                         } else {
-                          // Last order finished, go home
                           navigate('/');
                         }
                       }}
@@ -357,8 +401,8 @@ const TrackingPage = () => {
   );
 };
 
-// Helper Components for Cleaner Rendering
-const LiveTracker = ({ order }) => {
+// ─── Helper Components ─────────────────────────────────────────────────────────
+const LiveTracker = React.memo(({ order }) => {
   const [timeLeft, setTimeLeft] = useState(null);
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === order.orderStatus);
 
@@ -394,6 +438,15 @@ const LiveTracker = ({ order }) => {
         </div>
       )}
 
+      {order.arrivalMinutes && (
+        <div className="mb-6 px-5 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/50">
+            Customer arriving in ~{order.arrivalMinutes} mins
+          </p>
+        </div>
+      )}
+
       <div className="relative">
         <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-white/5 -ml-px z-0">
           <motion.div
@@ -411,8 +464,7 @@ const LiveTracker = ({ order }) => {
             const Icon = step.icon;
             return (
               <div key={step.id} className="flex items-center gap-8">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 relative ${isCompleted ? 'bg-primary text-background' : 'bg-surface-dark text-text-muted border border-white/5'
-                  }`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700 relative ${isCompleted ? 'bg-primary text-background' : 'bg-surface-dark text-text-muted border border-white/5'}`}>
                   {isActive && (
                     <motion.div
                       layoutId="pulse"
@@ -440,9 +492,9 @@ const LiveTracker = ({ order }) => {
       </div>
     </div>
   );
-};
+});
 
-const OrderConfirmedOverlay = ({ onClose }) => (
+const OrderConfirmedOverlay = React.memo(({ onClose }) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -468,6 +520,6 @@ const OrderConfirmedOverlay = ({ onClose }) => (
       </button>
     </motion.div>
   </motion.div>
-);
+));
 
-export default TrackingPage;
+export default React.memo(TrackingPage);

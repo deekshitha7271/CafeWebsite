@@ -166,7 +166,11 @@ const MenuItemDetailsPage = () => {
 
                     {/* Action Area / Cart */}
                     <div className="mt-auto">
-                        {quantity > 0 ? (
+                        {!state.isOrderingActive ? (
+                            <div className="w-full bg-red-500/10 border border-red-500/30 text-red-500 text-center text-sm font-black uppercase tracking-[0.2em] py-6 rounded-[30px]">
+                                Currently Closed for Online Ordering
+                            </div>
+                        ) : quantity > 0 ? (
                             <div className="flex items-center justify-between p-3 bg-surface-dark border border-primary/30 rounded-[40px] shadow-[0_20px_40px_rgba(245,158,11,0.15)]">
                                 <motion.button
                                     whileTap={{ scale: 0.9 }}

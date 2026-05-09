@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2, Power, Lock, X, Download, Printer } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 const COLORS = ['#F59E0B', '#FBBF24', '#D97706', '#92400E', '#78350F'];
 
@@ -31,6 +32,13 @@ const AdminDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('week');
+  const [isOrdering, setIsOrdering] = useState(true);
+  const [togglingOrder, setTogglingOrder] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState('');
+  const ORDERING_PIN = '1234'; // Change this PIN as needed
+  const pinInputRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,10 +51,45 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     };
+    // Also fetch current ordering status
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/settings`);
+        setIsOrdering(res.data.isOrderingEnabled !== false);
+      } catch (err) { /* ignore */ }
+    };
     fetchData();
+    fetchSettings();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleToggleRequest = () => {
+    setPin('');
+    setPinError('');
+    setShowPinModal(true);
+    setTimeout(() => pinInputRef.current?.focus(), 100);
+  };
+
+  const handlePinSubmit = async () => {
+    if (pin !== ORDERING_PIN) {
+      setPinError('Incorrect PIN. Try again.');
+      setPin('');
+      return;
+    }
+    setShowPinModal(false);
+    setTogglingOrder(true);
+    try {
+      const res = await axios.put(`${import.meta.env.VITE_API_URL}/admin/settings`, {
+        isOrderingEnabled: !isOrdering
+      });
+      setIsOrdering(res.data.isOrderingEnabled);
+    } catch (err) {
+      console.error('Failed to toggle ordering:', err);
+    } finally {
+      setTogglingOrder(false);
+    }
+  };
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
@@ -54,6 +97,117 @@ const AdminDashboard = () => {
       <p className="text-primary text-xs font-black uppercase tracking-widest">Loading Live Data...</p>
     </div>
   );
+
+  const makeSheet = (rows) => {
+    if (!rows.length) return XLSX.utils.json_to_sheet([{ Note: 'No data available' }]);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const colWidths = Object.keys(rows[0]).map(key => ({
+      wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2
+    }));
+    ws['!cols'] = colWidths;
+    return ws;
+  };
+
+  const downloadReport = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders`);
+      const orders = res.data;
+      const wb = XLSX.utils.book_new();
+      const IST = 'en-IN';
+
+      // Sheet 1: All Orders
+      const allRows = orders.map(order => ({
+        'Bill No': order.billNumber || order._id.slice(-6).toUpperCase(),
+        'Date': new Date(order.timestamp).toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }),
+        'Day': new Date(order.timestamp).toLocaleDateString(IST, { weekday: 'long' }),
+        'Time': new Date(order.timestamp).toLocaleTimeString(IST, { hour: '2-digit', minute: '2-digit' }),
+        'Customer Name': order.customerName || 'Walk-in',
+        'Phone': order.customerPhone || '-',
+        'Order Type': order.orderType === 'takeaway' ? 'Takeaway' : 'Dine-In',
+        'Items': order.items.map(i => `${i.name} x${i.quantity}`).join(', '),
+        'Item Count': order.items.reduce((s, i) => s + i.quantity, 0),
+        'Subtotal (₹)': order.total,
+        'Payment': order.paymentStatus.toUpperCase(),
+        'Order Status': order.orderStatus.toUpperCase(),
+      }));
+      XLSX.utils.book_append_sheet(wb, makeSheet(allRows), '📋 All Orders');
+
+      // Sheet 2: By Day
+      const dayMap = {};
+      orders.forEach(order => {
+        const d = new Date(order.timestamp);
+        const key = d.toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' });
+        if (!dayMap[key]) dayMap[key] = { date: key, weekday: d.toLocaleDateString(IST, { weekday: 'long' }), totalOrders: 0, paidOrders: 0, totalRevenue: 0, takeaway: 0, dinein: 0, items: {} };
+        const day = dayMap[key];
+        day.totalOrders++;
+        if (order.paymentStatus === 'paid') { day.paidOrders++; day.totalRevenue += order.total; }
+        if (order.orderType === 'takeaway') day.takeaway++; else day.dinein++;
+        order.items.forEach(i => { day.items[i.name] = (day.items[i.name] || 0) + i.quantity; });
+      });
+      const dayRows = Object.values(dayMap).map(d => ({
+        'Date': d.date, 'Day': d.weekday,
+        'Total Orders': d.totalOrders, 'Paid Orders': d.paidOrders,
+        'Total Revenue (₹)': parseFloat(d.totalRevenue.toFixed(2)),
+        'Avg Order Value (₹)': d.paidOrders > 0 ? parseFloat((d.totalRevenue / d.paidOrders).toFixed(2)) : 0,
+        'Takeaway Orders': d.takeaway, 'Dine-In Orders': d.dinein,
+        'Top Selling Item': Object.entries(d.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
+      }));
+      XLSX.utils.book_append_sheet(wb, makeSheet(dayRows), '📅 By Day');
+
+      // Sheet 3: By Week
+      const weekMap = {};
+      orders.forEach(order => {
+        const d = new Date(order.timestamp);
+        const startOfWeek = new Date(d); startOfWeek.setDate(d.getDate() - d.getDay());
+        const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+        const fmt = dt => dt.toLocaleDateString(IST, { day: '2-digit', month: 'short' });
+        const key = `${fmt(startOfWeek)} – ${fmt(endOfWeek)}`;
+        if (!weekMap[key]) weekMap[key] = { week: key, sortKey: startOfWeek.getTime(), totalOrders: 0, paidOrders: 0, totalRevenue: 0, takeaway: 0, dinein: 0, items: {} };
+        const week = weekMap[key];
+        week.totalOrders++;
+        if (order.paymentStatus === 'paid') { week.paidOrders++; week.totalRevenue += order.total; }
+        if (order.orderType === 'takeaway') week.takeaway++; else week.dinein++;
+        order.items.forEach(i => { week.items[i.name] = (week.items[i.name] || 0) + i.quantity; });
+      });
+      const weekRows = Object.values(weekMap).sort((a, b) => a.sortKey - b.sortKey).map(w => ({
+        'Week': w.week, 'Total Orders': w.totalOrders, 'Paid Orders': w.paidOrders,
+        'Total Revenue (₹)': parseFloat(w.totalRevenue.toFixed(2)),
+        'Avg Order Value (₹)': w.paidOrders > 0 ? parseFloat((w.totalRevenue / w.paidOrders).toFixed(2)) : 0,
+        'Takeaway Orders': w.takeaway, 'Dine-In Orders': w.dinein,
+        'Top Selling Item': Object.entries(w.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
+      }));
+      XLSX.utils.book_append_sheet(wb, makeSheet(weekRows), '📆 By Week');
+
+      // Sheet 4: By Month
+      const monthMap = {};
+      orders.forEach(order => {
+        const d = new Date(order.timestamp);
+        const key = d.toLocaleDateString(IST, { month: 'long', year: 'numeric' });
+        if (!monthMap[key]) monthMap[key] = { month: key, sortKey: d.getFullYear() * 100 + d.getMonth(), totalOrders: 0, paidOrders: 0, totalRevenue: 0, takeaway: 0, dinein: 0, items: {}, customers: new Set() };
+        const mo = monthMap[key];
+        mo.totalOrders++;
+        if (order.paymentStatus === 'paid') { mo.paidOrders++; mo.totalRevenue += order.total; }
+        if (order.orderType === 'takeaway') mo.takeaway++; else mo.dinein++;
+        if (order.customerName) mo.customers.add(order.customerName);
+        order.items.forEach(i => { mo.items[i.name] = (mo.items[i.name] || 0) + i.quantity; });
+      });
+      const monthRows = Object.values(monthMap).sort((a, b) => a.sortKey - b.sortKey).map(m => ({
+        'Month': m.month, 'Total Orders': m.totalOrders, 'Paid Orders': m.paidOrders,
+        'Total Revenue (₹)': parseFloat(m.totalRevenue.toFixed(2)),
+        'Avg Order Value (₹)': m.paidOrders > 0 ? parseFloat((m.totalRevenue / m.paidOrders).toFixed(2)) : 0,
+        'Takeaway Orders': m.takeaway, 'Dine-In Orders': m.dinein,
+        'Unique Customers': m.customers.size,
+        'Top 3 Items': Object.entries(m.items).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n, q]) => `${n} (${q})`).join(', ') || '-',
+      }));
+      XLSX.utils.book_append_sheet(wb, makeSheet(monthRows), '🗓️ By Month');
+
+      const today = new Date().toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
+      XLSX.writeFile(wb, `CaPhe-Bistro-Report-${today}.xlsx`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export report. Please try again.');
+    }
+  };
 
   const kpis = [
     { label: 'Total Revenue', value: `₹${Number(data?.kpis?.totalRevenue || 0).toLocaleString('en-IN')}`, change: data?.kpis?.revenueGrowth || '0%', up: !String(data?.kpis?.revenueGrowth).startsWith('-'), icon: IndianRupee, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
@@ -74,14 +228,113 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* PIN Modal */}
+      <AnimatePresence>
+        {showPinModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowPinModal(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-surface-dark border border-white/10 rounded-3xl p-8 w-full max-w-sm shadow-2xl text-center"
+            >
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${ isOrdering ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
+                <Lock className={`w-7 h-7 ${isOrdering ? 'text-red-400' : 'text-emerald-400'}`} />
+              </div>
+              <h3 className="text-white font-serif font-black text-2xl mb-1">
+                {isOrdering ? 'Disable Ordering' : 'Enable Ordering'}
+              </h3>
+              <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mb-6">
+                Enter your admin PIN to confirm
+              </p>
+              <div className="relative mb-3">
+                <input
+                  ref={pinInputRef}
+                  type="password"
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => { setPin(e.target.value); setPinError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+                  placeholder="••••"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-center text-2xl font-black text-white tracking-[0.4em] focus:border-primary outline-none transition-all"
+                />
+              </div>
+              {pinError && (
+                <p className="text-red-400 text-[11px] font-bold uppercase tracking-widest mb-3">{pinError}</p>
+              )}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setShowPinModal(false)}
+                  className="flex-1 bg-white/5 border border-white/10 text-white/60 font-black text-[11px] uppercase tracking-widest py-3.5 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" /> Cancel
+                </button>
+                <button
+                  onClick={handlePinSubmit}
+                  className={`flex-1 font-black text-[11px] uppercase tracking-widest py-3.5 rounded-xl transition-all ${ isOrdering ? 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white' : 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white' }`}
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.div {...fadeUp} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-serif font-black text-white">Dashboard</h2>
           <p className="text-text-muted text-sm mt-1">Live data from your café. Refreshes every 30s.</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full w-fit">
-          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-          <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest">Live</span>
+        <div className="flex items-center gap-3">
+          {/* Ordering Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={handleToggleRequest}
+            disabled={togglingOrder}
+            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border font-black text-[11px] uppercase tracking-widest transition-all ${
+              isOrdering
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]'
+                : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+            } disabled:opacity-50`}
+          >
+            {togglingOrder
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Power className={`w-4 h-4 ${isOrdering ? 'text-emerald-400' : 'text-red-400'}`} />}
+            <span>{isOrdering ? 'Ordering: ON' : 'Ordering: OFF'}</span>
+            <div className={`w-2 h-2 rounded-full ${isOrdering ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+          </motion.button>
+          {/* Kitchen Printer — opens in new tab */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => window.open('/kitchen', '_blank')}
+            className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-violet-500/30 bg-violet-500/10 text-violet-400 font-black text-[11px] uppercase tracking-widest hover:bg-violet-500 hover:text-white transition-all"
+          >
+            <Printer className="w-4 h-4" />
+            <span className="hidden sm:inline">Kitchen Printer</span>
+          </motion.button>
+          {/* Download Report */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={downloadReport}
+            className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-primary/30 bg-primary/10 text-primary font-black text-[11px] uppercase tracking-widest hover:bg-primary hover:text-background transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Download Report</span>
+          </motion.button>
+          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest">Live</span>
+          </div>
         </div>
       </motion.div>
 
@@ -127,7 +380,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-white font-serif font-bold text-xl">Revenue Trend</h3>
-              <p className="text-primary text-[10px] uppercase tracking-widest font-black mt-1">Weekly Overview</p>
+              <p className="text-primary text-[10px] uppercase tracking-widest font-black mt-1">Last 7 Days</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
@@ -210,7 +463,7 @@ const AdminDashboard = () => {
               <div key={a._id} className="flex gap-3">
                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.orderStatus === 'completed' ? 'bg-emerald-400' : a.orderStatus === 'placed' ? 'bg-blue-400' : 'bg-primary'}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold text-white">Order #{a._id.toString().slice(-4).toUpperCase()}</p>
+                  <p className="text-[11px] font-bold text-white">{a.billNumber || `Order #${a._id.toString().slice(-4).toUpperCase()}`}</p>
                   <p className="text-[10px] text-white/40 mt-0.5">{a.customerName || 'Walk-in'} • ₹{a.total} • {a.orderStatus}</p>
                 </div>
                 <span className="text-[9px] text-white/20 font-bold flex-shrink-0 mt-0.5">

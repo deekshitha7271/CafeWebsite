@@ -11,7 +11,21 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
         window.print();
     };
 
-    const subtotal = (transaction.amount || 0) - (transaction.gst || 0);
+    // ── Billing calculation ────────────────────────────────────────────────────
+    const items = transaction.items || [];
+    const orderType = transaction.orderType || 'dinein-web';
+    const itemSubtotal = items.length > 0
+        ? items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 1), 0)
+        : (transaction.amount || 0) - (transaction.gst || 0);
+
+    const totalItemCount = items.reduce((s, i) => s + (i.quantity || 1), 0);
+    const isDineIn = orderType === 'dinein-web';
+    const isTakeaway = orderType === 'takeaway';
+
+    const serviceCharge = isDineIn ? Math.round(itemSubtotal * 0.05 * 100) / 100 : 0;
+    const takeawayFee = isTakeaway ? totalItemCount * 10 : 0;
+    const extraFee = serviceCharge + takeawayFee;
+    const grandTotal = transaction.amount || (itemSubtotal + extraFee);
 
     return (
         <AnimatePresence>
@@ -34,13 +48,13 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button 
+                            <button
                                 onClick={handlePrint}
                                 className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
                             >
                                 <Printer className="w-4 h-4" /> Print
                             </button>
-                            <button 
+                            <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-slate-200 rounded-xl transition-all text-slate-400"
                             >
@@ -49,7 +63,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                         </div>
                     </div>
 
-                    {/* Content - This is what gets printed */}
+                    {/* Content - Printable */}
                     <div ref={printRef} className="p-6 md:p-12 overflow-y-auto flex-1 invoice-container">
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-12">
                             <div>
@@ -61,6 +75,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                                 <div className="inline-block px-4 py-1 bg-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Original Receipt</div>
                                 <p className="text-sm font-bold text-slate-900">Date: {transaction.time}</p>
                                 <p className="text-sm text-slate-500">Order ID: {transaction.orderId}</p>
+                                <p className="text-sm text-slate-500 mt-1 capitalize">Type: {isTakeaway ? 'Takeaway' : 'Dine-In'}</p>
                             </div>
                         </div>
 
@@ -68,7 +83,7 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Billed To</p>
                                 <p className="font-bold text-slate-900">{transaction.customer || 'Guest Customer'}</p>
-                                <p className="text-sm text-slate-500">Authenticated Session</p>
+                                {transaction.phone && <p className="text-sm text-slate-500">{transaction.phone}</p>}
                             </div>
                             <div className="text-left md:text-right">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Payment Status</p>
@@ -78,43 +93,74 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                             </div>
                         </div>
 
+                        {/* ── Itemized Line Items ────────────────────────────── */}
                         <div className="overflow-x-auto -mx-2 px-2">
-                            <table className="w-full mb-12 min-w-[500px] md:min-w-0">
+                            <table className="w-full mb-8 min-w-[500px] md:min-w-0">
                                 <thead>
                                     <tr className="border-b-2 border-slate-900/5">
-                                        <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</th>
+                                        <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Item</th>
                                         <th className="text-center py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Qty</th>
-                                        <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Price</th>
+                                        <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Unit Price</th>
                                         <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    <tr>
-                                        <td className="py-6">
-                                            <p className="font-bold text-slate-900">Food & Beverage Items</p>
-                                            <p className="text-xs text-slate-500">Consolidated order summary</p>
-                                        </td>
-                                        <td className="py-6 text-center text-slate-600 font-medium">1</td>
-                                        <td className="py-6 text-right text-slate-600 font-medium">₹{subtotal.toFixed(2)}</td>
-                                        <td className="py-6 text-right font-bold text-slate-900">₹{subtotal.toFixed(2)}</td>
-                                    </tr>
+                                    {items.length > 0 ? items.map((item, idx) => (
+                                        <tr key={idx}>
+                                            <td className="py-4">
+                                                <p className="font-bold text-slate-900">{item.name}</p>
+                                            </td>
+                                            <td className="py-4 text-center text-slate-600 font-medium">{item.quantity || 1}</td>
+                                            <td className="py-4 text-right text-slate-600 font-medium">₹{(item.price || 0).toFixed(2)}</td>
+                                            <td className="py-4 text-right font-bold text-slate-900">₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td className="py-6">
+                                                <p className="font-bold text-slate-900">Food & Beverage Items</p>
+                                                <p className="text-xs text-slate-500">Consolidated order summary</p>
+                                            </td>
+                                            <td className="py-6 text-center text-slate-600 font-medium">1</td>
+                                            <td className="py-6 text-right text-slate-600 font-medium">₹{itemSubtotal.toFixed(2)}</td>
+                                            <td className="py-6 text-right font-bold text-slate-900">₹{itemSubtotal.toFixed(2)}</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
 
+                        {/* ── Totals Section ─────────────────────────────────── */}
                         <div className="flex justify-end">
-                            <div className="w-full max-w-[240px] space-y-3">
+                            <div className="w-full max-w-[260px] space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-500">Subtotal</span>
-                                    <span className="font-medium text-slate-900">₹{subtotal.toFixed(2)}</span>
+                                    <span className="font-medium text-slate-900">₹{itemSubtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">GST (5%)</span>
-                                    <span className="font-medium text-slate-900">₹{(transaction.gst || 0).toFixed(2)}</span>
-                                </div>
+
+                                {/* GST or conditional fee */}
+                                {isDineIn && serviceCharge > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">Service Charge (5%)</span>
+                                        <span className="font-medium text-slate-900">₹{serviceCharge.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {isTakeaway && takeawayFee > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">Takeaway Handling (₹10 × {totalItemCount})</span>
+                                        <span className="font-medium text-slate-900">₹{takeawayFee.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {/* Fallback: if legacy GST field exists and no fee computed */}
+                                {!isDineIn && !isTakeaway && transaction.gst > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-slate-500">GST (5%)</span>
+                                        <span className="font-medium text-slate-900">₹{(transaction.gst || 0).toFixed(2)}</span>
+                                    </div>
+                                )}
+
                                 <div className="flex justify-between items-center pt-4 border-t border-slate-100">
                                     <span className="font-black uppercase tracking-widest text-xs text-slate-900">Total Amount</span>
-                                    <span className="text-2xl font-black text-slate-900">₹{transaction.amount?.toFixed(2)}</span>
+                                    <span className="text-2xl font-black text-slate-900">₹{grandTotal.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -125,25 +171,15 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                         </div>
                     </div>
                 </motion.div>
-                
+
                 <style>{`
                     @media print {
-                        body * {
-                            visibility: hidden;
-                        }
-                        .invoice-container, .invoice-container * {
-                            visibility: visible;
-                        }
+                        body * { visibility: hidden; }
+                        .invoice-container, .invoice-container * { visibility: visible; }
                         .invoice-container {
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            padding: 20mm;
+                            position: absolute; left: 0; top: 0; width: 100%; padding: 20mm;
                         }
-                        .no-print {
-                            display: none !important;
-                        }
+                        .no-print { display: none !important; }
                     }
                 `}</style>
             </div>
