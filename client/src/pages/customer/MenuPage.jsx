@@ -17,47 +17,12 @@ import { motion, useScroll, useTransform, AnimatePresence, useMotionValueEvent }
 
 // ── Sub-component for Category Sections to handle Hooks safely ────────────
 const MenuCategorySection = ({ section, viewMode }) => {
-  // NORMALIZE NAME TO STRIP ACCENTS (e.g. Cá Phê -> Ca Phe)
-  const normalizedName = section.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // BROAD DETECTION DNA
-  const isSpecial = normalizedName.includes('special') ||
-    normalizedName.includes('vietnam') ||
-    normalizedName.includes('bistro') ||
-    normalizedName.includes('chef') ||
-    normalizedName.includes('ca phe');
-
-  const carouselRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  const checkScroll = () => {
-    if (carouselRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-      setCanScrollLeft(scrollLeft > 20);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 20);
-    }
-  };
-
-  const scroll = (dir) => {
-    if (carouselRef.current) {
-      carouselRef.current.scrollBy({ left: dir * (window.innerWidth > 768 ? 600 : 300), behavior: 'smooth' });
-      setTimeout(checkScroll, 500);
-    }
-  };
-
-  useEffect(() => {
-    checkScroll();
-    window.addEventListener('resize', checkScroll);
-    return () => window.removeEventListener('resize', checkScroll);
-  }, []);
-
   return (
     <div id={`category-${section._id}`} className="scroll-mt-48 relative group/section">
       <div className="flex items-end justify-between gap-6 mb-12 group flex-wrap">
         <div className="flex flex-col min-w-[200px]">
           <span className="text-primary text-[10px] font-black uppercase tracking-[0.6em] mb-2 opacity-50">
-            {isSpecial ? "Chef's Recommendations" : "Discover Our Menu"}
+            Discover Our Menu
           </span>
           <h4 className="font-serif text-3xl md:text-5xl lg:text-7xl font-bold text-white tracking-tight leading-tight">
             {section.name}
@@ -65,56 +30,26 @@ const MenuCategorySection = ({ section, viewMode }) => {
         </div>
       </div>
 
-      <div className="relative">
-        {/* Modern Floating Navigation for Carousels */}
-        {isSpecial && (
-          <>
-            <button
-              onClick={() => scroll(-1)}
-              disabled={!canScrollLeft}
-              className={`absolute left-2 lg:-left-6 top-[40%] -translate-y-1/2 z-50 w-12 h-12 md:w-20 md:h-20 rounded-full bg-surface-dark border-2 border-white/20 flex items-center justify-center text-white transition-all shadow-[0_15px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl ${canScrollLeft ? 'opacity-100 scale-100 hover:bg-primary hover:text-background active:scale-95' : 'opacity-10 scale-90 pointer-events-none'
-                }`}
-            >
-              <ChevronLeft className="w-8 h-8 md:w-12 md:h-12" />
-            </button>
-
-            <button
-              onClick={() => scroll(1)}
-              disabled={!canScrollRight}
-              className={`absolute right-2 lg:-right-6 top-[40%] -translate-y-1/2 z-50 w-12 h-12 md:w-20 md:h-20 rounded-full bg-surface-dark border-2 border-white/20 flex items-center justify-center text-white transition-all shadow-[0_15px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl ${canScrollRight ? 'opacity-100 scale-100 hover:bg-primary hover:text-background active:scale-95' : 'opacity-10 scale-90 pointer-events-none'
-                }`}
-            >
-              <ChevronRight className="w-8 h-8 md:w-12 md:h-12" />
-            </button>
-          </>
-        )}
-
-        <div
-          ref={isSpecial ? carouselRef : null}
-          onScroll={isSpecial ? checkScroll : undefined}
-          className={viewMode === 'grid'
-            ? isSpecial
-              ? "flex gap-4 lg:gap-8 overflow-x-auto hide-scrollbar pb-8 snap-x snap-mandatory px-4"
-              : "grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8"
-            : "flex flex-col gap-4 overflow-x-hidden"
-          }
-        >
-          {section.items.map((item, i) => (
-            <motion.div
-              key={item._id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i % 5 * 0.05 }}
-              className={isSpecial ? "shrink-0 w-[200px] md:w-[280px] snap-start" : ""}
-            >
-              {viewMode === 'grid'
-                ? <MenuItemCard item={item} variant={isSpecial ? 'compact' : 'standard'} />
-                : <MenuListItem item={item} />
-              }
-            </motion.div>
-          ))}
-        </div>
+      <div
+        className={viewMode === 'grid'
+          ? "grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8"
+          : "flex flex-col gap-4 overflow-x-hidden"
+        }
+      >
+        {section.items.map((item, i) => (
+          <motion.div
+            key={item._id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: i % 5 * 0.05 }}
+          >
+            {viewMode === 'grid'
+              ? <MenuItemCard item={item} variant="standard" />
+              : <MenuListItem item={item} />
+            }
+          </motion.div>
+        ))}
       </div>
     </div>
   );
@@ -470,7 +405,7 @@ const MenuPage = () => {
 
         {/* TIER 1: CA PHE BISTRO SPECIAL */}
         {specialItems.length > 0 && (
-          <section className="mt-20 px-8 lg:px-20 relative overflow-hidden">
+          <section className="mt-20 px-8 lg:px-20 relative overflow-hidden group/featured">
             {/* Background branding text */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 text-[15vw] font-serif font-black text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
               SPECIALS • SPECIALS • SPECIALS
@@ -491,19 +426,45 @@ const MenuPage = () => {
               </div>
             </motion.div>
 
-            <div className="flex overflow-x-auto hide-scrollbar gap-12 pb-20 -mx-4 px-4 snap-x snap-mandatory relative z-10">
-              {specialItems.map((item, idx) => (
-                <motion.div
-                  key={item._id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="min-w-[320px] sm:min-w-[400px] snap-start"
-                >
-                  <MenuItemCard item={item} />
-                </motion.div>
-              ))}
+            <div className="relative z-10">
+              {/* Refined MNC-Style Navigation Arrows (Unified for Mobile/Desktop) */}
+              <button
+                onClick={() => {
+                  const el = document.getElementById('featured-carousel');
+                  if (el) el.scrollBy({ left: -320, behavior: 'smooth' });
+                }}
+                className="absolute left-1 lg:-left-5 top-[40%] -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-surface-dark/90 border border-white/10 flex items-center justify-center text-white transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl hover:bg-primary hover:text-background active:scale-95 group-hover/featured:opacity-100"
+              >
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+
+              <button
+                onClick={() => {
+                  const el = document.getElementById('featured-carousel');
+                  if (el) el.scrollBy({ left: 320, behavior: 'smooth' });
+                }}
+                className="absolute right-1 lg:-right-5 top-[40%] -translate-y-1/2 z-40 w-10 h-10 md:w-12 md:h-12 rounded-full bg-surface-dark/90 border border-white/10 flex items-center justify-center text-white transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-xl hover:bg-primary hover:text-background active:scale-95 group-hover/featured:opacity-100"
+              >
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+              </button>
+
+              <div
+                id="featured-carousel"
+                className="flex overflow-x-auto hide-scrollbar gap-8 pb-20 -mx-4 px-4 snap-x snap-mandatory relative z-10"
+              >
+                {specialItems.map((item, idx) => (
+                  <motion.div
+                    key={item._id}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="shrink-0 w-[280px] md:w-[360px] snap-start"
+                  >
+                    <MenuItemCard item={item} variant="standard" />
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </section>
         )}

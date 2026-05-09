@@ -133,13 +133,17 @@ const Navbar = () => {
             </div>
           )}
 
-          {/* Cafe Info Injection */}
+          {/* Cafe Info Injection - Visible and Tappable on all devices */}
           {state.settings && (
-            <div className="hidden lg:flex flex-col items-end mr-2 text-white/80">
-              <span className="text-[10px] font-black tracking-widest uppercase flex items-center gap-1">
-                {state.settings.phone || '+91 79811 44753'}
-              </span>
-              <span className="text-[9px] font-bold tracking-widest text-primary flex items-center gap-1">
+            <div className="flex flex-col items-end mr-2 text-white/80">
+              <a
+                href={`tel:${(state.settings.phone || '+91 79811 44753').replace(/\s/g, '')}`}
+                className="text-[9px] md:text-[10px] font-black tracking-widest uppercase flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <span className="md:hidden">📞</span>
+                <span className="">{state.settings.phone || '+91 79811 44753'}</span>
+              </a>
+              <span className="text-[8px] md:text-[9px] font-bold tracking-widest text-primary flex items-center gap-1">
                 {state.settings.weekdayHours || '08:30 AM – 11:00 PM'}
                 {!state.isOrderingActive && <span className="text-red-500 ml-1">(Closed)</span>}
               </span>
