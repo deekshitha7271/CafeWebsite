@@ -15,9 +15,18 @@ const { protect, authorize } = require('./middleware/auth');
 const app = express();
 const server = http.createServer(app);
 
+// ─── HEALTH CHECK ────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Clean up the CLIENT_URL to handle accidental trailing slashes or spaces
 const clientUrl = process.env.CLIENT_URL?.trim().replace(/\/$/, "");
-const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:3000"].filter(Boolean);
+const allowedOrigins = [clientUrl, "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"].filter(Boolean);
 
 // 1. CORS MUST BE FIRST
 app.use(cors({
@@ -59,13 +68,24 @@ const authLimiter = rateLimit({
 app.use('/api/auth/', authLimiter);
 app.use('/api/payment/checkout', authLimiter);
 
+const serverPort = process.env.PORT || 5000;
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      // Allow: no origin (server-to-server), known frontend origins, the
+      // server's own origin (sent by Node.js socket.io-client), or any
+      // kitchen bridge connection identified by its clientType query param.
+      // Note: We cannot read handshake.query here (not available in CORS fn),
+      // so we trust no-origin + server-origin connections as internal clients.
+      if (
+        !origin ||
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin === `http://localhost:${serverPort}` ||
+        origin === `https://localhost:${serverPort}`
+      ) {
         callback(null, true);
       } else {
-        console.warn("🚫 CORS BLOCKED origin:", origin);
+        console.warn("🚫 Socket.io CORS BLOCKED origin:", origin);
         callback(null, false);
       }
     },
@@ -101,12 +121,45 @@ mongoose.connect(process.env.MONGODB_URI)
 // Pass io instance to app
 app.set('io', io);
 
+// ─── KOT Print Bridge — Track the local print client connection ──────────────
+let kitchenBridgeSocketId = null;
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // ── Identify the Kitchen Print Bridge ──────────────────────────────────────
+  if (socket.handshake.query.clientType === 'kitchen_bridge') {
+    kitchenBridgeSocketId = socket.id;
+    console.log('🖨️  Kitchen Bridge connected:', socket.id);
+    // Broadcast to all admin clients that the printer is online
+    io.emit('printer_status', { online: true });
+
+    socket.on('disconnect', () => {
+      console.log('🖨️  Kitchen Bridge disconnected:', socket.id);
+      if (kitchenBridgeSocketId === socket.id) {
+        kitchenBridgeSocketId = null;
+      }
+      // Broadcast to all admin clients that the printer is offline
+      io.emit('printer_status', { online: false });
+    });
+
+    return; // Skip generic handlers for the bridge socket
+  }
+
+  // ── Generic client (admin dashboard, customer app) ────────────────────────
   socket.on('join:order', (orderId) => {
     socket.join(`order:${orderId}`);
     console.log(`Socket joined room order:${orderId}`);
+  });
+
+  // ── Admin requests a reprint — forward to the kitchen bridge ─────────────
+  socket.on('admin_reprint_order', (order) => {
+    if (kitchenBridgeSocketId) {
+      console.log(`🔁 Reprint forwarded to bridge ${kitchenBridgeSocketId} for order ${order._id || order.billNumber}`);
+      io.to(kitchenBridgeSocketId).emit('admin_reprint_order', order);
+    } else {
+      console.warn('⚠️  Reprint requested but Kitchen Bridge is not connected.');
+    }
   });
 
   socket.on('disconnect', () => {
@@ -170,9 +223,20 @@ app.get('/api/orders/status/:id', async (req, res) => {
   }
 });
 
+// Public full order detail (for guest tracking - returns all fields, no auth)
+app.get('/api/orders/public/:id', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Protected routes
+app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', protect, orderRoutes);
-app.use('/api/payment', protect, paymentRoutes);
 app.use('/api/admin', protect, authorize('admin', 'worker'), adminRoutes);
 
 app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res) => {
@@ -248,28 +312,64 @@ app.get('/api/analytics', protect, authorize('admin', 'worker'), async (req, res
   }
 });
 
+// ─── GLOBAL ERROR HANDLER ─────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error('🔥 Server Error:', err.stack);
+  
+  const status = err.status || 500;
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'An unexpected error occurred' 
+    : err.message;
+
+  res.status(status).json({
+    error: message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`));
 
-// Graceful Shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
-    });
-  });
-});
+// ── Graceful Shutdown ────────────────────────────────────────────────────────
+// io.close() must be called FIRST — socket.io keeps persistent WebSocket
+// connections alive, which prevents server.close() from ever completing.
+// The isShuttingDown guard prevents multiple Ctrl+C presses from stacking.
+let isShuttingDown = false;
 
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    mongoose.connection.close(false, () => {
-      console.log('MongoDB connection closed');
-      process.exit(0);
+function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`\n${signal} received — shutting down gracefully …`);
+
+  // Hard-exit after 5 s in case something hangs
+  const forceExit = setTimeout(() => {
+    console.error('⚠️  Graceful shutdown timed out. Forcing exit.');
+    process.exit(1);
+  }, 5000);
+  forceExit.unref(); // Don't let this timer itself keep the process alive
+
+  // 1. Close all socket.io connections so server.close() can complete
+  io.close(() => {
+    console.log('Socket.io connections closed.');
+
+    // 2. Stop accepting new HTTP connections
+    server.close(() => {
+      console.log('HTTP server closed.');
+
+      // 3. Close MongoDB
+      mongoose.connection.close().then(() => {
+        console.log('MongoDB connection closed.');
+        clearTimeout(forceExit);
+        process.exit(0);
+      }).catch((err) => {
+        console.error('MongoDB close error:', err.message);
+        process.exit(1);
+      });
     });
   });
-});
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+

@@ -35,12 +35,12 @@ export const AuthProvider = ({ children }) => {
 
     fetchMe();
 
-    // Cleanup interceptor on unmount
     return () => {
       axios.interceptors.response.eject(interceptor);
     };
   }, []);
 
+  // Staff login: email + password
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
@@ -52,16 +52,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { name, email, password });
-      setUser(response.data.user);
-      return response.data.user;
-    } catch (err) {
-      const message = err.response?.data?.error || err.message || 'Registration failed';
-      throw new Error(message);
-    }
-  };
+
 
   const logout = async () => {
     try {
@@ -73,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = useMemo(() => ({ user, loading, error, login, register, logout }), [user, loading, error]);
+  const value = useMemo(() => ({ user, loading, error, login, logout }), [user, loading, error]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

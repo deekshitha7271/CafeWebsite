@@ -1,0 +1,17 @@
+{
+  "name": "caphe-bistro-print-client",
+  "version": "1.0.0",
+  "description": "Local Kitchen Bridge — listens for KOT events and prints to a thermal printer.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["kot", "thermal-printer", "kitchen-bridge"],
+  "author": "Caphe Bistro",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-thermal-printer": "^4.4.1",
+    "socket.io-client": "^4.8.1"
+  }
+}

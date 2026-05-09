@@ -20,8 +20,10 @@ const orderSchema = new mongoose.Schema({
   orderStatus: { type: String, enum: ['placed', 'preparing', 'ready', 'completed'], default: 'placed' },
   estimatedReadyTime: { type: Date },
   arrivalTime: { type: Date },
+  arrivalMinutes: { type: Number }, // Original picker value: 10, 20, or 30
   customerName: { type: String },
   customerPhone: { type: String },
+  billNumber: { type: String },
   stripeSessionId: { type: String },
   timestamp: { type: Date, default: Date.now }
 });

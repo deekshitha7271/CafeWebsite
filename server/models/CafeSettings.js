@@ -23,6 +23,10 @@ const cafeSettingsSchema = new mongoose.Schema({
     aboutDescription: { type: String, default: 'Ca Phe Bistro was born from a love of Vietnamese coffee culture.' },
     offerBannerText: { type: String, default: '☕ Happy Hours: 15% off from 3PM – 6PM' },
     offerBannerActive: { type: Boolean, default: true },
+    // Ordering & Timings Controls
+    isOrderingEnabled: { type: Boolean, default: true },
+    openingTime: { type: String, default: '08:30' },
+    closingTime: { type: String, default: '23:00' },
     // Notification Preferences
     notifNewOrder: { type: Boolean, default: true },
     notifLowStock: { type: Boolean, default: true },

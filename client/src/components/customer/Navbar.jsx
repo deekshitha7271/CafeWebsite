@@ -35,6 +35,8 @@ const Navbar = () => {
         }`}
     >
       <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-12 flex items-center justify-between gap-2 md:gap-4">
+        {/* Hidden Staff Login Portal */}
+        <div onClick={() => navigate('/login')} className="absolute top-0 left-0 w-12 h-12 z-[100] cursor-default opacity-0" />
 
         {/* Brand / Logo */}
         <button onClick={() => navigate('/')} className="flex items-center gap-2 md:gap-4 group shrink-0">
@@ -108,17 +110,15 @@ const Navbar = () => {
             )}
           </motion.button>
 
-          {user ? (
+          {user && (user.role === 'admin' || user.role === 'worker') && (
             <div className="flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-2.5 rounded-full border border-white/10 bg-white/5 text-white">
-              {(user.role === 'admin' || user.role === 'worker') && (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-primary hover:text-primary-light border-r border-white/10 pr-1.5 md:pr-3 mr-0.5 md:mr-1"
-                >
-                  <Activity className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Portal</span>
-                </button>
-              )}
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-primary hover:text-primary-light border-r border-white/10 pr-1.5 md:pr-3 mr-0.5 md:mr-1"
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Portal</span>
+              </button>
               <span className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black max-w-[50px] md:max-w-none truncate">{user.name}</span>
               <button
                 onClick={() => {
@@ -131,24 +131,23 @@ const Navbar = () => {
                 <span className="hidden md:inline">Logout</span>
               </button>
             </div>
-          ) : (
-            <div className="flex items-center gap-1 md:gap-3">
-              <button
-                onClick={() => navigate('/login')}
-                className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black text-text-muted hover:text-white px-2"
-              >
-                Login
-              </button>
-              <button
-                onClick={() => navigate('/register')}
-                className="px-2.5 py-1.5 md:px-3 md:py-2 rounded-full bg-primary text-background text-[9px] md:text-[10px] uppercase tracking-[0.3em] font-black hover:bg-primary-light"
-              >
-                Sign Up
-              </button>
+          )}
+
+          {/* Cafe Info Injection */}
+          {state.settings && (
+            <div className="hidden lg:flex flex-col items-end mr-2 text-white/80">
+              <span className="text-[10px] font-black tracking-widest uppercase flex items-center gap-1">
+                {state.settings.phone || '+91 123 456 7890'}
+              </span>
+              <span className="text-[9px] font-bold tracking-widest text-primary flex items-center gap-1">
+                {state.settings.weekdayHours || '08:30 AM – 11:00 PM'}
+                {!state.isOrderingActive && <span className="text-red-500 ml-1">(Closed)</span>}
+              </span>
             </div>
           )}
 
           {/* Premium Cart Button */}
+          {state.isOrderingActive && (
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
@@ -169,6 +168,7 @@ const Navbar = () => {
             </div>
             <span className="text-xs font-black tracking-widest uppercase hidden sm:block ml-1">Cart</span>
           </motion.button>
+          )}
         </div>
       </div>
     </motion.div>

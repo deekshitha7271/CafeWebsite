@@ -43,18 +43,27 @@ router.get('/dashboard', async (req, res) => {
         // Customers today (unique users/names)
         const customersToday = await Order.distinct('customerName', { timestamp: { $gte: startOfToday }, customerName: { $ne: null } });
 
-        // Weekly revenue (last 7 days)
+        // Weekly revenue (last 7 days grouped by IST date)
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // +5:30 in ms
         const weeklyRevenue = await Order.aggregate([
             { $match: { timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, paymentStatus: 'paid' } },
             {
                 $group: {
-                    _id: { $dayOfWeek: '$timestamp' },
+                    _id: {
+                        $dateToString: {
+                            format: '%Y-%m-%d',
+                            date: '$timestamp',
+                            timezone: '+05:30'
+                        }
+                    },
                     revenue: { $sum: '$total' },
                     orders: { $sum: 1 }
                 }
             },
             { $sort: { '_id': 1 } }
         ]);
+
+        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
         // Peak hours today
         const peakHours = await Order.aggregate([
@@ -101,11 +110,14 @@ router.get('/dashboard', async (req, res) => {
                 cancelledOrders: todayStats?.cancelledOrders || 0,
                 revenueGrowth: `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`
             },
-            weeklyRevenue: weeklyRevenue.map(d => ({
-                day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d._id - 1] || `Day ${d._id}`,
-                revenue: d.revenue,
-                orders: d.orders
-            })),
+            weeklyRevenue: weeklyRevenue.map(d => {
+                const [year, month, day] = d._id.split('-').map(Number);
+                return {
+                    day: `${day} ${monthNames[month - 1]}`,
+                    revenue: d.revenue,
+                    orders: d.orders
+                };
+            }),
             peakHours: peakHours.map(h => ({ hour: `${h._id}:00`, orders: h.orders })),
             topItems: topItems.map((item, i) => ({
                 name: item._id,
@@ -305,9 +317,12 @@ router.get('/payments', async (req, res) => {
             _id: o._id,
             orderId: `#${o._id.toString().slice(-4).toUpperCase()}`,
             customer: o.customerName || o.user?.name || 'Walk-in',
+            phone: o.customerPhone || '',
             amount: o.total,
             method: 'Online', // Always Online as we only use Stripe for this setup
             status: o.paymentStatus,
+            orderType: o.orderType || 'dinein-web',
+            items: o.items || [],
             time: new Date(o.timestamp).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }),
             gst: parseFloat((o.total * 0.05).toFixed(2))
         }));

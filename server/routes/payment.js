@@ -3,12 +3,34 @@ const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
-
 const User = require('../models/User');
-
 const Coupon = require('../models/Coupon');
+const DailyCounter = require('../models/DailyCounter');
 
-// Create checkout session
+// ─── HELPER: Calculate billing fees ───────────────────────────────────────────
+// Returns the fee amount and a descriptor for Stripe line items
+const calculateFees = (items, orderType) => {
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const totalItemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  let feeAmount = 0;
+  let feeLabel = '';
+  let feeDescription = '';
+
+  if (orderType === 'dinein-web') {
+    feeAmount = Math.round(subtotal * 0.05 * 100) / 100; // 5% service charge
+    feeLabel = 'Service Charge (5%)';
+    feeDescription = 'Dine-in service charge';
+  } else if (orderType === 'takeaway') {
+    feeAmount = totalItemCount * 10; // ₹10 per item
+    feeLabel = `Takeaway Handling (₹10 × ${totalItemCount} items)`;
+    feeDescription = 'Takeaway packaging and handling fee';
+  }
+
+  return { feeAmount, feeLabel, feeDescription, subtotal };
+};
+
+// ─── CREATE CHECKOUT SESSION ───────────────────────────────────────────────────
 router.post('/checkout', async (req, res) => {
   try {
     const { items, table, total, orderId, orderType, customerName, customerPhone, arrivalTime, couponCode } = req.body;
@@ -21,6 +43,7 @@ router.post('/checkout', async (req, res) => {
     }
 
     if (orderId) {
+      // Re-paying an existing order
       targetOrder = await Order.findById(orderId);
       if (!targetOrder) return res.status(404).json({ error: 'Order not found' });
     } else {
@@ -28,57 +51,84 @@ router.post('/checkout', async (req, res) => {
         return res.status(400).json({ error: 'No items in order' });
       }
 
+      // Parse arrival time from minutes offset (e.g. "10", "20", "30")
       let parsedArrivalTime;
       if (arrivalTime) {
-        if (arrivalTime.includes(':') && arrivalTime.length <= 5) {
-          const today = new Date();
-          const [hours, minutes] = arrivalTime.split(':');
-          today.setHours(parseInt(hours, 10) || 0, parseInt(minutes, 10) || 0, 0, 0);
-          parsedArrivalTime = today;
-        } else {
-          parsedArrivalTime = new Date(arrivalTime);
+        const mins = parseInt(arrivalTime, 10);
+        if (!isNaN(mins) && mins > 0) {
+          parsedArrivalTime = new Date(Date.now() + mins * 60000);
         }
       }
 
-      // Save new order to DB
+      // Generate Daily Sequential Bill Number
+      const dateStr = new Date().toISOString().split('T')[0];
+      const counter = await DailyCounter.findOneAndUpdate(
+        { date: dateStr },
+        { $inc: { count: 1 } },
+        { new: true, upsert: true }
+      );
+      const billNumber = `B-${counter.count}`;
+
+      // ── Calculate fees ────────────────────────────────────────────────────
+      const resolvedOrderType = orderType || 'dinein-web';
+      const { feeAmount, subtotal } = calculateFees(items, resolvedOrderType);
+      const grandTotal = subtotal + feeAmount;
+
+      // Parse arrivalMinutes for display on admin cards
+      const arrivalMins = arrivalTime ? parseInt(arrivalTime, 10) : null;
+
+      // Save new order to DB with the final computed total (including fees)
       targetOrder = new Order({
         table,
         user: req.session?.userId,
-        orderType: orderType || 'dinein-web',
+        orderType: resolvedOrderType,
         customerName,
         customerPhone,
+        billNumber,
         arrivalTime: parsedArrivalTime,
+        arrivalMinutes: arrivalMins && !isNaN(arrivalMins) ? arrivalMins : undefined,
         items: items.map(i => ({
           menuItemId: i._id || i.menuItemId,
           name: i.name,
           price: i.price,
           quantity: i.quantity
         })),
-        total,
+        total: grandTotal,
         paymentStatus: 'pending',
         orderStatus: 'placed'
       });
       await targetOrder.save();
 
-      // IMPORTANT: Clear the user's persistent cart in the database
+      // Clear the user's persistent cart in the database
       if (req.session?.userId) {
         await User.findByIdAndUpdate(req.session.userId, { $set: { cart: [] } });
       }
     }
 
-    // Map items for Stripe using the order's items
+    // ── Build Stripe line items ───────────────────────────────────────────────
     const line_items = targetOrder.items.map(item => ({
       price_data: {
         currency: 'inr',
-        product_data: {
-          name: item.name,
-        },
-        unit_amount: Math.round(item.price * 100), // Stripe expects cents/paise
+        product_data: { name: item.name },
+        unit_amount: Math.round(item.price * 100),
       },
       quantity: item.quantity,
     }));
 
-    // Calculate Discount Amount
+    // Add fee line item to Stripe
+    const { feeAmount, feeLabel, feeDescription } = calculateFees(targetOrder.items, targetOrder.orderType);
+    if (feeAmount > 0) {
+      line_items.push({
+        price_data: {
+          currency: 'inr',
+          product_data: { name: feeLabel, description: feeDescription },
+          unit_amount: Math.round(feeAmount * 100),
+        },
+        quantity: 1,
+      });
+    }
+
+    // ── Apply coupon discount ─────────────────────────────────────────────────
     if (appliedCoupon) {
       const rawTotal = targetOrder.total;
       if (appliedCoupon.type === 'percent') {
@@ -88,7 +138,6 @@ router.post('/checkout', async (req, res) => {
       }
     }
 
-    // Handle Discounts using Stripe Coupons
     let stripeCouponId = null;
     if (appliedCoupon && discountAmount > 0) {
       try {
@@ -100,33 +149,33 @@ router.post('/checkout', async (req, res) => {
         });
         stripeCouponId = stripeCoupon.id;
 
-        // Update order total in DB
         const rawTotal = targetOrder.total;
         targetOrder.total = Math.max(0, rawTotal - discountAmount);
         await targetOrder.save();
 
-        // Increment usage
         await Coupon.findByIdAndUpdate(appliedCoupon._id, { $inc: { uses: 1 } });
       } catch (couponErr) {
         console.error('Stripe Coupon Creation Failed:', couponErr);
-        // Fallback: Continue without discount or handle error
       }
     }
 
-    // Create Stripe session
+    const clientBase = process.env.CLIENT_URL || 'http://localhost:5173';
+
+    // ── Create Stripe session ─────────────────────────────────────────────────
+    // success → public PaymentSuccessPage that verifies & then redirects to orders
+    // cancel  → back to menu/cart with canceled param
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items,
       discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : [],
       mode: 'payment',
-      success_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?success=true`,
-      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/track/${targetOrder._id}?canceled=true`,
+      success_url: `${clientBase}/payment/success?orderId=${targetOrder._id}`,
+      cancel_url: `${clientBase}/?canceled=true&orderId=${targetOrder._id}`,
       metadata: {
         orderId: targetOrder._id.toString()
       }
     });
 
-    // Update order with session id
     targetOrder.stripeSessionId = session.id;
     await targetOrder.save();
 
@@ -141,14 +190,15 @@ router.post('/checkout', async (req, res) => {
   }
 });
 
-// Verify payment for local dev when Stripe webhooks aren't forwarded
+// ─── VERIFY PAYMENT SESSION ────────────────────────────────────────────────────
+// Public endpoint — no auth required (called from PaymentSuccessPage)
 router.get('/verify-session/:orderId', async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     if (order.paymentStatus === 'paid') {
-      return res.json({ paid: true });
+      return res.json({ paid: true, order });
     }
 
     if (order.stripeSessionId) {
@@ -161,9 +211,10 @@ router.get('/verify-session/:orderId', async (req, res) => {
         if (io) {
           io.emit('order:new', order);
           io.emit('order:update', order);
+          // ── KOT: trigger kitchen print for this newly-paid order ─────────────
+          io.emit('new_kitchen_order', order);
         }
 
-        // Create system notification
         try {
           await new Notification({
             type: 'payment',
@@ -184,25 +235,22 @@ router.get('/verify-session/:orderId', async (req, res) => {
   }
 });
 
-// Stripe webhook handler (defined in index.js for raw body parsing)
+// ─── STRIPE WEBHOOK ────────────────────────────────────────────────────────────
 router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
   try {
-    // If you add a webhook secret in .env, verify it here.
-    // For now we trust the webhook payload locally or bypass verification if no secret is set.
     if (process.env.STRIPE_WEBHOOK_SECRET) {
       event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } else {
-      event = JSON.parse(req.body.toString()); // Raw body parsing fallback
+      event = JSON.parse(req.body.toString());
     }
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Handle the checkout.session.completed event
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const orderId = session.metadata.orderId;
@@ -213,13 +261,13 @@ router.post('/webhook', async (req, res) => {
         order.paymentStatus = 'paid';
         await order.save();
 
-        // Emit socket event to admins
         const io = req.app.get('io');
         if (io) {
           io.emit('order:new', order);
+          // ── KOT: trigger kitchen print via webhook confirmation ────────────
+          io.emit('new_kitchen_order', order);
         }
 
-        // Create system notification
         try {
           await new Notification({
             type: 'payment',

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Check, Play, Package, User, Hash } from 'lucide-react';
+import { Clock, Check, Play, Package, User, Hash, Timer } from 'lucide-react';
 
 const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
     const [timeLeft, setTimeLeft] = useState(null);
@@ -20,10 +20,9 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
 
             setTimeLeft(`${isOverdue ? '-' : ''}${minutes}:${seconds.toString().padStart(2, '0')}`);
 
-            // Urgency Logic
             if (isOverdue) setUrgency('overdue');
-            else if (diff < 300000) setUrgency('urgent'); // < 5 min
-            else if (diff < 600000) setUrgency('warning'); // 5-10 min
+            else if (diff < 300000) setUrgency('urgent');   // < 5 min
+            else if (diff < 600000) setUrgency('warning');  // 5-10 min
             else setUrgency('normal');
         };
 
@@ -65,7 +64,7 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
                             {order.table ? `T-${order.table}` : 'WEB'}
                         </h3>
                         <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] mt-1.5 font-bold">
-                            #{order._id.slice(-4)} • {order.orderType}
+                            {order.billNumber || `#${order._id.slice(-4)}`} • {order.orderType}
                         </p>
                     </div>
                 </div>
@@ -78,13 +77,24 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
                 )}
             </div>
 
-            {/* Customer Info */}
-            {order.customerName && (
-                <div className="flex items-center gap-2 mb-6 px-4 py-2 bg-white/5 rounded-2xl w-fit">
-                    <User className="w-3 h-3 text-primary" />
-                    <span className="text-[10px] text-white/60 font-black uppercase tracking-widest">{order.customerName}</span>
-                </div>
-            )}
+            {/* Customer Info + Arrival Label */}
+            <div className="flex items-center gap-3 mb-6 flex-wrap">
+                {order.customerName && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl">
+                        <User className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] text-white/60 font-black uppercase tracking-widest">{order.customerName}</span>
+                    </div>
+                )}
+                {/* ✅ Arrival time label from arrivalMinutes (the picker value) */}
+                {order.arrivalMinutes && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-2xl">
+                        <Timer className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] text-primary font-black uppercase tracking-widest">
+                            Arrives in {order.arrivalMinutes} mins
+                        </span>
+                    </div>
+                )}
+            </div>
 
             {/* Line Items */}
             <div className="space-y-4 mb-8 bg-black/20 p-5 rounded-3xl border border-white/5 shadow-inner">
@@ -137,7 +147,7 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
                 )}
             </div>
 
-            {/* Undo Hint (If applicable) */}
+            {/* Undo Hint */}
             <button
                 onClick={() => onUndo(order._id)}
                 className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-surface-light border border-white/10 text-[10px] text-white/20 hover:text-white hover:border-primary transition-all opacity-0 group-hover:opacity-100"
@@ -149,4 +159,4 @@ const KDSOrderCard = ({ order, onStatusUpdate, onUndo }) => {
     );
 };
 
-export default KDSOrderCard;
+export default React.memo(KDSOrderCard);

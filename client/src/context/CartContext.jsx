@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import { createContext, useContext, useReducer, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 
@@ -16,6 +16,8 @@ const initialState = {
   sessionTotal: 0,
   coupon: null, // { code, type, value }
   discount: 0,
+  settings: null,
+  isOrderingActive: true,
 };
 
 const cartReducer = (state, action) => {
@@ -100,6 +102,16 @@ const cartReducer = (state, action) => {
         coupon: null,
         discount: 0
       };
+    case 'SET_SETTINGS': {
+      const settings = action.payload;
+      let isOrderingActive = true;
+      
+      if (settings) {
+        // The toggle acts as a master switch. If enabled, it's open irrespective of time.
+        isOrderingActive = settings.isOrderingEnabled !== false;
+      }
+      return { ...state, settings, isOrderingActive };
+    }
     default:
       return state;
   }
@@ -113,36 +125,17 @@ export const CartProvider = ({ children }) => {
 
   // 1. Initial Load (One time only)
   useEffect(() => {
+    // ── Load cart from localStorage (Guest mode only) ────────────────────────
     const guestCartKey = 'cart_guest';
     let itemsToLoad = [];
     const savedGuestItems = localStorage.getItem(guestCartKey);
-
-    if (userId !== 'guest') {
-      // Migrating Guest to User if items exist in localStorage
-      if (savedGuestItems && savedGuestItems !== '[]') {
-        try {
-          itemsToLoad = JSON.parse(savedGuestItems);
-          localStorage.removeItem(guestCartKey);
-          // Sync migration to server
-          axios.put(`${import.meta.env.VITE_API_URL}/auth/cart`, { cart: itemsToLoad })
-            .catch(err => console.error('Migration failed', err));
-        } catch (e) { itemsToLoad = []; }
-      } else {
-        // Just load from server
-        itemsToLoad = user?.cart || [];
-      }
-    } else {
-      // Guest Load
-      if (savedGuestItems) {
-        try { itemsToLoad = JSON.parse(savedGuestItems); } catch (e) { itemsToLoad = []; }
-      }
+    if (savedGuestItems) {
+      try { itemsToLoad = JSON.parse(savedGuestItems); } catch (e) { itemsToLoad = []; }
     }
 
     const savedActiveOrders = localStorage.getItem('activeOrders');
     let activeOrdersToLoad = [];
-    if (userId !== 'guest') {
-      activeOrdersToLoad = user?.activeOrders || [];
-    } else if (savedActiveOrders) {
+    if (savedActiveOrders) {
       try { activeOrdersToLoad = JSON.parse(savedActiveOrders); } catch (e) { activeOrdersToLoad = []; }
     }
 
@@ -165,77 +158,50 @@ export const CartProvider = ({ children }) => {
     });
 
     const fetchSessionData = async () => {
-      if (userId === 'guest') {
-        // For guests, use the public status endpoint (no auth required)
-        const activeIds = JSON.parse(localStorage.getItem('activeOrders') || '[]');
-        if (activeIds.length > 0) {
-          try {
-            const results = await Promise.all(
-              activeIds.map(id =>
-                axios.get(`${import.meta.env.VITE_API_URL}/orders/status/${id}`).catch(() => null)
-              )
-            );
-            // Keep only orders that still exist and are not completed/cancelled
-            const validIds = results
-              .filter(r => r && r.data && r.data.orderStatus !== 'completed' && r.data.orderStatus !== 'cancelled')
-              .map(r => r.data._id);
-            // If any were removed, update state + localStorage
-            if (validIds.length !== activeIds.length) {
-              dispatch({ type: 'SET_CART', payload: { activeOrders: validIds } });
-              localStorage.setItem('activeOrders', JSON.stringify(validIds));
-            }
-          } catch (e) { console.error('Guest order verification failed', e); }
-        }
-        return;
-      }
-
+      // Fetch settings independent of auth
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/auth/session-summary`);
-        dispatch({ type: 'SET_SESSION_DATA', payload: res.data });
+        const settingsRes = await axios.get(`${import.meta.env.VITE_API_URL}/settings`);
+        dispatch({ type: 'SET_SETTINGS', payload: settingsRes.data });
+      } catch (e) { console.error('Failed to fetch settings', e); }
 
-        // Also verify active orders from the user profile returned by session-summary or similar
-        // For now, let's just use the activeOrders from the user object if they exist
-        if (res.data.activeOrders) {
-          dispatch({ type: 'SET_CART', payload: { activeOrders: res.data.activeOrders } });
-        }
-      } catch (err) {
-        console.error('Failed to fetch session data', err);
+      // For everyone (no customer login), verify active orders from localStorage
+      const activeIds = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+      if (activeIds.length > 0) {
+        try {
+          const results = await Promise.all(
+            activeIds.map(id =>
+              axios.get(`${import.meta.env.VITE_API_URL}/orders/status/${id}`).catch(() => null)
+            )
+          );
+          const validIds = results
+            .filter(r => r && r.data && r.data.orderStatus !== 'completed' && r.data.orderStatus !== 'cancelled')
+            .map(r => r.data._id);
+          if (validIds.length !== activeIds.length) {
+            dispatch({ type: 'SET_CART', payload: { activeOrders: validIds } });
+            localStorage.setItem('activeOrders', JSON.stringify(validIds));
+          }
+        } catch (e) { console.error('Order verification failed', e); }
       }
     };
 
     fetchSessionData();
 
-    // Enable saving after a short delay to prevent overwriting
     setTimeout(() => {
       initialLoadDone.current = true;
     }, 500);
-  }, [userId, user?.activeOrders]);
+  }, []);
 
-  // 2. Save Sync (Whenever items change)
+  // 2. Save Sync (localStorage only)
   useEffect(() => {
     if (!initialLoadDone.current) return;
-
-    if (userId === 'guest') {
-      if (state.items.length > 0) {
-        localStorage.setItem('cart_guest', JSON.stringify(state.items));
-      } else {
-        localStorage.removeItem('cart_guest');
-      }
+    if (state.items.length > 0) {
+      localStorage.setItem('cart_guest', JSON.stringify(state.items));
     } else {
-      // Server Sync
-      axios.put(`${import.meta.env.VITE_API_URL}/auth/cart`, { cart: state.items })
-        .catch(err => console.error('Cloud sync failed', err));
+      localStorage.removeItem('cart_guest');
     }
-  }, [state.items, userId]);
+  }, [state.items]);
 
-  // 3. Sync Active Orders to Cloud
-  useEffect(() => {
-    if (!initialLoadDone.current || userId === 'guest') return;
-    axios.put(`${import.meta.env.VITE_API_URL}/auth/active-orders`, { activeOrders: state.activeOrders })
-      .catch(err => console.error('Active orders sync failed', err));
-  }, [state.activeOrders, userId]);
-
-  // 4. Save Cart Details persistently (for both guests and users across login)
+  // 3. Save Cart Details persistently
   useEffect(() => {
     if (!initialLoadDone.current) return;
     const detailsToSave = {
@@ -246,32 +212,35 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart_details', JSON.stringify(detailsToSave));
   }, [state.coupon, state.arrivalTime, state.orderType]);
 
-  const rawCartTotal = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-
-  // Calculate discount
-  let discount = 0;
-  if (state.coupon) {
+  const rawCartTotal = useMemo(() => state.items.reduce((total, item) => total + (item.price * item.quantity), 0), [state.items]);
+  
+  const discount = useMemo(() => {
+    if (!state.coupon) return 0;
     const couponVal = Number(state.coupon.value);
     if (state.coupon.type === 'percent') {
-      discount = rawCartTotal * (couponVal / 100);
+      return rawCartTotal * (couponVal / 100);
     } else if (state.coupon.type === 'flat') {
-      discount = Math.min(couponVal, rawCartTotal);
+      return Math.min(couponVal, rawCartTotal);
     }
-  }
+    return 0;
+  }, [state.coupon, rawCartTotal]);
 
-  const cartTotal = Math.max(0, rawCartTotal - discount);
-  const cartCount = state.items.reduce((count, item) => count + item.quantity, 0);
+  const cartTotal = useMemo(() => Math.max(0, rawCartTotal - discount), [rawCartTotal, discount]);
+  const cartCount = useMemo(() => state.items.reduce((count, item) => count + item.quantity, 0), [state.items]);
 
-  // Calculate combined summary
-  const sessionStats = {
-    itemsCount: cartCount + state.sessionOrders.reduce((sum, order) => sum + order.items.reduce((s, i) => s + i.quantity, 0), 0),
-    paidAmount: state.paidTotal,
+  const sessionStats = useMemo(() => ({
+    itemsCount: cartCount,
+    paidAmount: 0,
     pendingAmount: cartTotal,
-    totalSpend: state.paidTotal + cartTotal
-  };
+    totalSpend: cartTotal
+  }), [cartCount, cartTotal]);
+
+  const value = useMemo(() => ({ 
+    state, dispatch, cartTotal, cartCount, sessionStats, discount, rawCartTotal 
+  }), [state, cartTotal, cartCount, sessionStats, discount, rawCartTotal]);
 
   return (
-    <CartContext.Provider value={{ state, dispatch, cartTotal, cartCount, sessionStats, discount, rawCartTotal }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );
@@ -284,4 +253,3 @@ export const useCart = () => {
   }
   return context;
 };
-

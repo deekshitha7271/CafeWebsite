@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: cafe-backend
+    env: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+        description: "MongoDB Atlas connection string"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+        description: "Stripe secret key (sk_test_...)"
+      - key: SESSION_SECRET
+        sync: false
+        description: "Random string for session encryption"
+      - key: CLIENT_URL
+        sync: false
+        description: "The URL of your deployed frontend (e.g., https://cafe-frontend.vercel.app)"
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+        description: "Optional: Stripe webhook secret for payment verification"
