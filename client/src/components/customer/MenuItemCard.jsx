@@ -43,11 +43,17 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
         {item.image ? (
           <img
             src={formatImageUrl(item.image, 800)}
+            srcSet={`
+              ${formatImageUrl(item.image, 400)} 400w,
+              ${formatImageUrl(item.image, 800)} 800w
+            `}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             alt={`Delicious ${item.name}`}
             width={400}
             height={400}
             className="w-full h-full object-cover relative z-0 group-hover:scale-110 transition-transform duration-1000 ease-out"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = getFallbackImage('coffee');

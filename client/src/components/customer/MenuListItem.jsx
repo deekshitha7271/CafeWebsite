@@ -22,6 +22,7 @@ const MenuListItem = ({ item }) => {
                         width={64}
                         height={64}
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
                             e.target.onerror = null;

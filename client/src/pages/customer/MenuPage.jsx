@@ -40,10 +40,10 @@ const MenuCategorySection = ({ section, viewMode }) => {
         {section.items.map((item, i) => (
           <motion.div
             key={item._id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: i % 5 * 0.05 }}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "50px" }}
+            transition={{ duration: 0.3, delay: (i % 4) * 0.03 }}
           >
             {viewMode === 'grid'
               ? <MenuItemCard item={item} variant="standard" />
@@ -256,7 +256,7 @@ const MenuPage = () => {
                   {(settings?.cafeName || 'Cá Phê Bistro').replace('Ca Phe', 'Cá Phê')} • {settings?.tagline || 'Signature'}
                 </span>
               </div>
-              <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold font-serif leading-[0.95] mt-2 mb-8 tracking-[-0.02em]">
+              <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold font-serif leading-[0.95] mt-2 mb-8 tracking-[-0.02em] min-h-[1.1em] md:min-h-[1.5em]">
                 <motion.span
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -314,10 +314,18 @@ const MenuPage = () => {
 
               <motion.img
                 src={formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)}
+                srcSet={`
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 400)} 400w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 800)} 800w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1200)} 1200w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)} 1600w
+                `}
+                sizes="(max-width: 768px) 100vw, 50vw"
                 alt="Artisan coffee topped with whipped cream and coffee seeds - Cá Phê Bistro Signature"
                 width={600}
                 height={600}
                 loading="eager"
+                fetchPriority="high"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{
                   scale: 1,
@@ -870,7 +878,7 @@ const MenuPage = () => {
                 <div className="flex -space-x-4">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="w-14 h-14 rounded-full border-4 border-background bg-surface overflow-hidden hover:scale-110 transition-transform cursor-pointer">
-                      <img src={`https://i.pravatar.cc/150?img=${i + 10}`} className="w-full h-full object-cover" />
+                      <img src={`https://i.pravatar.cc/150?img=${i + 10}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </div>
                   ))}
                 </div>
