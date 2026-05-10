@@ -88,9 +88,9 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
           </p>
         )}
 
-        <div className={`mt-auto flex items-center justify-between gap-1 ${isCompact ? 'pt-3' : 'pt-4'}`}>
-          <div className="flex flex-col">
-            <span className={`font-sans font-black text-primary tracking-tight ${isCompact ? 'text-lg' : 'text-base sm:text-xl'}`}>
+        <div className={`mt-auto flex items-center justify-between gap-2 ${isCompact ? 'pt-3' : 'pt-4'}`}>
+          <div className="flex flex-col shrink-0">
+            <span className={`font-sans font-black text-primary tracking-tight whitespace-nowrap ${isCompact ? 'text-lg' : 'text-base sm:text-xl'}`}>
               ₹{item.price.toFixed(0)}
             </span>
           </div>

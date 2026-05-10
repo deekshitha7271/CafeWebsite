@@ -51,7 +51,7 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
     }
 
     return (
-        <div className={`flex items-center gap-1.5 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full shadow-xl transition-all ${isGrid ? 'scale-100 sm:scale-110 px-1.5 py-1.5' : isCompact ? 'scale-90 px-1 py-1' : 'scale-100 px-1.5 py-1.5'
+        <div className={`flex items-center gap-1.5 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full shadow-xl transition-all ${isGrid ? 'scale-[0.95] sm:scale-110 px-1.5 py-1.5' : isCompact ? 'scale-90 px-1 py-1' : 'scale-100 px-1.5 py-1.5'
             }`} onClick={e => e.stopPropagation()}>
             <motion.button
                 aria-label={`Remove one ${item.name} from cart`}
