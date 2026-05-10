@@ -42,8 +42,10 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
 
         {item.image ? (
           <img
-            src={formatImageUrl(item.image)}
-            alt={item.name}
+            src={formatImageUrl(item.image, 800)}
+            alt={`Delicious ${item.name}`}
+            width={400}
+            height={400}
             className="w-full h-full object-cover relative z-0 group-hover:scale-110 transition-transform duration-1000 ease-out"
             loading="lazy"
             onError={(e) => {
@@ -53,7 +55,7 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-surface to-surface-dark relative z-0">
-            <Coffee className="w-10 h-10 text-primary opacity-20" />
+            <Coffee className="w-10 h-10 text-primary opacity-20" aria-hidden="true" />
           </div>
         )}
 
@@ -62,7 +64,7 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
       </div>
 
       {/* Content Section with Professional Spacing */}
-      <div className={`${isCompact ? 'p-3.5' : 'p-4'} flex flex-col flex-1`}>
+      <div className={`${isCompact ? 'p-3.5' : 'p-3.5 sm:p-4'} flex flex-col flex-1`}>
         <div className="flex items-start justify-between gap-2">
           <h3 className={`font-serif font-bold text-white group-hover:text-primary transition-colors duration-300 leading-tight ${isCompact ? 'text-sm' : 'text-lg'}`}>
             {item.name}
@@ -80,9 +82,9 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
           </p>
         )}
 
-        <div className={`mt-auto flex items-center justify-between ${isCompact ? 'pt-3' : 'pt-4'}`}>
+        <div className={`mt-auto flex items-center justify-between gap-1 ${isCompact ? 'pt-3' : 'pt-4'}`}>
           <div className="flex flex-col">
-            <span className={`font-sans font-black text-primary tracking-tight ${isCompact ? 'text-lg' : 'text-xl'}`}>
+            <span className={`font-sans font-black text-primary tracking-tight ${isCompact ? 'text-lg' : 'text-base sm:text-xl'}`}>
               ₹{item.price.toFixed(0)}
             </span>
           </div>

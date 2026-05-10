@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useCart } from '../../context/CartContext';
 import { ArrowLeft, Plus, Minus, Star, Zap, Leaf } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatImageUrl } from '../../lib/utils';
 
 const MenuItemDetailsPage = () => {
     const { id } = useParams();
@@ -56,6 +57,7 @@ const MenuItemDetailsPage = () => {
                 <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
+                    aria-label="Go back to menu"
                     onClick={() => navigate('/')}
                     className="w-12 h-12 rounded-full bg-surface-light border border-white/10 flex items-center justify-center text-white hover:text-primary transition-colors"
                 >
@@ -107,8 +109,10 @@ const MenuItemDetailsPage = () => {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 0.8, delay: 0.2 }}
-                            src={item.image}
+                            src={formatImageUrl(item.image, 1200)}
                             alt={item.name}
+                            width={800}
+                            height={800}
                             className="w-full h-full object-cover rounded-3xl relative z-10 shadow-2xl"
                         />
                     ) : (
@@ -174,6 +178,7 @@ const MenuItemDetailsPage = () => {
                             <div className="flex items-center justify-between p-3 bg-surface-dark border border-primary/30 rounded-[40px] shadow-[0_20px_40px_rgba(245,158,11,0.15)]">
                                 <motion.button
                                     whileTap={{ scale: 0.9 }}
+                                    aria-label={`Decrease ${item.name} quantity`}
                                     onClick={() => dispatch({ type: 'DECREMENT_ITEM', payload: item._id })}
                                     className="w-16 h-16 rounded-full bg-background flex items-center justify-center text-primary border border-white/5 hover:bg-primary hover:text-background transition-colors"
                                 >
@@ -187,6 +192,7 @@ const MenuItemDetailsPage = () => {
 
                                 <motion.button
                                     whileTap={{ scale: 0.9 }}
+                                    aria-label={`Increase ${item.name} quantity`}
                                     onClick={() => dispatch({ type: 'ADD_ITEM', payload: item })}
                                     className="w-16 h-16 rounded-full bg-background flex items-center justify-center text-primary border border-white/5 hover:bg-primary hover:text-background transition-colors"
                                 >
@@ -197,6 +203,7 @@ const MenuItemDetailsPage = () => {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
+                                aria-label={`Add ${item.name} to cart`}
                                 onClick={() => dispatch({ type: 'ADD_ITEM', payload: item })}
                                 className="w-full relative overflow-hidden group rounded-[30px]"
                             >

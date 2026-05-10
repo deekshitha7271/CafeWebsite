@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cafe-website-psi-bice.vercel.app/sitemap.xml

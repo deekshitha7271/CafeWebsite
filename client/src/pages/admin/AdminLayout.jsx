@@ -126,7 +126,7 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex text-text font-sans selection:bg-primary/20">
+    <div className="min-h-screen bg-background flex text-text font-sans selection:bg-primary/20 overflow-x-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl">
         <SidebarContent />

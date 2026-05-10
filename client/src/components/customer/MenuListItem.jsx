@@ -17,8 +17,11 @@ const MenuListItem = ({ item }) => {
             <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 bg-surface">
                 {item.image ? (
                     <img
-                        src={formatImageUrl(item.image)}
+                        src={formatImageUrl(item.image, 400)}
                         alt={item.name}
+                        width={64}
+                        height={64}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
                             e.target.onerror = null;

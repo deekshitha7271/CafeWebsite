@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 @import "tailwindcss";
 
 @theme {
@@ -22,14 +26,24 @@
 }
 
 @layer base {
-  html, body, #root {
-    @apply overflow-x-hidden w-full max-w-full;
+
+  html,
+  body,
+  #root {
+    @apply w-full max-w-full;
+    overflow-x: hidden;
+    position: relative;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
     @apply text-text antialiased selection:bg-primary/30 min-h-screen font-sans;
     background: radial-gradient(circle at 50% 0%, #30170A 0%, #140A05 100%);
     background-attachment: fixed;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow-x: hidden;
   }
 
   html.lenis {
@@ -71,15 +85,18 @@
   .scrollbar-thin::-webkit-scrollbar {
     width: 8px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track,
   .scrollbar-thin::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.02);
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb,
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: rgba(245, 158, 11, 0.15);
     border-radius: 20px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover,
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: rgba(245, 158, 11, 0.3);
@@ -130,9 +147,47 @@
     /* Firefox */
   }
 }
-.animate-pulse-fast { animation: pulse-fast 1s infinite; }
-.animate-spin-slow { animation: spin-slow 3s linear infinite; }
-@keyframes pulse-fast { 0%, 100% { opacity: 1; border-color: #dc2626; box-shadow: 0 0 30px rgba(220, 38, 38, 0.4); } 50% { opacity: 0.8; border-color: #dc2626; box-shadow: 0 0 10px rgba(220, 38, 38, 0.1); } }
-@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
 
+.animate-pulse-fast {
+  animation: pulse-fast 1s infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+@keyframes pulse-fast {
+
+  0%,
+  100% {
+    opacity: 1;
+    border-color: #dc2626;
+    box-shadow: 0 0 30px rgba(220, 38, 38, 0.4);
+  }
+
+  50% {
+    opacity: 0.8;
+    border-color: #dc2626;
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.1);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(200%);
+  }
+}

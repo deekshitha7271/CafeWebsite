@@ -30,6 +30,7 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
     if (quantity === 0) {
         return (
             <motion.button
+                aria-label={`Add ${item.name} to cart`}
                 whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.9 }}
                 disabled={loadingType === 'add'}
@@ -50,9 +51,10 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
     }
 
     return (
-        <div className={`flex items-center gap-2 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full shadow-xl transition-all ${isGrid ? 'scale-110 px-1.5 py-1.5' : isCompact ? 'scale-90 px-1 py-1' : 'scale-100 px-1.5 py-1.5'
+        <div className={`flex items-center gap-1.5 bg-surface-dark/80 backdrop-blur-md border border-primary/30 rounded-full shadow-xl transition-all ${isGrid ? 'scale-100 sm:scale-110 px-1.5 py-1.5' : isCompact ? 'scale-90 px-1 py-1' : 'scale-100 px-1.5 py-1.5'
             }`} onClick={e => e.stopPropagation()}>
             <motion.button
+                aria-label={`Remove one ${item.name} from cart`}
                 whileTap={{ scale: 0.8 }}
                 disabled={loadingType !== null}
                 onClick={() => handleUpdate('decrement')}
@@ -81,6 +83,7 @@ const QuantitySelector = ({ item, variant = 'grid' }) => {
             </div>
 
             <motion.button
+                aria-label={`Add one more ${item.name} to cart`}
                 whileTap={{ scale: 0.8 }}
                 disabled={loadingType !== null}
                 onClick={() => handleUpdate('add')}

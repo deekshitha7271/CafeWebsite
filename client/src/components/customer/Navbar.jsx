@@ -34,12 +34,16 @@ const Navbar = () => {
         : 'bg-transparent border-b border-transparent py-4 md:py-8'
         }`}
     >
-      <div className="max-w-[1600px] mx-auto px-3 md:px-6 lg:px-12 flex items-center justify-between gap-2 md:gap-4">
+      <div className="max-w-[1600px] mx-auto px-2 md:px-6 lg:px-12 flex items-center justify-between gap-1.5 md:gap-4">
         {/* Hidden Staff Login Portal */}
         <div onClick={() => navigate('/login')} className="absolute top-0 left-0 w-12 h-12 z-[100] cursor-default opacity-0" />
 
         {/* Brand / Logo */}
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 md:gap-4 group shrink-0">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 md:gap-4 group shrink-0"
+          aria-label="Cá Phê Bistro Home"
+        >
           <motion.div
             whileHover={{ rotate: 180 }}
             transition={{ duration: 0.5, ease: "anticipate" }}
@@ -57,6 +61,7 @@ const Navbar = () => {
         <div className="flex items-center bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/10 shrink-1 flex">
           <button
             onClick={() => handleOrderTypeChange('dinein-web')}
+            aria-label="Select Dine In"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
               ? 'bg-primary text-background shadow-lg md:scale-105'
               : 'text-text-muted hover:text-white'
@@ -68,6 +73,7 @@ const Navbar = () => {
 
           <button
             onClick={() => handleOrderTypeChange('takeaway')}
+            aria-label="Select Takeaway"
             className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
               ? 'bg-primary text-background shadow-lg md:scale-105'
               : 'text-text-muted hover:text-white'
@@ -85,6 +91,7 @@ const Navbar = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            aria-label="Track your active order"
             onClick={() => {
               if (activeOrderId) navigate(`/track/${activeOrderId}`);
             }}
@@ -157,6 +164,7 @@ const Navbar = () => {
             href="https://maps.google.com/?q=Ca+Phe+Bistro+Financial+District"
             target="_blank"
             rel="noreferrer"
+            aria-label="Get directions to the bistro"
             className="flex items-center gap-1.5 md:gap-2 bg-primary text-background px-3 py-2 md:px-6 md:py-3.5 rounded-full font-black text-[9px] md:text-[10px] tracking-widest uppercase transition-all hover:scale-105 shadow-[0_5px_15px_rgba(245,158,11,0.3)] border border-primary-light/50"
           >
             <Navigation className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -168,6 +176,7 @@ const Navbar = () => {
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              aria-label={`Open shopping cart (${cartCount} items)`}
               onClick={() => dispatch({ type: 'TOGGLE_CART' })}
               className="flex items-center gap-2 md:gap-3 bg-gradient-to-tr from-primary-dark to-primary hover:to-primary-light text-background px-3 py-2 md:px-7 md:py-3.5 rounded-full transition-all font-bold shadow-[0_10px_25px_-5px_rgba(245,158,11,0.5)] border border-primary-light/50"
             >
@@ -188,7 +197,7 @@ const Navbar = () => {
           )}
         </div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 };
 
