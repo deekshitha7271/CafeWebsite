@@ -8,6 +8,33 @@ const Coupon = require('../models/Coupon');
 const CafeSettings = require('../models/CafeSettings');
 const Notification = require('../models/Notification');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer for local storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = './uploads';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `img-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const filetypes = /jpeg|jpg|png|webp|avif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        if (mimetype && extname) return cb(null, true);
+        cb(new Error('Only images are allowed'));
+    }
+});
 
 // ============================================================
 // DASHBOARD ANALYTICS
@@ -63,7 +90,7 @@ router.get('/dashboard', async (req, res) => {
             { $sort: { '_id': 1 } }
         ]);
 
-        const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         // Peak hours today
         const peakHours = await Order.aggregate([
@@ -364,10 +391,10 @@ router.post('/staff', async (req, res) => {
         const { name, email, password, role, phone, shift, salary, status } = req.body;
         const existing = await User.findOne({ email });
         if (existing) return res.status(400).json({ error: 'Email already exists' });
-        
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password || 'password123', salt);
-        
+
         const user = new User({
             name, email, password: hashedPassword, role: role === 'Manager' ? 'admin' : 'worker', phone, shift, salary, status
         });
@@ -534,6 +561,17 @@ router.put('/settings', async (req, res) => {
         res.json(settings);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+router.post('/upload', upload.single('image'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const url = `${baseUrl}/uploads/${req.file.filename}`;
+        res.json({ url });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

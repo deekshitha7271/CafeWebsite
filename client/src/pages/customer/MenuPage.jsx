@@ -706,11 +706,11 @@ const MenuPage = () => {
               viewport={{ once: true }}
               className="md:col-span-7 h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
             >
-              <img src="https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
+              <img src={settings?.gallery?.[0]?.url || "https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
               <div className="absolute bottom-12 left-12">
-                <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">Ambience</span>
-                <h4 className="text-3xl font-serif text-white mt-2">The Golden Hour</h4>
+                <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">{settings?.gallery?.[0]?.category || "Ambience"}</span>
+                <h4 className="text-3xl font-serif text-white mt-2">{settings?.gallery?.[0]?.caption || "The Golden Hour"}</h4>
               </div>
             </motion.div>
 
@@ -722,10 +722,9 @@ const MenuPage = () => {
                 viewport={{ once: true }}
                 className="rounded-[60px] overflow-hidden group relative border border-white/10"
               >
-                <img src="/ca phe bistro website images/image 2.avif" className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]" />
+                <img src={settings?.gallery?.[1]?.url || "/ca phe bistro website images/image 2.avif"} className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]" />
                 <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
               </motion.div>
-
               <div className="grid grid-cols-2 gap-6">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -733,7 +732,7 @@ const MenuPage = () => {
                   viewport={{ once: true }}
                   className="rounded-[40px] overflow-hidden border border-white/10 relative group"
                 >
-                  <img src="/ca phe bistro website images/image 3.webp" className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]" />
+                  <img src={settings?.gallery?.[2]?.url || "/ca phe bistro website images/image 3.webp"} className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]" />
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -742,7 +741,7 @@ const MenuPage = () => {
                   transition={{ delay: 0.2 }}
                   className="rounded-[40px] overflow-hidden border border-white/10 relative group"
                 >
-                  <img src="/ca phe bistro website images/image 4.jpeg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]" />
+                  <img src={settings?.gallery?.[3]?.url || "/ca phe bistro website images/image 4.jpeg"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]" />
                 </motion.div>
               </div>
             </div>
@@ -806,10 +805,10 @@ const MenuPage = () => {
               className="space-y-8"
             >
               <p className="text-text-muted text-xl font-light leading-relaxed italic border-l-2 border-primary/30 pl-10">
-                {settings?.aboutDescription?.slice(0, 100) || "We didn't just build a café. We cultivated a sanctuary where artisan mastery meets digital evolution."}
+                {settings?.aboutDescription || "We didn't just build a café. We cultivated a sanctuary where artisan mastery meets digital evolution."}
               </p>
               <p className="text-text-muted/80 text-base leading-relaxed font-light pl-10">
-                At Cá Phê Bistro, every cup tells a story.<br className="mb-2" />
+                At {(settings?.cafeName || 'Cá Phê Bistro').replace('Ca Phe', 'Cá Phê')}, every cup tells a story.<br className="mb-2" />
                 From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space.
               </p>
             </motion.div>

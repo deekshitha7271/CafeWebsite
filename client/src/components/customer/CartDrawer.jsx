@@ -15,10 +15,11 @@ const CartDrawer = () => {
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
-  
-  // Always use local state for name/phone since there's no customer login
+
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [shakeFields, setShakeFields] = useState(false);
+  const [inputErrors, setInputErrors] = useState({ name: false, phone: false });
 
   // ── Arrival time is stored as a string: "10", "20", or "30" ────────────────
   const selectedArrival = state.arrivalTime || '';
@@ -59,7 +60,7 @@ const CartDrawer = () => {
     const tFee = takeaway ? itemCount * 10 : 0;
     const fee = sCharge + tFee;
     const total = cartTotal + fee;
-    
+
     return {
       totalItemCount: itemCount,
       isDineIn: dineIn,
@@ -75,7 +76,12 @@ const CartDrawer = () => {
     if (state.items.length === 0) return;
 
     if (!customerName?.trim() || !customerPhone?.trim()) {
-      alert('Please provide your Name and Phone Number to complete the order.');
+      setInputErrors({
+        name: !customerName?.trim(),
+        phone: !customerPhone?.trim()
+      });
+      setShakeFields(true);
+      setTimeout(() => setShakeFields(false), 500);
       return;
     }
 
@@ -175,7 +181,7 @@ const CartDrawer = () => {
                     <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
                       <ShoppingBag className="w-5 h-5 text-text-muted/30" />
                     </div>
-                    <p className="text-sm font-serif italic text-text-muted opacity-50">Empty selection.<br/>Pick something delicious!</p>
+                    <p className="text-sm font-serif italic text-text-muted opacity-50">Empty selection.<br />Pick something delicious!</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -268,11 +274,10 @@ const CartDrawer = () => {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => handleArrivalSelect(mins)}
-                        className={`py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${
-                          selectedArrival === mins
-                            ? 'bg-primary text-background border-primary shadow-[0_8px_24px_rgba(245,158,11,0.35)]'
-                            : 'bg-white/5 text-white/50 border-white/10 hover:border-primary/50 hover:text-white'
-                        }`}
+                        className={`py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${selectedArrival === mins
+                          ? 'bg-primary text-background border-primary shadow-[0_8px_24px_rgba(245,158,11,0.35)]'
+                          : 'bg-white/5 text-white/50 border-white/10 hover:border-primary/50 hover:text-white'
+                          }`}
                       >
                         {mins} mins
                       </motion.button>
@@ -297,63 +302,88 @@ const CartDrawer = () => {
 
                 {/* Conditional fee display */}
                 {state.items.length > 0 && extraFee > 0 && (
-                  <div className="space-y-1.5 px-1">
-                    <div className="flex justify-between text-[10px] text-white/40">
-                      <span className="font-bold uppercase tracking-widest">Subtotal</span>
-                      <span className="font-black">₹{cartTotal.toFixed(0)}</span>
+                  <div className="space-y-2 px-1 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+                    <div className="flex justify-between text-[11px] text-white/60">
+                      <span className="font-black uppercase tracking-widest">Subtotal</span>
+                      <span className="font-black text-white">₹{cartTotal.toFixed(0)}</span>
                     </div>
-                    <div className="flex justify-between text-[10px] text-primary/70">
-                      <span className="font-bold uppercase tracking-widest">
+                    <div className="flex justify-between text-[11px] text-primary-light">
+                      <span className="font-black uppercase tracking-widest">
                         {isDineIn ? 'Service Charge (5%)' : `Takeaway Fee (₹10 × ${totalItemCount})`}
                       </span>
-                      <span className="font-black">+₹{extraFee.toFixed(0)}</span>
+                      <span className="font-black text-primary-light">+ ₹{extraFee.toFixed(0)}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Always show Guest Checkout Inputs */}
                 {state.items.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3 pb-2">
-                    <input
-                      id="guest-name"
-                      type="text"
-                      placeholder="YOUR NAME"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/30"
-                    />
-                    <input
-                      id="guest-phone"
-                      type="tel"
-                      placeholder="PHONE NO."
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value.replace(/\D/g, ''))}
-                      maxLength={15}
-                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-white focus:border-primary outline-none transition-all placeholder:text-text-muted/30"
-                    />
+                  <div className="grid grid-cols-2 gap-3 pb-3">
+                    <motion.div
+                      animate={shakeFields && inputErrors.name ? { x: [-10, 10, -10, 10, 0] } : {}}
+                      transition={{ duration: 0.4 }}
+                      className="relative"
+                    >
+                      <label className="text-[9px] font-black text-primary uppercase tracking-[0.15em] ml-1 mb-1.5 flex items-center gap-1">
+                        NAME <span className="text-red-500 text-xs">*</span>
+                      </label>
+                      <input
+                        id="guest-name"
+                        type="text"
+                        placeholder="e.g. John Doe"
+                        value={customerName}
+                        onChange={(e) => {
+                          setCustomerName(e.target.value);
+                          if (inputErrors.name) setInputErrors(prev => ({ ...prev, name: false }));
+                        }}
+                        className={`w-full bg-white/5 border ${inputErrors.name ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 hover:border-primary/50 focus:border-primary'} rounded-xl px-4 py-4 text-xs font-black tracking-widest text-white outline-none transition-all placeholder:text-primary/30`}
+                      />
+                      {inputErrors.name && <span className="absolute -bottom-2 right-2 bg-red-500 text-[7px] px-1.5 py-0.5 rounded text-white font-bold uppercase z-10 shadow-lg">Required</span>}
+                    </motion.div>
+                    <motion.div
+                      animate={shakeFields && inputErrors.phone ? { x: [-10, 10, -10, 10, 0] } : {}}
+                      transition={{ duration: 0.4 }}
+                      className="relative"
+                    >
+                      <label className="text-[9px] font-black text-primary uppercase tracking-[0.15em] ml-1 mb-1.5 flex items-center gap-1">
+                        PHONE <span className="text-red-500 text-xs">*</span>
+                      </label>
+                      <input
+                        id="guest-phone"
+                        type="tel"
+                        placeholder="e.g. 98765 43210"
+                        value={customerPhone}
+                        onChange={(e) => {
+                          setCustomerPhone(e.target.value.replace(/\D/g, ''));
+                          if (inputErrors.phone) setInputErrors(prev => ({ ...prev, phone: false }));
+                        }}
+                        maxLength={15}
+                        className={`w-full bg-white/5 border ${inputErrors.phone ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 hover:border-primary/50 focus:border-primary'} rounded-xl px-4 py-4 text-xs font-black tracking-widest text-white outline-none transition-all placeholder:text-primary/30`}
+                      />
+                      {inputErrors.phone && <span className="absolute -bottom-2 right-2 bg-red-500 text-[7px] px-1.5 py-0.5 rounded text-white font-bold uppercase z-10 shadow-lg">Required</span>}
+                    </motion.div>
                   </div>
                 )}
 
-                <div className="flex justify-between items-end gap-6">
+                <div className="flex justify-between items-end gap-6 pt-2">
                   <div className="flex-shrink-0">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted block mb-1">Pay Total</span>
-                    <p className="text-4xl font-serif font-black text-white tracking-tighter">₹{grandTotal.toFixed(0)}</p>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-1">Pay Total</span>
+                    <p className="text-4xl md:text-5xl font-serif font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">₹{grandTotal.toFixed(0)}</p>
                   </div>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.02, brightness: 1.1 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCheckout}
                     disabled={state.items.length === 0 || loading}
-                    className="flex-1 relative group disabled:opacity-50 h-[72px]"
+                    className="flex-1 relative group disabled:opacity-50 h-[76px]"
                   >
-                    <div className="absolute inset-0 bg-primary/30 rounded-[24px] blur-xl group-hover:bg-primary/50 transition-all"></div>
-                    <div className="relative h-full bg-gradient-to-r from-primary to-primary-dark text-background rounded-[24px] font-black uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-3 border border-white/20 shadow-2xl overflow-hidden">
-                      <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500"></div>
+                    <div className="absolute inset-0 bg-primary/60 rounded-[28px] blur-3xl group-hover:bg-primary/80 transition-all animate-pulse"></div>
+                    <div className="relative h-full bg-gradient-to-br from-amber-300 via-primary-light to-primary-dark text-background rounded-[24px] font-black uppercase tracking-[0.2em] text-[13px] flex items-center justify-center gap-3 border border-white/40 shadow-[0_0_40px_rgba(245,158,11,0.5)] overflow-hidden scale-[1.02]">
+                      <div className="absolute inset-0 bg-white/40 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500"></div>
                       {loading ? <Loader2 className="animate-spin w-6 h-6" /> : (
                         <div className="relative flex items-center gap-3">
                           Complete Order
-                          <div className="bg-background/20 p-1.5 rounded-lg">
-                            <Sparkles size={16} />
+                          <div className="bg-background/40 p-2 rounded-xl border border-white/30 backdrop-blur-sm">
+                            <Sparkles size={18} className="text-white" />
                           </div>
                         </div>
                       )}

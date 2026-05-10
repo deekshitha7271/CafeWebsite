@@ -16,11 +16,11 @@ const cafeSettingsSchema = new mongoose.Schema({
     serviceCharge: { type: Number, default: 0 },
     invoicePrefix: { type: String, default: 'CPB-' },
     // CMS Content
-    heroHeadline: { type: String, default: 'Sip, Savour & Stay' },
-    heroSubheadline: { type: String, default: 'Your neighbourhood café in Financial District' },
-    heroCta: { type: String, default: 'Order Now' },
-    aboutTitle: { type: String, default: 'Our Story' },
-    aboutDescription: { type: String, default: 'Cá Phê Bistro was born from a love of Vietnamese coffee culture.' },
+    heroHeadline: { type: String, default: 'Cá Phê Bistro.' },
+    heroSubheadline: { type: String, default: 'Signature Blends & Artisan Perfection' },
+    heroCta: { type: String, default: 'Start Your Order' },
+    aboutTitle: { type: String, default: 'Beyond The Daily Grind.' },
+    aboutDescription: { type: String, default: "At Cá Phê Bistro, every cup tells a story. From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space." },
     offerBannerText: { type: String, default: '☕ Happy Hours: 15% off from 3PM – 6PM' },
     offerBannerActive: { type: Boolean, default: true },
     // Ordering & Timings Controls
@@ -32,7 +32,18 @@ const cafeSettingsSchema = new mongoose.Schema({
     notifLowStock: { type: Boolean, default: true },
     notifPayment: { type: Boolean, default: true },
     notifStaffCheckin: { type: Boolean, default: false },
-    notifReview: { type: Boolean, default: true }
+    notifReview: { type: Boolean, default: true },
+    // Gallery
+    gallery: [
+        {
+            url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg' },
+            caption: { type: String, default: 'The Golden Hour' },
+            category: { type: String, default: 'Ambience' }
+        },
+        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_2.avif' }, caption: { type: String, default: 'Brewing perfection' }, category: { type: String, default: 'Rituals' } },
+        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_3.webp' }, caption: { type: String, default: 'Freshly Baked' }, category: { type: String, default: 'Treats' } },
+        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_4.jpeg' }, caption: { type: String, default: 'Cozy Corners' }, category: { type: String, default: 'Ambience' } }
+    ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('CafeSettings', cafeSettingsSchema);

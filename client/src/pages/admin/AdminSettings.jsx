@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Store, Phone, Mail, Clock, AtSign, Globe, Percent, Bell, Loader2 } from 'lucide-react';
+import { Save, Store, Phone, Mail, Clock, AtSign, Globe, Percent, Bell, Loader2, Camera, X, Plus, AlignLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
@@ -75,46 +75,136 @@ const AdminSettings = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SettingsSection title="Café Information" icon={Store}>
+                <SettingsSection title="Portal Identity" icon={Store}>
                     <Field label="Café Name" field="cafeName" />
                     <Field label="Tagline" field="tagline" />
-                    <Field label="GST Number" field="gstNumber" />
-                </SettingsSection>
-
-                <SettingsSection title="Contact Details" icon={Phone}>
-                    <Field label="Phone Number" field="phone" type="tel" />
-                    <Field label="Email Address" field="email" type="email" />
                     <Field label="Address" field="address" />
                 </SettingsSection>
 
-                <SettingsSection title="Operating Hours & Ordering" icon={Clock}>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Field label="Opening Time" field="openingTime" type="time" />
-                        <Field label="Closing Time" field="closingTime" type="time" />
-                    </div>
-                    <Field label="Weekday Hours (Display Text)" field="weekdayHours" />
-                    <Field label="Weekend Hours (Display Text)" field="weekendHours" />
+                <SettingsSection title="Portal Hero Section" icon={Globe}>
+                    <Field label="Hero Headline" field="heroHeadline" />
+                    <Field label="Hero Subheadline" field="heroSubheadline" />
+                    <Field label="Hero CTA Button" field="heroCta" />
                 </SettingsSection>
 
-                <SettingsSection title="Social Media" icon={AtSign}>
+                <SettingsSection title="Contact & Socio" icon={Phone}>
+                    <Field label="Phone Number" field="phone" type="tel" />
                     <Field label="Instagram URL" field="instagram" />
-                    <Field label="Website URL" field="website" />
                     <Field label="Google Maps Link" field="googleMaps" />
                 </SettingsSection>
 
-                <SettingsSection title="Tax & Billing" icon={Percent}>
-                    <Field label="GST Rate (%)" field="gstRate" type="number" />
-                    <Field label="Service Charge (%)" field="serviceCharge" type="number" />
-                    <Field label="Invoice Prefix" field="invoicePrefix" />
+                <SettingsSection title="About Sanctuary" icon={AlignLeft}>
+                    <Field label="About Title" field="aboutTitle" />
+                    <div>
+                        <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">About Description</label>
+                        <textarea value={settings?.aboutDescription || ''} onChange={e => update('aboutDescription', e.target.value)}
+                            className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white resize-none" rows={4} />
+                    </div>
                 </SettingsSection>
 
-                <SettingsSection title="Notifications" icon={Bell}>
-                    <Toggle label="New Order Alerts" field="notifNewOrder" />
-                    <Toggle label="Low Stock Alerts" field="notifLowStock" />
-                    <Toggle label="Payment Received" field="notifPayment" />
-                    <Toggle label="Staff Check-In" field="notifStaffCheckin" />
-                    <Toggle label="Customer Review Posted" field="notifReview" />
+                <SettingsSection title="Operating Hours" icon={Clock}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Field label="Opening Time (Logic)" field="openingTime" type="time" />
+                        <Field label="Closing Time (Logic)" field="closingTime" type="time" />
+                    </div>
+                    <Field label="Display Hours (Text)" field="weekdayHours" />
                 </SettingsSection>
+
+                <SettingsSection title="Pricing & Billing" icon={Percent}>
+                    <Field label="Service Charge (%)" field="serviceCharge" type="number" />
+                    <Field label="GST Rate (%)" field="gstRate" type="number" />
+                </SettingsSection>
+
+                {/* Gallery Management Section - Spanning 2 columns */}
+                <div className="lg:col-span-2">
+                    <SettingsSection title="Portal Gallery (Crafted Moments)" icon={Camera}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {(settings?.gallery || []).map((img, i) => (
+                                <div key={i} className="bg-surface-dark border border-white/5 rounded-2xl p-4 space-y-3 relative group">
+                                    <div className="aspect-[4/5] bg-white/5 rounded-xl overflow-hidden border border-white/10 relative">
+                                        {img.url ? (
+                                            <img src={img.url} className="w-full h-full object-cover" alt={`Gallery ${i}`} />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-white/10 italic text-[10px]">No Image</div>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <label className="bg-primary text-background p-2.5 rounded-full cursor-pointer hover:scale-110 transition-transform shadow-lg">
+                                                <Camera className="w-4 h-4" />
+                                                <input
+                                                    type="file"
+                                                    className="sr-only"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files[0];
+                                                        if (!file) return;
+
+                                                        const formData = new FormData();
+                                                        formData.append('image', file);
+
+                                                        try {
+                                                            const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/upload`, formData, {
+                                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                                            });
+                                                            const newGallery = [...settings.gallery];
+                                                            newGallery[i].url = res.data.url;
+                                                            update('gallery', newGallery);
+                                                        } catch (err) {
+                                                            alert('Upload failed: ' + (err.response?.data?.error || err.message));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            <button
+                                                onClick={() => {
+                                                    const newGallery = settings.gallery.filter((_, idx) => idx !== i);
+                                                    update('gallery', newGallery);
+                                                }}
+                                                className="bg-red-500 text-white p-2.5 rounded-full hover:scale-110 transition-transform shadow-lg"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Label (e.g. Ambience)"
+                                            value={img.category || ''}
+                                            onChange={e => {
+                                                const newGallery = [...settings.gallery];
+                                                newGallery[i].category = e.target.value;
+                                                update('gallery', newGallery);
+                                            }}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-[10px] outline-none text-white focus:border-primary/40"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Caption"
+                                            value={img.caption || ''}
+                                            onChange={e => {
+                                                const newGallery = [...settings.gallery];
+                                                newGallery[i].caption = e.target.value;
+                                                update('gallery', newGallery);
+                                            }}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg py-2 px-3 text-[10px] outline-none text-white focus:border-primary/40 font-medium"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            {/* Add Image Button Card */}
+                            <button
+                                onClick={() => {
+                                    const newGallery = [...(settings?.gallery || []), { url: '', caption: '', category: 'Ambience' }];
+                                    update('gallery', newGallery);
+                                }}
+                                className="border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center p-8 hover:border-primary/30 hover:bg-primary/5 transition-all min-h-[220px]"
+                            >
+                                <Plus className="w-8 h-8 text-white/20 mb-2" />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white/30">Add New Moment</span>
+                            </button>
+                        </div>
+                    </SettingsSection>
+                </div>
             </div>
         </div>
     );

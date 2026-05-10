@@ -104,6 +104,7 @@ const io = new Server(server, {
 // Webhook requires raw body. We'll set it up in payment routes.
 app.use('/api/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 const MongoStore = require('connect-mongo').default;
 
