@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Loader2, Lock, ArrowRight } from 'lucide-react';
+import { Loader2, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const LoginPage = () => {
   const { login, loading } = useAuth();
@@ -9,6 +9,7 @@ const LoginPage = () => {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
@@ -51,15 +52,24 @@ const LoginPage = () => {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all placeholder:text-white/30"
           />
-          <input
-            id="admin-password"
-            type="password"
-            placeholder="Password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all placeholder:text-white/30"
-          />
+          <div className="relative">
+            <input
+              id="admin-password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-primary transition-all placeholder:text-white/30 pr-14"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-primary transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
 
           {error && <p className="text-sm text-red-400 bg-red-400/10 rounded-xl px-4 py-3 text-left">{error}</p>}
 
