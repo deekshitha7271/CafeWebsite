@@ -60,6 +60,10 @@ router.post('/checkout', async (req, res) => {
         }
       }
 
+      if (!parsedArrivalTime && !orderId) {
+        return res.status(400).json({ error: 'Arrival time is required for new orders.' });
+      }
+
       // Generate Daily Sequential Bill Number
       const dateStr = new Date().toISOString().split('T')[0];
       const counter = await DailyCounter.findOneAndUpdate(

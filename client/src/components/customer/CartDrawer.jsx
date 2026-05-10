@@ -19,7 +19,7 @@ const CartDrawer = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [shakeFields, setShakeFields] = useState(false);
-  const [inputErrors, setInputErrors] = useState({ name: false, phone: false });
+  const [inputErrors, setInputErrors] = useState({ name: false, phone: false, arrival: false });
 
   // ── Arrival time is stored as a string: "10", "20", or "30" ────────────────
   const selectedArrival = state.arrivalTime || '';
@@ -28,6 +28,7 @@ const CartDrawer = () => {
     // Toggle off if already selected
     const newVal = selectedArrival === mins ? '' : mins;
     dispatch({ type: 'SET_ARRIVAL_TIME', payload: newVal });
+    if (inputErrors.arrival) setInputErrors(prev => ({ ...prev, arrival: false }));
   };
 
   const isAlreadyOrdered = useMemo(() => (itemId) => {
@@ -75,10 +76,13 @@ const CartDrawer = () => {
   const handleCheckout = async () => {
     if (state.items.length === 0) return;
 
-    if (!customerName?.trim() || !customerPhone?.trim()) {
+    const isArrivalMissing = !selectedArrival || String(selectedArrival).trim().length === 0 || selectedArrival === 'null';
+
+    if (!customerName?.trim() || !customerPhone?.trim() || isArrivalMissing) {
       setInputErrors({
         name: !customerName?.trim(),
-        phone: !customerPhone?.trim()
+        phone: !customerPhone?.trim(),
+        arrival: isArrivalMissing
       });
       setShakeFields(true);
       setTimeout(() => setShakeFields(false), 500);
@@ -264,10 +268,15 @@ const CartDrawer = () => {
               {/* ── Arrival Time: 3-Button Picker ─────────────────────────────── */}
               {state.items.length > 0 && (
                 <div className="space-y-4 pt-4 border-t border-white/5">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/50 flex items-center gap-2">
-                    <Clock size={14} /> When are you arriving?
+                  <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-colors ${inputErrors.arrival ? 'text-red-500' : 'text-white/50'}`}>
+                    <Clock size={14} className={inputErrors.arrival ? 'animate-bounce' : ''} />
+                    When are you arriving? <span className="text-red-500 text-xs font-black animate-pulse">*</span>
                   </h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <motion.div
+                    animate={shakeFields && inputErrors.arrival ? { x: [-10, 10, -10, 10, 0] } : {}}
+                    transition={{ duration: 0.4 }}
+                    className="grid grid-cols-3 gap-3 relative"
+                  >
                     {ARRIVAL_OPTIONS.map((mins) => (
                       <motion.button
                         key={mins}
@@ -276,13 +285,18 @@ const CartDrawer = () => {
                         onClick={() => handleArrivalSelect(mins)}
                         className={`py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${selectedArrival === mins
                           ? 'bg-primary text-background border-primary shadow-[0_8px_24px_rgba(245,158,11,0.35)]'
-                          : 'bg-white/5 text-white/50 border-white/10 hover:border-primary/50 hover:text-white'
+                          : inputErrors.arrival
+                            ? 'bg-red-500/10 text-red-100 border-red-500/40'
+                            : 'bg-white/5 text-white/50 border-white/10 hover:border-primary/50 hover:text-white'
                           }`}
                       >
                         {mins} mins
                       </motion.button>
                     ))}
-                  </div>
+                    {inputErrors.arrival && (
+                      <span className="absolute -bottom-6 left-0 text-[8px] font-black uppercase tracking-widest text-red-500 animate-pulse">Required: Select an arrival window</span>
+                    )}
+                  </motion.div>
                 </div>
               )}
 
