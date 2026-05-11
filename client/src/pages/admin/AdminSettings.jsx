@@ -1,11 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
-import { Save, Store, Phone, Mail, Clock, AtSign, Globe, Percent, Bell, Loader2, Camera, X, Plus, AlignLeft, Tag } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Store, Phone, Globe, Percent, Clock, AlignLeft, Tag, Camera, X, Plus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
+// ─── Static sub-components MUST live outside AdminSettings ───────────────────
+// Defining them inside causes React to treat them as new component types on every
+// render, which unmounts/remounts the input and drops focus after each keystroke.
+
 const SettingsSection = ({ title, icon: Icon, children }) => (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-surface border border-white/5 rounded-3xl overflow-hidden hover:border-primary/10 transition-colors">
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-surface border border-white/5 rounded-3xl overflow-hidden hover:border-primary/10 transition-colors"
+    >
         <div className="px-6 py-5 border-b border-white/5 flex items-center gap-3">
             <div className="w-9 h-9 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center">
                 <Icon className="w-4 h-4 text-primary" />
@@ -16,6 +23,36 @@ const SettingsSection = ({ title, icon: Icon, children }) => (
     </motion.div>
 );
 
+// Field: receives settings + update as props — never recreated as a new type
+const Field = ({ label, field, type = 'text', settings, update }) => (
+    <div>
+        <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">{label}</label>
+        <input
+            type={type}
+            value={settings?.[field] || ''}
+            onChange={e => update(field, e.target.value)}
+            className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white placeholder:text-white/20"
+        />
+    </div>
+);
+
+// Toggle: same pattern — outside the parent component
+const Toggle = ({ label, field, settings, update }) => (
+    <div className="flex items-center justify-between py-1">
+        <span className="text-white/60 text-sm font-medium">{label}</span>
+        <label className="relative inline-flex items-center cursor-pointer">
+            <input
+                type="checkbox"
+                checked={!!settings?.[field]}
+                onChange={e => update(field, e.target.checked)}
+                className="sr-only peer"
+            />
+            <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
+        </label>
+    </div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 const AdminSettings = () => {
     const [settings, setSettings] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -35,30 +72,23 @@ const AdminSettings = () => {
         setSaving(true);
         try {
             await axios.put(`${import.meta.env.VITE_API_URL}/admin/settings`, settings);
-            setSaved(true); setTimeout(() => setSaved(false), 2500);
-        } catch (err) { alert('Failed to save settings'); }
-        finally { setSaving(false); }
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (err) {
+            alert('Failed to save settings');
+        } finally {
+            setSaving(false);
+        }
     };
 
-    if (loading) return <div className="flex justify-center p-20"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
-
-    const Field = ({ label, field, type = 'text' }) => (
-        <div>
-            <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">{label}</label>
-            <input type={type} value={settings?.[field] || ''} onChange={e => update(field, e.target.value)}
-                className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white placeholder:text-white/20" />
+    if (loading) return (
+        <div className="flex justify-center p-20">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
         </div>
     );
 
-    const Toggle = ({ label, field }) => (
-        <div className="flex items-center justify-between py-1">
-            <span className="text-white/60 text-sm font-medium">{label}</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked={!!settings?.[field]} onChange={e => update(field, e.target.checked)} className="sr-only peer" />
-                <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary" />
-            </label>
-        </div>
-    );
+    // Shared props passed down so Field/Toggle stay stable component references
+    const fp = { settings, update };
 
     return (
         <div className="space-y-6">
@@ -67,8 +97,11 @@ const AdminSettings = () => {
                     <h2 className="text-3xl font-serif font-black text-white">Settings</h2>
                     <p className="text-text-muted text-sm mt-1">Saved to your database</p>
                 </div>
-                <button onClick={handleSave} disabled={saving}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all w-fit ${saved ? 'bg-emerald-500 text-background' : 'bg-primary text-background hover:bg-primary-light'} disabled:opacity-60`}>
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all w-fit ${saved ? 'bg-emerald-500 text-background' : 'bg-primary text-background hover:bg-primary-light'} disabled:opacity-60`}
+                >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     {saving ? 'Saving...' : saved ? 'Saved!' : 'Save All Settings'}
                 </button>
@@ -76,51 +109,55 @@ const AdminSettings = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SettingsSection title="Portal Identity" icon={Store}>
-                    <Field label="Café Name" field="cafeName" />
-                    <Field label="Tagline" field="tagline" />
-                    <Field label="Address" field="address" />
+                    <Field label="Café Name" field="cafeName" {...fp} />
+                    <Field label="Tagline" field="tagline" {...fp} />
+                    <Field label="Address" field="address" {...fp} />
                 </SettingsSection>
 
                 <SettingsSection title="Portal Hero Section" icon={Globe}>
-                    <Field label="Hero Headline" field="heroHeadline" />
-                    <Field label="Hero Subheadline" field="heroSubheadline" />
-                    <Field label="Hero CTA Button" field="heroCta" />
+                    <Field label="Hero Headline" field="heroHeadline" {...fp} />
+                    <Field label="Hero Subheadline" field="heroSubheadline" {...fp} />
+                    <Field label="Hero CTA Button" field="heroCta" {...fp} />
                 </SettingsSection>
 
                 <SettingsSection title="Contact & Socio" icon={Phone}>
-                    <Field label="Phone Number" field="phone" type="tel" />
-                    <Field label="Instagram URL" field="instagram" />
-                    <Field label="Google Maps Link" field="googleMaps" />
+                    <Field label="Phone Number" field="phone" type="tel" {...fp} />
+                    <Field label="Instagram URL" field="instagram" {...fp} />
+                    <Field label="Google Maps Link" field="googleMaps" {...fp} />
                 </SettingsSection>
 
                 <SettingsSection title="About Sanctuary" icon={AlignLeft}>
-                    <Field label="About Title" field="aboutTitle" />
+                    <Field label="About Title" field="aboutTitle" {...fp} />
                     <div>
                         <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">About Description</label>
-                        <textarea value={settings?.aboutDescription || ''} onChange={e => update('aboutDescription', e.target.value)}
-                            className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white resize-none" rows={4} />
+                        <textarea
+                            value={settings?.aboutDescription || ''}
+                            onChange={e => update('aboutDescription', e.target.value)}
+                            className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white resize-none"
+                            rows={4}
+                        />
                     </div>
                 </SettingsSection>
 
                 <SettingsSection title="Operating Hours" icon={Clock}>
                     <div className="grid grid-cols-2 gap-4">
-                        <Field label="Opening Time (Logic)" field="openingTime" type="time" />
-                        <Field label="Closing Time (Logic)" field="closingTime" type="time" />
+                        <Field label="Opening Time (Logic)" field="openingTime" type="time" {...fp} />
+                        <Field label="Closing Time (Logic)" field="closingTime" type="time" {...fp} />
                     </div>
-                    <Field label="Display Hours (Text)" field="weekdayHours" />
+                    <Field label="Display Hours (Text)" field="weekdayHours" {...fp} />
                 </SettingsSection>
 
                 <SettingsSection title="Pricing & Billing" icon={Percent}>
-                    <Field label="Service Charge (%)" field="serviceCharge" type="number" />
-                    <Field label="GST Rate (%)" field="gstRate" type="number" />
+                    <Field label="Service Charge (%)" field="serviceCharge" type="number" {...fp} />
+                    <Field label="GST Rate (%)" field="gstRate" type="number" {...fp} />
                 </SettingsSection>
 
                 <SettingsSection title="Today's Offer Banner" icon={Tag}>
-                    <Field label="Banner Text" field="offerBannerText" />
-                    <Toggle label="Show Banner on Website" field="offerBannerActive" />
+                    <Field label="Banner Text" field="offerBannerText" {...fp} />
+                    <Toggle label="Show Banner on Website" field="offerBannerActive" {...fp} />
                 </SettingsSection>
 
-                {/* Gallery Management Section - Spanning 2 columns */}
+                {/* Gallery Management — spans full width */}
                 <div className="lg:col-span-2">
                     <SettingsSection title="Portal Gallery (Crafted Moments)" icon={Camera}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -142,10 +179,8 @@ const AdminSettings = () => {
                                                     onChange={async (e) => {
                                                         const file = e.target.files[0];
                                                         if (!file) return;
-
                                                         const formData = new FormData();
                                                         formData.append('image', file);
-
                                                         try {
                                                             const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/upload`, formData, {
                                                                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -196,7 +231,6 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                             ))}
-                            {/* Add Image Button Card */}
                             <button
                                 onClick={() => {
                                     const newGallery = [...(settings?.gallery || []), { url: '', caption: '', category: 'Ambience' }];
