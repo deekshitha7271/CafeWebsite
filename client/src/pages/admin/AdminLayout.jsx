@@ -125,7 +125,7 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex text-text font-sans selection:bg-primary/20 overflow-x-hidden">
+    <div className="h-screen bg-background flex text-text font-sans selection:bg-primary/20 overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl overflow-hidden">
         <SidebarContent />
@@ -155,9 +155,9 @@ const AdminLayout = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 overflow-x-hidden">
+      <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
         {/* Mobile Topbar */}
-        <div className="md:hidden bg-surface/90 backdrop-blur border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+        <div className="md:hidden bg-surface/90 backdrop-blur border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shrink-0">
           <button onClick={() => setMobileSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">
             <Menu className="w-5 h-5" />
           </button>
@@ -169,9 +169,17 @@ const AdminLayout = () => {
             <LogOut className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto">
-          <Outlet />
-        </div>
+
+        {/* KDS gets full height; every other page gets the padded container */}
+        {location.pathname.includes('/kds') ? (
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 md:px-6 lg:px-8">
+            <Outlet />
+          </div>
+        ) : (
+          <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto w-full">
+            <Outlet />
+          </div>
+        )}
       </main>
     </div>
   );

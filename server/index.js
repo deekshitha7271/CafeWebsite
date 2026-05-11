@@ -28,6 +28,8 @@ app.get('/health', (req, res) => {
 const clientUrl = process.env.CLIENT_URL?.trim().replace(/\/$/, "");
 const allowedOrigins = [
   clientUrl,
+  "https://caphebistro.in",
+  "https://www.caphebistro.in",
   "https://cafe-website-psi-bice.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
