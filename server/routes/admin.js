@@ -58,6 +58,28 @@ router.get('/dashboard', async (req, res) => {
             }
         ]);
 
+        // Monthly revenue (Current month)
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const [monthStats] = await Order.aggregate([
+            { $match: { timestamp: { $gte: startOfMonth }, paymentStatus: 'paid' } },
+            { $group: { _id: null, totalRevenue: { $sum: '$total' } } }
+        ]);
+
+        // Monthly Historical Revenue (Last 6 Months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        const monthlyHistorical = await Order.aggregate([
+            { $match: { timestamp: { $gte: sixMonthsAgo }, paymentStatus: 'paid' } },
+            {
+                $group: {
+                    _id: { year: { $year: '$timestamp' }, month: { $month: '$timestamp' } },
+                    revenue: { $sum: '$total' },
+                    orders: { $sum: 1 }
+                }
+            },
+            { $sort: { '_id.year': 1, '_id.month': 1 } }
+        ]);
+
         // Yesterday revenue for growth comparison
         const [yesterdayStats] = await Order.aggregate([
             { $match: { timestamp: { $gte: startOfYesterday, $lt: startOfToday }, paymentStatus: 'paid' } },
@@ -131,6 +153,7 @@ router.get('/dashboard', async (req, res) => {
         res.json({
             kpis: {
                 totalRevenue: currentRevenue,
+                monthlyRevenue: monthStats?.totalRevenue || 0,
                 totalOrders: todayStats?.totalOrders || 0,
                 activeOrders,
                 customersToday: customersToday.length,
@@ -145,6 +168,11 @@ router.get('/dashboard', async (req, res) => {
                     orders: d.orders
                 };
             }),
+            monthlyTrend: monthlyHistorical.map(m => ({
+                month: monthNames[m._id.month - 1],
+                revenue: m.revenue,
+                orders: m.orders
+            })),
             peakHours: peakHours.map(h => ({ hour: `${h._id}:00`, orders: h.orders })),
             topItems: topItems.map((item, i) => ({
                 name: item._id,

@@ -38,18 +38,28 @@ const MenuCategorySection = ({ section, viewMode }) => {
         }
       >
         {section.items.map((item, i) => (
-          <motion.div
-            key={item._id}
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "50px" }}
-            transition={{ duration: 0.3, delay: (i % 4) * 0.03 }}
-          >
-            {viewMode === 'grid'
-              ? <MenuItemCard item={item} variant="standard" />
-              : <MenuListItem item={item} />
-            }
-          </motion.div>
+          // Only animate the first 8 items (above-fold); rest are below-fold at load — no visible difference
+          i < 8 ? (
+            <motion.div
+              key={item._id}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "50px" }}
+              transition={{ duration: 0.3, delay: (i % 4) * 0.03 }}
+            >
+              {viewMode === 'grid'
+                ? <MenuItemCard item={item} variant="standard" />
+                : <MenuListItem item={item} />
+              }
+            </motion.div>
+          ) : (
+            <div key={item._id}>
+              {viewMode === 'grid'
+                ? <MenuItemCard item={item} variant="standard" />
+                : <MenuListItem item={item} />
+              }
+            </div>
+          )
         ))}
       </div>
     </div>
@@ -485,13 +495,13 @@ const MenuPage = () => {
 
             {/* ── FIXED STICKY SHELL: Search bar + Category Strip (always on top) ── */}
             {/* ── HIGH-PERFORMANCE NAVIGATION SHELL ── */}
-            <div ref={menuHeaderRef} className="h-[140px] md:h-[160px] relative">
+            <div ref={menuHeaderRef} className="h-[140px] md:h-[180px] relative">
               <div className={`${isHeaderSticky
-                ? 'fixed top-[72px] md:top-[88px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/5 animate-in slide-in-from-top-4 duration-300'
+                ? 'fixed top-[60px] md:top-[80px] left-0 right-0 z-[48] bg-background/95 backdrop-blur-3xl shadow-2xl border-b border-white/10'
                 : 'relative'
                 }`}>
                 {/* Row 1: Search + View Toggle */}
-                <div className="px-6 lg:px-20 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="px-4 lg:px-20 py-3 md:py-5 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
                   <div className="relative w-full md:w-96 group">
                     <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
                     <input
@@ -500,40 +510,34 @@ const MenuPage = () => {
                       aria-label="Search for menu items"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-surface-dark border border-white/10 rounded-2xl py-3.5 pl-14 pr-6 text-sm outline-none focus:border-primary/50 transition-all placeholder:text-white/20 shadow-inner"
+                      className="w-full bg-surface-dark/50 border border-white/10 rounded-2xl py-3.5 pl-14 pr-6 text-sm outline-none focus:border-primary/50 transition-all placeholder:text-white/20 shadow-inner backdrop-blur-md"
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 bg-surface-dark p-1.5 rounded-2xl border border-white/5 mx-auto md:mx-0">
+                  <div className="flex items-center gap-1.5 bg-surface-dark/50 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
                     <button
                       onClick={() => setDietaryFilter('all')}
-                      aria-label="Show all items"
-                      className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${dietaryFilter === 'all' ? 'bg-primary text-background shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white'}`}
+                      className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${dietaryFilter === 'all' ? 'bg-primary text-background shadow-lg' : 'text-white/40 hover:text-white'}`}
                     >
                       Full Menu
                     </button>
                     <button
                       onClick={() => setDietaryFilter('veg')}
-                      aria-label="Show vegetarian items only"
-                      className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${dietaryFilter === 'veg' ? 'bg-green-500 text-white shadow-lg shadow-green-500/20' : 'text-white/40 hover:text-white'}`}
+                      className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap ${dietaryFilter === 'veg' ? 'bg-green-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
                     >
                       <Leaf className="w-3 h-3" /> Veg Only
                     </button>
-                    <div className="w-px h-4 bg-white/10 mx-2" />
-                    <div className="flex items-center gap-1">
+                    <div className="w-px h-4 bg-white/10 mx-1 shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => setViewMode('grid')}
-                        aria-label="Switch to Gallery View"
                         className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
-                        title="Gallery View"
                       >
                         <Grid className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setViewMode('list')}
-                        aria-label="Switch to List View"
                         className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white/10 text-primary' : 'text-white/30 hover:text-white'}`}
-                        title="List View"
                       >
                         <List className="w-4 h-4" />
                       </button>
@@ -542,12 +546,11 @@ const MenuPage = () => {
                 </div>
 
                 {/* Row 2: Horizontal Category Strip */}
-                <div className="relative px-6 lg:px-20 pb-3">
+                <div className="relative px-4 lg:px-20 pb-4">
                   {showLeftArrow && (
                     <button
                       onClick={() => scrollCatStrip(-1)}
-                      aria-label="Scroll categories left"
-                      className="absolute left-2 lg:left-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/40 transition-all shadow-xl backdrop-blur-sm"
+                      className="absolute left-2 lg:left-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 shadow-xl backdrop-blur-md"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -555,8 +558,7 @@ const MenuPage = () => {
                   {showRightArrow && (
                     <button
                       onClick={() => scrollCatStrip(1)}
-                      aria-label="Scroll categories right"
-                      className="absolute right-2 lg:right-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/40 transition-all shadow-xl backdrop-blur-sm"
+                      className="absolute right-2 lg:right-16 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-surface border border-white/10 flex items-center justify-center text-white/70 shadow-xl backdrop-blur-md"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -569,8 +571,8 @@ const MenuPage = () => {
                   >
                     <button
                       onClick={() => handleCategoryChange('all')}
-                      className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === 'all'
-                        ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                      className={`shrink-0 px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === 'all'
+                        ? 'bg-primary text-background border-primary shadow-lg shadow-primary/20'
                         : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
                         }`}
                     >All</button>
@@ -578,8 +580,8 @@ const MenuPage = () => {
                       <button
                         key={cat._id}
                         onClick={() => handleCategoryChange(cat._id)}
-                        className={`shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === cat._id
-                          ? 'bg-primary text-background border-primary shadow-[0_6px_20px_rgba(245,158,11,0.4)]'
+                        className={`shrink-0 flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${activeCategory === cat._id
+                          ? 'bg-primary text-background border-primary shadow-lg shadow-primary/20'
                           : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:bg-white/10'
                           }`}
                       >
@@ -587,12 +589,6 @@ const MenuPage = () => {
                         {cat.name.replace('Ca Phe', 'Cá Phê')}
                       </button>
                     ))}
-                    <button
-                      onClick={() => handleCategoryChange('footer')}
-                      className="shrink-0 flex items-center gap-1.5 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap bg-white/5 text-white/60 border-white/10 hover:text-primary hover:bg-white/10"
-                    >
-                      <MapPin className="w-3 h-3" /> Restaurant Info
-                    </button>
                   </div>
                 </div>
               </div>

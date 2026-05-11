@@ -20,7 +20,6 @@ const allLinks = [
   { to: '/admin/payments', icon: CreditCard, label: 'Payments & Billing', roles: ['admin'] },
   { to: '/admin/offers', icon: Tag, label: 'Offers & Coupons', roles: ['admin'] },
   { to: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['admin'], badge: 3 },
-  { to: '/admin/cms', icon: Globe, label: 'Website CMS', roles: ['admin'] },
   { to: '/admin/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
 ];
 
@@ -64,7 +63,7 @@ const AdminLayout = () => {
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent min-h-0">
         {allowedLinks.map((link) => {
           const Icon = link.icon;
           return (
@@ -128,7 +127,7 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background flex text-text font-sans selection:bg-primary/20 overflow-x-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl">
+      <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl overflow-hidden">
         <SidebarContent />
       </aside>
 

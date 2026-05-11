@@ -210,12 +210,12 @@ const AdminDashboard = () => {
   };
 
   const kpis = [
-    { label: 'Total Revenue', value: `₹${Number(data?.kpis?.totalRevenue || 0).toLocaleString('en-IN')}`, change: data?.kpis?.revenueGrowth || '0%', up: !String(data?.kpis?.revenueGrowth).startsWith('-'), icon: IndianRupee, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+    { label: "Today's Revenue", value: `₹${Number(data?.kpis?.totalRevenue || 0).toLocaleString('en-IN')}`, change: data?.kpis?.revenueGrowth || '0%', up: !String(data?.kpis?.revenueGrowth).startsWith('-'), icon: IndianRupee, color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' },
+    { label: 'Monthly Revenue', value: `₹${Number(data?.kpis?.monthlyRevenue || 0).toLocaleString('en-IN')}`, change: 'Current Month', up: true, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
     { label: 'Total Orders', value: data?.kpis?.totalOrders || 0, change: 'Today', up: true, icon: ShoppingBag, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
     { label: 'Active Orders', value: data?.kpis?.activeOrders || 0, change: 'Live Now', up: true, icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20' },
     { label: 'Customers Today', value: data?.kpis?.customersToday || 0, change: 'Unique visitors', up: true, icon: Users, color: 'text-violet-400', bg: 'bg-violet-400/10', border: 'border-violet-400/20' },
     { label: 'Stock Alerts', value: data?.lowStockAlerts || 0, change: data?.lowStockAlerts > 0 ? 'Needs attention' : 'All stocked', up: data?.lowStockAlerts === 0, icon: Clock, color: 'text-cyan-400', bg: 'bg-cyan-400/10', border: 'border-cyan-400/20' },
-    { label: 'Cancelled', value: data?.kpis?.cancelledOrders || 0, change: 'Today', up: false, icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400/20' },
   ];
 
   const statusCounts = data?.statusCounts || {};
@@ -228,7 +228,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* PIN Modal */}
+      {/* PIN Modal ... */}
       <AnimatePresence>
         {showPinModal && (
           <motion.div
@@ -379,11 +379,27 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-white font-serif font-bold text-xl">Revenue Trend</h3>
-              <p className="text-primary text-[10px] uppercase tracking-widest font-black mt-1">Last 7 Days</p>
+              <p className="text-primary text-[10px] uppercase tracking-widest font-black mt-1">
+                {period === 'week' ? 'Last 7 Days' : 'Last 6 Months'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-background p-1 rounded-xl border border-white/5">
+              <button
+                onClick={() => setPeriod('week')}
+                className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${period === 'week' ? 'bg-primary text-background shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Week
+              </button>
+              <button
+                onClick={() => setPeriod('month')}
+                className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${period === 'month' ? 'bg-primary text-background shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Month
+              </button>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={data?.weeklyRevenue || []}>
+            <AreaChart data={period === 'week' ? (data?.weeklyRevenue || []) : (data?.monthlyTrend || [])}>
               <defs>
                 <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
@@ -391,7 +407,7 @@ const AdminDashboard = () => {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="day" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
+              <XAxis dataKey={period === 'week' ? "day" : "month"} tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="revenue" name="revenue" stroke="#F59E0B" strokeWidth={2.5} fill="url(#colorRev)" dot={{ fill: '#F59E0B', strokeWidth: 0, r: 4 }} activeDot={{ r: 6, fill: '#FBBF24' }} />

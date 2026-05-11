@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import compression from 'vite-plugin-compression'
 
 export default defineConfig({
   optimizeDeps: {
@@ -9,6 +10,10 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     react(),
+    // Brotli — Vercel serves .br automatically when present
+    compression({ algorithm: 'brotliCompress', ext: '.br' }),
+    // Gzip fallback
+    compression({ algorithm: 'gzip', ext: '.gz' }),
   ],
 
   build: {

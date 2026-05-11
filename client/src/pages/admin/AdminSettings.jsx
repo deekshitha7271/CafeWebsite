@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Store, Phone, Mail, Clock, AtSign, Globe, Percent, Bell, Loader2, Camera, X, Plus, AlignLeft } from 'lucide-react';
+import { Save, Store, Phone, Mail, Clock, AtSign, Globe, Percent, Bell, Loader2, Camera, X, Plus, AlignLeft, Tag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
@@ -113,6 +113,11 @@ const AdminSettings = () => {
                 <SettingsSection title="Pricing & Billing" icon={Percent}>
                     <Field label="Service Charge (%)" field="serviceCharge" type="number" />
                     <Field label="GST Rate (%)" field="gstRate" type="number" />
+                </SettingsSection>
+
+                <SettingsSection title="Today's Offer Banner" icon={Tag}>
+                    <Field label="Banner Text" field="offerBannerText" />
+                    <Toggle label="Show Banner on Website" field="offerBannerActive" />
                 </SettingsSection>
 
                 {/* Gallery Management Section - Spanning 2 columns */}

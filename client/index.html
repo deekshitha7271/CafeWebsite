@@ -34,45 +34,35 @@
   <link rel="preconnect" href="https://res.cloudinary.com">
   <link rel="dns-prefetch" href="https://res.cloudinary.com">
 
-  <!-- Preloads -->
+  <!--
+    LCP Preload — URL matches exactly the src rendered by MenuPage.jsx hero <motion.img>.
+    Previously pointed to the wrong image (v1777180127) causing the "preloaded but not used" warning.
+    formatImageUrl(..., 800) produces: f_auto,q_auto,w_800 + the path below.
+  -->
   <link rel="preload"
     href="https://res.cloudinary.com/dqxhjnhrt/image/upload/f_auto,q_auto,w_800/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png"
     as="image" fetchpriority="high" />
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts — non-blocking (rel=preload swap trick eliminates render-blocking) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
-    rel="stylesheet">
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap">
+  </noscript>
 </head>
 
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
-  <!-- Google Model Viewer for 3D/AR -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
-
-  <!-- Lenis Smooth Scroll -->
-  <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-  <script>
-    const lenis = new Lenis({
-      duration: 2.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // https://www.desmos.com/calculator/brs54l4ba6
-      direction: 'vertical',
-      gestureDirection: 'vertical',
-      smoothHover: true,
-      smoothTouch: true,
-      touchMultiplier: 2,
-    })
-
-    function raf(time) {
-      lenis.raf(time)
-      requestAnimationFrame(raf)
-    }
-
-    requestAnimationFrame(raf)
-  </script>
+  <!--
+    REMOVED: model-viewer CDN script (was parser-blocking, not used in production)
+    REMOVED: Lenis CDN + inline script (was parser-blocking TBT killer)
+    Lenis is now initialised from the npm package via useLenis() hook in App.jsx.
+  -->
 </body>
 
 </html>
