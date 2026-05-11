@@ -3,9 +3,9 @@ import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { Loader2, Download, Printer, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as XLSX from 'xlsx';
+// xlsx dynamically imported inside downloadExcel() — not in the initial bundle
 
-// ─── PrinterStatusBadge — Apple-style premium indicator ─────────────────
+// ─── PrinterStatusBadge ──────────────────────────────────────────────────────
 const PrinterStatusBadge = ({ online }) => (
   <motion.div
     layout
@@ -13,11 +13,10 @@ const PrinterStatusBadge = ({ online }) => (
     animate={{ opacity: 1, scale: 1 }}
     transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
     title={online ? 'Thermal printer bridge is connected' : 'Thermal printer bridge is offline'}
-    className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.18em] select-none backdrop-blur-md transition-colors duration-700 ${
-      online
+    className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.18em] select-none backdrop-blur-md transition-colors duration-700 ${online
         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
         : 'bg-white/5 border-white/10 text-text-muted'
-    }`}
+      }`}
   >
     <span className="relative flex h-2 w-2">
       {online ? (
@@ -34,7 +33,7 @@ const PrinterStatusBadge = ({ online }) => (
   </motion.div>
 );
 
-// ─── OrderCard Component (Moved outside for performance + React.memo) ────────────────
+// ─── OrderCard ───────────────────────────────────────────────────────────────
 const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, printerOnline }) => {
   const handleReprint = useCallback(() => {
     if (socket) {
@@ -58,7 +57,9 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
             <span>{order.orderType === 'takeaway' ? '🥡 Takeaway' : '🪑 Dine-in'}</span>
           </h3>
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <p className="text-[10px] text-text-muted uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded-md bg-surface-dark">{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-widest border border-white/10 px-2 py-0.5 rounded-md bg-surface-dark">
+              {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
             {order.customerName && (
               <span className="text-[10px] text-primary font-black uppercase tracking-widest px-2 py-0.5 bg-primary/10 rounded-md border border-primary/20">
                 {order.customerName}
@@ -69,19 +70,16 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
             <div className="flex items-center gap-2 mt-3">
               <span className={`flex items-center gap-1.5 text-[10px] border px-3 py-1.5 rounded-full font-black uppercase tracking-[0.2em] shadow-inner transition-colors duration-500 ${(() => {
                 const diff = new Date(order.arrivalTime) - now;
-                if (diff <= 0) return "bg-red-500/10 text-red-500 border-red-500/30";
-                if (diff <= 300000) return "bg-orange-500/10 text-orange-400 border-orange-500/30";
-                return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
-              })()
-                }`}>
+                if (diff <= 0) return 'bg-red-500/10 text-red-500 border-red-500/30';
+                if (diff <= 300000) return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+                return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+              })()}`}>
                 {(() => {
                   const diff = new Date(order.arrivalTime) - now;
-                  if (diff <= 0) {
-                    return <><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping"></div> ARRIVED</>;
-                  }
+                  if (diff <= 0) return <><div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" /> ARRIVED</>;
                   const mins = Math.floor(diff / 60000);
                   const secs = Math.floor((diff % 60000) / 1000);
-                  return <><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div> IN {mins}:{secs.toString().padStart(2, '0')} MINS</>;
+                  return <><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" /> IN {mins}:{secs.toString().padStart(2, '0')} MINS</>;
                 })()}
               </span>
             </div>
@@ -89,20 +87,18 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
         </div>
         <div className="text-right">
           <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${order.orderStatus === 'placed' ? 'bg-orange-500/10 text-orange-400 border-orange-500/30' :
-            order.orderStatus === 'preparing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
-              'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              order.orderStatus === 'preparing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
             }`}>
             {order.orderStatus}
           </span>
           {order.paymentStatus === 'paid' ? (
             <p className="text-[10px] mt-3 text-emerald-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              PAID
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> PAID
             </p>
           ) : (
             <p className="text-[10px] mt-3 text-orange-400 font-black tracking-widest uppercase flex items-center justify-end gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-              PAYMENT PENDING
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" /> PAYMENT PENDING
             </p>
           )}
         </div>
@@ -111,12 +107,13 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
       <div className="space-y-3 mb-6 bg-surface-dark/50 p-4 rounded-xl border border-white/5">
         {order.items.map((item, idx) => (
           <div key={idx} className="flex justify-between items-center text-sm">
-            <span className="text-text-muted font-medium"><span className="font-bold text-primary mr-3 text-base">{item.quantity}×</span> {item.name}</span>
+            <span className="text-text-muted font-medium">
+              <span className="font-bold text-primary mr-3 text-base">{item.quantity}×</span> {item.name}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* Actions Section */}
       <div className="flex flex-col gap-3 mt-6">
         {isActive && (
           <div className="flex gap-4">
@@ -162,7 +159,6 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
             )}
           </div>
         )}
-
         {order.paymentStatus === 'pending' && (
           <button
             onClick={() => updateStatus(order._id, null, 'paid')}
@@ -171,23 +167,16 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
             Confirm Payment (Override)
           </button>
         )}
-
-        {/* ── KOT Reprint Button ────────────────────────────────────── */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={handleReprint}
           disabled={!socket}
           title={printerOnline ? 'Reprint KOT to kitchen printer' : 'Printer bridge is offline'}
-          className={`
-            w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border mt-1
-            text-[10px] font-black uppercase tracking-widest transition-all duration-200
-            ${
-              printerOnline
-                ? 'bg-transparent border-white/10 text-text-muted hover:border-primary/40 hover:text-primary hover:bg-primary/5'
-                : 'bg-transparent border-white/5 text-white/20 cursor-not-allowed'
-            }
-          `}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border mt-1 text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${printerOnline
+              ? 'bg-transparent border-white/10 text-text-muted hover:border-primary/40 hover:text-primary hover:bg-primary/5'
+              : 'bg-transparent border-white/5 text-white/20 cursor-not-allowed'
+            }`}
         >
           <Printer className="w-3 h-3" />
           Reprint KOT
@@ -197,11 +186,11 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
   );
 });
 
+// ─── AdminOrders ─────────────────────────────────────────────────────────────
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
-  // ── KOT: track whether the local print bridge is connected ────────────────
   const [printerOnline, setPrinterOnline] = useState(false);
   const socket = useSocket();
 
@@ -216,7 +205,8 @@ const AdminOrders = () => {
     }
   };
 
-  const makeSheet = (rows) => {
+  // xlsx download — only imports the 220kB library when the button is clicked
+  const makeSheet = (XLSX, rows) => {
     if (!rows.length) return XLSX.utils.json_to_sheet([{ Note: 'No data available' }]);
     const ws = XLSX.utils.json_to_sheet(rows);
     const colWidths = Object.keys(rows[0]).map(key => ({
@@ -226,11 +216,11 @@ const AdminOrders = () => {
     return ws;
   };
 
-  const downloadExcel = () => {
+  const downloadExcel = async () => {
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const IST = 'en-IN';
 
-    // ─── SHEET 1: ALL ORDERS (full detail) ────────────────────────
     const allRows = orders.map(order => ({
       'Bill No': order.billNumber || order._id.slice(-6).toUpperCase(),
       'Date': new Date(order.timestamp).toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -245,9 +235,8 @@ const AdminOrders = () => {
       'Payment': order.paymentStatus.toUpperCase(),
       'Order Status': order.orderStatus.toUpperCase(),
     }));
-    XLSX.utils.book_append_sheet(wb, makeSheet(allRows), '📋 All Orders');
+    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, allRows), '📋 All Orders');
 
-    // ─── SHEET 2: BY DAY ─────────────────────────────────────────
     const dayMap = {};
     orders.forEach(order => {
       const d = new Date(order.timestamp);
@@ -261,27 +250,20 @@ const AdminOrders = () => {
       order.items.forEach(i => { day.items[i.name] = (day.items[i.name] || 0) + i.quantity; });
     });
     const dayRows = Object.values(dayMap).map(d => ({
-      'Date': d.date,
-      'Day': d.weekday,
-      'Total Orders': d.totalOrders,
-      'Paid Orders': d.paidOrders,
+      'Date': d.date, 'Day': d.weekday, 'Total Orders': d.totalOrders, 'Paid Orders': d.paidOrders,
       'Total Revenue (₹)': parseFloat(d.totalRevenue.toFixed(2)),
       'Avg Order Value (₹)': d.paidOrders > 0 ? parseFloat((d.totalRevenue / d.paidOrders).toFixed(2)) : 0,
-      'Takeaway Orders': d.takeaway,
-      'Dine-In Orders': d.dinein,
+      'Takeaway Orders': d.takeaway, 'Dine-In Orders': d.dinein,
       'Top Selling Item': Object.entries(d.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
     }));
-    XLSX.utils.book_append_sheet(wb, makeSheet(dayRows), '📅 By Day');
+    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, dayRows), '📅 By Day');
 
-    // ─── SHEET 3: BY WEEK ────────────────────────────────────────
     const weekMap = {};
     orders.forEach(order => {
       const d = new Date(order.timestamp);
-      const startOfWeek = new Date(d);
-      startOfWeek.setDate(d.getDate() - d.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      const fmt = (dt) => dt.toLocaleDateString(IST, { day: '2-digit', month: 'short' });
+      const startOfWeek = new Date(d); startOfWeek.setDate(d.getDate() - d.getDay());
+      const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate() + 6);
+      const fmt = dt => dt.toLocaleDateString(IST, { day: '2-digit', month: 'short' });
       const key = `${fmt(startOfWeek)} – ${fmt(endOfWeek)}`;
       if (!weekMap[key]) weekMap[key] = { week: key, sortKey: startOfWeek.getTime(), totalOrders: 0, paidOrders: 0, totalRevenue: 0, takeaway: 0, dinein: 0, items: {} };
       const week = weekMap[key];
@@ -291,18 +273,14 @@ const AdminOrders = () => {
       order.items.forEach(i => { week.items[i.name] = (week.items[i.name] || 0) + i.quantity; });
     });
     const weekRows = Object.values(weekMap).sort((a, b) => a.sortKey - b.sortKey).map(w => ({
-      'Week': w.week,
-      'Total Orders': w.totalOrders,
-      'Paid Orders': w.paidOrders,
+      'Week': w.week, 'Total Orders': w.totalOrders, 'Paid Orders': w.paidOrders,
       'Total Revenue (₹)': parseFloat(w.totalRevenue.toFixed(2)),
       'Avg Order Value (₹)': w.paidOrders > 0 ? parseFloat((w.totalRevenue / w.paidOrders).toFixed(2)) : 0,
-      'Takeaway Orders': w.takeaway,
-      'Dine-In Orders': w.dinein,
+      'Takeaway Orders': w.takeaway, 'Dine-In Orders': w.dinein,
       'Top Selling Item': Object.entries(w.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
     }));
-    XLSX.utils.book_append_sheet(wb, makeSheet(weekRows), '📆 By Week');
+    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, weekRows), '📆 By Week');
 
-    // ─── SHEET 4: BY MONTH ───────────────────────────────────────
     const monthMap = {};
     orders.forEach(order => {
       const d = new Date(order.timestamp);
@@ -319,28 +297,21 @@ const AdminOrders = () => {
     const monthRows = Object.values(monthMap).sort((a, b) => a.sortKey - b.sortKey).map(m => {
       const topItems = Object.entries(m.items).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n, q]) => `${n} (${q})`).join(', ');
       return {
-        'Month': m.month,
-        'Total Orders': m.totalOrders,
-        'Paid Orders': m.paidOrders,
+        'Month': m.month, 'Total Orders': m.totalOrders, 'Paid Orders': m.paidOrders,
         'Total Revenue (₹)': parseFloat(m.totalRevenue.toFixed(2)),
         'Avg Order Value (₹)': m.paidOrders > 0 ? parseFloat((m.totalRevenue / m.paidOrders).toFixed(2)) : 0,
-        'Takeaway Orders': m.takeaway,
-        'Dine-In Orders': m.dinein,
-        'Unique Customers': m.customers.size,
-        'Top 3 Items': topItems || '-',
+        'Takeaway Orders': m.takeaway, 'Dine-In Orders': m.dinein,
+        'Unique Customers': m.customers.size, 'Top 3 Items': topItems || '-',
       };
     });
-    XLSX.utils.book_append_sheet(wb, makeSheet(monthRows), '🗓️ By Month');
+    XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, monthRows), '🗓️ By Month');
 
-    // ─── DOWNLOAD ────────────────────────────────────────────────
     const today = new Date().toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
     XLSX.writeFile(wb, `CaPhe-Bistro-Report-${today}.xlsx`);
   };
 
   useEffect(() => {
     fetchOrders();
-
-    // Fail-safe polling every 30 seconds
     const interval = setInterval(fetchOrders, 30000);
     const timeInterval = setInterval(() => setNow(new Date()), 1000);
 
@@ -351,12 +322,9 @@ const AdminOrders = () => {
           return [newOrder, ...prev];
         });
       });
-
       socket.on('order:update', (updatedOrder) => {
         setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
       });
-
-      // ── KOT: listen for the print bridge connection status ─────────────────
       socket.on('printer_status', ({ online }) => {
         setPrinterOnline(online);
       });
@@ -379,27 +347,24 @@ const AdminOrders = () => {
       if (newStatus) updateData.orderStatus = newStatus;
       if (newPaymentStatus) updateData.paymentStatus = newPaymentStatus;
       if (estimatedReadyTime) updateData.estimatedReadyTime = estimatedReadyTime;
-
-      // Optimistic Update
       setOrders(prev => prev.map(o => o._id === orderId ? { ...o, ...updateData } : o));
-
       await axios.put(`${import.meta.env.VITE_API_URL}/orders/${orderId}/status`, updateData);
     } catch (error) {
       console.error('Failed to update status:', error);
-      fetchOrders(); // Rollback on error
+      fetchOrders();
     }
   };
 
-  const { activeOrders, pastOrders } = useMemo(() => {
-    return {
-      activeOrders: orders.filter(o => o.paymentStatus === 'paid' && o.orderStatus !== 'completed' && o.orderStatus !== 'ready'),
-      pastOrders: orders.filter(o => o.orderStatus === 'ready' || o.orderStatus === 'completed')
-    };
-  }, [orders]);
+  const { activeOrders, pastOrders } = useMemo(() => ({
+    activeOrders: orders.filter(o => o.paymentStatus === 'paid' && o.orderStatus !== 'completed' && o.orderStatus !== 'ready'),
+    pastOrders: orders.filter(o => o.orderStatus === 'ready' || o.orderStatus === 'completed')
+  }), [orders]);
 
-  if (loading) {
-    return <div className="flex justify-center p-20"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
-  }
+  if (loading) return (
+    <div className="flex justify-center p-20">
+      <Loader2 className="w-12 h-12 animate-spin text-primary" />
+    </div>
+  );
 
   return (
     <div>
@@ -409,7 +374,6 @@ const AdminOrders = () => {
           <p className="text-primary text-sm uppercase tracking-widest font-bold">Real-time Kitchen Display</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {/* ── KOT Printer Status Badge ── */}
           <PrinterStatusBadge online={printerOnline} />
           <motion.button
             whileHover={{ scale: 1.04 }}

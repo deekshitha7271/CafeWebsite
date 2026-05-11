@@ -122,9 +122,43 @@ app.use(session({
   }
 }));
 
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// ─── MongoDB Connection — Production-grade resilience ────────────────────────
+const MONGO_OPTS = {
+  serverSelectionTimeoutMS: 10000,  // Give up trying to select a server after 10s (not 30s default)
+  socketTimeoutMS: 45000,           // Close idle sockets after 45s to avoid ECONNRESET on keep-alive
+  connectTimeoutMS: 15000,          // Initial connection timeout
+  heartbeatFrequencyMS: 10000,      // Check connection health every 10s (vs 30s default)
+  maxPoolSize: 10,                  // Max concurrent connections (keep it low for free-tier Atlas)
+  minPoolSize: 1,                   // Always keep at least 1 connection warm
+  retryWrites: true,
+  retryReads: true,
+};
+
+const connectWithRetry = (attempt = 1) => {
+  const MAX_ATTEMPTS = 5;
+  mongoose.connect(process.env.MONGODB_URI, MONGO_OPTS)
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch(err => {
+      console.error(`❌ MongoDB connection failed (attempt ${attempt}):`, err.message);
+      if (attempt < MAX_ATTEMPTS) {
+        const delay = Math.min(1000 * 2 ** attempt, 30000); // Exponential backoff, max 30s
+        console.log(`🔄 Retrying in ${delay / 1000}s...`);
+        setTimeout(() => connectWithRetry(attempt + 1), delay);
+      } else {
+        console.error('🔥 MongoDB: max connection attempts reached. Server continuing without DB.');
+      }
+    });
+};
+connectWithRetry();
+
+// Reconnect automatically if the connection is lost after startup (ECONNRESET etc.)
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️  MongoDB disconnected — attempting reconnect...');
+  setTimeout(() => connectWithRetry(), 5000);
+});
+mongoose.connection.on('error', (err) => {
+  console.error('⚠️  MongoDB connection error:', err.message);
+});
 
 // Pass io instance to app
 app.set('io', io);

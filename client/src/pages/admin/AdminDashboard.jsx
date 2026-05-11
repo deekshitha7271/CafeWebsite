@@ -6,7 +6,7 @@ import {
 import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2, Power, Lock, X, Download, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import * as XLSX from 'xlsx'; // XLSX for reports export
+// xlsx is dynamically imported inside downloadReport() — not in the initial bundle
 
 const COLORS = ['#F59E0B', '#FBBF24', '#D97706', '#92400E', '#78350F'];
 
@@ -98,7 +98,7 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const makeSheet = (rows) => {
+  const makeSheet = (XLSX, rows) => {
     if (!rows.length) return XLSX.utils.json_to_sheet([{ Note: 'No data available' }]);
     const ws = XLSX.utils.json_to_sheet(rows);
     const colWidths = Object.keys(rows[0]).map(key => ({
@@ -110,6 +110,8 @@ const AdminDashboard = () => {
 
   const downloadReport = async () => {
     try {
+      // Dynamic import — xlsx (~220kB) is only loaded when admin clicks this button
+      const XLSX = await import('xlsx');
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders`);
       const orders = res.data;
       const wb = XLSX.utils.book_new();
@@ -130,7 +132,7 @@ const AdminDashboard = () => {
         'Payment': order.paymentStatus.toUpperCase(),
         'Order Status': order.orderStatus.toUpperCase(),
       }));
-      XLSX.utils.book_append_sheet(wb, makeSheet(allRows), '📋 All Orders');
+      XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, allRows), '📋 All Orders');
 
       // Sheet 2: By Day
       const dayMap = {};
@@ -152,7 +154,7 @@ const AdminDashboard = () => {
         'Takeaway Orders': d.takeaway, 'Dine-In Orders': d.dinein,
         'Top Selling Item': Object.entries(d.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
       }));
-      XLSX.utils.book_append_sheet(wb, makeSheet(dayRows), '📅 By Day');
+      XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, dayRows), '📅 By Day');
 
       // Sheet 3: By Week
       const weekMap = {};
@@ -176,7 +178,7 @@ const AdminDashboard = () => {
         'Takeaway Orders': w.takeaway, 'Dine-In Orders': w.dinein,
         'Top Selling Item': Object.entries(w.items).sort((a, b) => b[1] - a[1])[0]?.[0] || '-',
       }));
-      XLSX.utils.book_append_sheet(wb, makeSheet(weekRows), '📆 By Week');
+      XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, weekRows), '📆 By Week');
 
       // Sheet 4: By Month
       const monthMap = {};
@@ -199,7 +201,7 @@ const AdminDashboard = () => {
         'Unique Customers': m.customers.size,
         'Top 3 Items': Object.entries(m.items).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([n, q]) => `${n} (${q})`).join(', ') || '-',
       }));
-      XLSX.utils.book_append_sheet(wb, makeSheet(monthRows), '🗓️ By Month');
+      XLSX.utils.book_append_sheet(wb, makeSheet(XLSX, monthRows), '🗓️ By Month');
 
       const today = new Date().toLocaleDateString(IST, { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-');
       XLSX.writeFile(wb, `Ca-Phe-Bistro-Report-${today}.xlsx`);
