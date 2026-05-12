@@ -374,7 +374,7 @@ const MenuPage = () => {
               {/* Left — Address + timings */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                 <div className="w-14 h-14 bg-primary/15 border border-primary/20 rounded-2xl flex items-center justify-center shrink-0">
-                  <span className="text-background font-serif font-black text-xl text-primary">{settings?.cafeName?.[0] || 'C'}.</span>
+                  <Crown className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <h2 className="text-xl font-serif font-black text-white mb-1">

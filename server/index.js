@@ -245,6 +245,43 @@ app.get('/api/orders/public/:id', async (req, res) => {
   }
 });
 
+const Review = require('./models/Review');
+// Public route to submit feedback
+app.post('/api/reviews/public', async (req, res) => {
+  try {
+    const { orderId, customerName, rating, comment } = req.body;
+    
+    // Create the review
+    const newReview = new Review({
+      customerName: customerName || 'Guest',
+      rating,
+      comment,
+      category: 'Food'
+    });
+    await newReview.save();
+
+    // Mark order as feedback submitted
+    if (orderId) {
+      const order = await Order.findById(orderId);
+      if (order) {
+        order.feedbackSubmitted = true;
+        await order.save();
+        
+        // Broadcast update to update UI if needed
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('order:update', order);
+        }
+      }
+    }
+
+    res.status(201).json({ message: 'Feedback submitted successfully' });
+  } catch (error) {
+    console.error('Feedback submission error:', error);
+    res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
 // Protected routes
 app.use('/api/payment', paymentRoutes);
 app.use('/api/orders', protect, orderRoutes);

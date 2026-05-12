@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { useCart } from '../../context/CartContext';
-import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, History, PackageCheck, Utensils, AlertCircle, X } from 'lucide-react';
+import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, History, PackageCheck, Utensils, AlertCircle, X, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
 import { playOrderSuccessSound } from '../../lib/utils';
@@ -357,6 +357,13 @@ const TrackingPage = () => {
                     <p className="text-emerald-400 font-bold font-serif text-lg mb-1">Enjoy your meal! ✨</p>
                     <p className="text-emerald-400/60 text-[10px] uppercase tracking-widest font-black">Thank you for visiting</p>
                   </div>
+
+                  {!activeOrder.feedbackSubmitted && (
+                    <FeedbackForm order={activeOrder} onSubmitted={() => {
+                      setOrders(prev => prev.map(o => o._id === activeOrder._id ? { ...o, feedbackSubmitted: true } : o));
+                    }} />
+                  )}
+
                   <div className="flex flex-col md:flex-row gap-4">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -521,5 +528,96 @@ const OrderConfirmedOverlay = React.memo(({ onClose }) => (
     </motion.div>
   </motion.div>
 ));
+
+const FeedbackForm = React.memo(({ order, onSubmitted }) => {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (rating === 0) return;
+    setLoading(true);
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/reviews/public`, {
+        orderId: order._id,
+        customerName: order.customerName,
+        rating,
+        comment
+      });
+      setSubmitted(true);
+      setTimeout(() => {
+        onSubmitted();
+      }, 2000);
+    } catch (error) {
+      console.error('Feedback error:', error);
+      alert('Failed to submit feedback. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="p-6 bg-primary/10 border border-primary/20 rounded-2xl text-center"
+      >
+        <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+        <h4 className="text-white font-serif font-black text-lg mb-1">Thank You!</h4>
+        <p className="text-white/60 text-sm">Your feedback helps us improve.</p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="p-6 bg-surface-dark border border-white/5 rounded-2xl mt-4 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px] -z-10" />
+      <h4 className="text-white font-serif font-black text-xl mb-4 text-center">How was your experience?</h4>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex justify-center gap-2 mb-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setRating(star)}
+              onMouseEnter={() => setHoverRating(star)}
+              onMouseLeave={() => setHoverRating(0)}
+              className="p-1 transition-transform hover:scale-110"
+            >
+              <Star
+                className={`w-8 h-8 ${star <= (hoverRating || rating)
+                  ? 'fill-primary text-primary drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                  : 'text-white/20'
+                  } transition-colors`}
+              />
+            </button>
+          ))}
+        </div>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Tell us what you loved (optional)"
+          className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors resize-none h-24"
+        />
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          type="submit"
+          disabled={rating === 0 || loading}
+          className={`w-full py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${rating === 0
+            ? 'bg-white/5 text-white/30 cursor-not-allowed'
+            : 'bg-primary text-background shadow-lg shadow-primary/20 hover:bg-primary-light'
+            }`}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Submit Feedback <ArrowRight className="w-3 h-3" /></>}
+        </motion.button>
+      </form>
+    </div>
+  );
+});
 
 export default React.memo(TrackingPage);
