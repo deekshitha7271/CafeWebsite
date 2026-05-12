@@ -16,6 +16,8 @@ const orderSchema = new mongoose.Schema({
   },
   items: [orderItemSchema],
   total: { type: Number, required: true },
+  gstRate: { type: Number, default: 5 },
+  gstAmount: { type: Number, default: 0 },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   orderStatus: { type: String, enum: ['placed', 'preparing', 'ready', 'completed'], default: 'placed' },
   estimatedReadyTime: { type: Date },

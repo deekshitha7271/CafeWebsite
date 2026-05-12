@@ -7,6 +7,7 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Coupon = require('../models/Coupon');
 const DailyCounter = require('../models/DailyCounter');
+const CafeSettings = require('../models/CafeSettings');
 
 // Lazy Razorpay initializer — avoids crash on startup when env vars are not yet set
 let _razorpay = null;
@@ -91,6 +92,12 @@ router.post('/razorpay/create-order', async (req, res) => {
       grandTotal = Math.max(0, grandTotal - discountAmount);
     }
 
+    // Add GST
+    const settings = await CafeSettings.findOne() || {};
+    const gstRate = settings.gstRate ?? 5;
+    const gstAmount = (grandTotal * gstRate) / 100;
+    grandTotal += gstAmount;
+
     // Save new order to DB
     const arrivalMins = arrivalTime ? parseInt(arrivalTime, 10) : null;
     const targetOrder = new Order({
@@ -109,6 +116,8 @@ router.post('/razorpay/create-order', async (req, res) => {
         quantity: i.quantity
       })),
       total: grandTotal,
+      gstRate: gstRate,
+      gstAmount: gstAmount,
       paymentStatus: 'pending',
       orderStatus: 'placed'
     });
