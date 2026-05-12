@@ -24,7 +24,8 @@ export const AuthProvider = ({ children }) => {
 
     const fetchMe = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`);
+        const url = `${import.meta.env.VITE_API_URL}/api/auth/me`.replace(/\/api\/api/, '/api');
+        const response = await axios.get(url);
         setUser(response.data.user || null);
       } catch (err) {
         setUser(null);
@@ -43,7 +44,8 @@ export const AuthProvider = ({ children }) => {
   // Staff login: email + password
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
+      const url = `${import.meta.env.VITE_API_URL}/api/auth/login`.replace(/\/api\/api/, '/api');
+      const response = await axios.post(url, { email, password });
       setUser(response.data.user);
       return response.data.user;
     } catch (err) {
@@ -56,7 +58,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`);
+      const url = `${import.meta.env.VITE_API_URL}/api/auth/logout`.replace(/\/api\/api/, '/api');
+      await axios.post(url);
     } catch (err) {
       console.error('Logout failed', err);
     } finally {
