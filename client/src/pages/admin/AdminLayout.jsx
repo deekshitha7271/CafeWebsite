@@ -15,6 +15,7 @@ const allLinks = [
 
   { to: '/admin/menu', icon: Coffee, label: 'Menu Management', roles: ['admin'] },
   { to: '/admin/customers', icon: Users, label: 'Customers', roles: ['admin'] },
+  { to: '/admin/reviews', icon: Star, label: 'Customer Reviews', roles: ['admin'] },
   { to: '/admin/inventory', icon: Package, label: 'Inventory', roles: ['admin'] },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analytics & Reports', roles: ['admin'] },
   { to: '/admin/staff', icon: UserCog, label: 'Staff Management', roles: ['admin'] },

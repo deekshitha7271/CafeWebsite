@@ -28,6 +28,7 @@ const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'));
 const AdminOffers = lazy(() => import('./pages/admin/AdminOffers'));
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminReviews = lazy(() => import('./pages/admin/AdminReviews'));
 
 function App() {
   useLenis(); // smooth scroll — non-blocking (replaces CDN script in index.html)
@@ -68,6 +69,7 @@ function App() {
                       <Route path="offers" element={<AdminOffers />} />
                       <Route path="notifications" element={<AdminNotifications />} />
                       <Route path="settings" element={<AdminSettings />} />
+                      <Route path="reviews" element={<AdminReviews />} />
                     </Route>
                   </Route>
                 </Routes>
