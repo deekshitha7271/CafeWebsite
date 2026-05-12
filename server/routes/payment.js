@@ -223,8 +223,6 @@ router.get('/verify-session/:orderId', async (req, res) => {
         if (io) {
           io.emit('order:new', order);
           io.emit('order:update', order);
-          // ── KOT: trigger kitchen print for this newly-paid order ─────────────
-          io.emit('new_kitchen_order', order);
         }
 
         try {
@@ -276,8 +274,6 @@ router.post('/webhook', async (req, res) => {
         const io = req.app.get('io');
         if (io) {
           io.emit('order:new', order);
-          // ── KOT: trigger kitchen print via webhook confirmation ────────────
-          io.emit('new_kitchen_order', order);
         }
 
         try {
@@ -432,7 +428,6 @@ router.post('/razorpay/verify', async (req, res) => {
         if (io) {
           io.emit('order:new', order);
           io.emit('order:update', order);
-          io.emit('new_kitchen_order', order);
         }
 
         try {

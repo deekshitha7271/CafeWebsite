@@ -1,46 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
-import { Loader2, Download, Printer, WifiOff } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // xlsx dynamically imported inside downloadExcel() — not in the initial bundle
 
-// ─── PrinterStatusBadge ──────────────────────────────────────────────────────
-const PrinterStatusBadge = ({ online }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
-    title={online ? 'Thermal printer bridge is connected' : 'Thermal printer bridge is offline'}
-    className={`inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl border text-[10px] font-black uppercase tracking-[0.18em] select-none backdrop-blur-md transition-colors duration-700 ${online
-        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-        : 'bg-white/5 border-white/10 text-text-muted'
-      }`}
-  >
-    <span className="relative flex h-2 w-2">
-      {online ? (
-        <>
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-        </>
-      ) : (
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-white/20" />
-      )}
-    </span>
-    {online ? <Printer className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-    {online ? 'Printer Online' : 'Printer Offline'}
-  </motion.div>
-);
 
 // ─── OrderCard ───────────────────────────────────────────────────────────────
-const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, printerOnline }) => {
-  const handleReprint = useCallback(() => {
-    if (socket) {
-      socket.emit('admin_reprint_order', order);
-      console.log('🔁 Reprint emitted for order', order._id || order.billNumber);
-    }
-  }, [socket, order]);
+const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket }) => {
 
   return (
     <motion.div
@@ -167,20 +134,6 @@ const OrderCard = React.memo(({ order, isActive, updateStatus, now, socket, prin
             Confirm Payment (Override)
           </button>
         )}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          onClick={handleReprint}
-          disabled={!socket}
-          title={printerOnline ? 'Reprint KOT to kitchen printer' : 'Printer bridge is offline'}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border mt-1 text-[10px] font-black uppercase tracking-widest transition-all duration-200 ${printerOnline
-              ? 'bg-transparent border-white/10 text-text-muted hover:border-primary/40 hover:text-primary hover:bg-primary/5'
-              : 'bg-transparent border-white/5 text-white/20 cursor-not-allowed'
-            }`}
-        >
-          <Printer className="w-3 h-3" />
-          Reprint KOT
-        </motion.button>
       </div>
     </motion.div>
   );
@@ -191,7 +144,6 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
-  const [printerOnline, setPrinterOnline] = useState(false);
   const socket = useSocket();
 
   const fetchOrders = async () => {
@@ -325,9 +277,6 @@ const AdminOrders = () => {
       socket.on('order:update', (updatedOrder) => {
         setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
       });
-      socket.on('printer_status', ({ online }) => {
-        setPrinterOnline(online);
-      });
     }
 
     return () => {
@@ -374,7 +323,6 @@ const AdminOrders = () => {
           <p className="text-primary text-sm uppercase tracking-widest font-bold">Real-time Kitchen Display</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <PrinterStatusBadge online={printerOnline} />
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
@@ -399,7 +347,7 @@ const AdminOrders = () => {
           <div className="space-y-6">
             <AnimatePresence>
               {activeOrders.map(order => (
-                <OrderCard key={order._id} order={order} isActive={true} updateStatus={updateStatus} now={now} socket={socket} printerOnline={printerOnline} />
+                <OrderCard key={order._id} order={order} isActive={true} updateStatus={updateStatus} now={now} socket={socket} />
               ))}
               {activeOrders.length === 0 && (
                 <div className="text-center py-20 bg-surface/30 rounded-3xl border border-white/5">
@@ -415,7 +363,7 @@ const AdminOrders = () => {
             <h3 className="text-xl font-serif font-bold text-text-muted mb-6">Completed / Pending</h3>
             <div className="space-y-4">
               {pastOrders.slice(0, 10).map(order => (
-                <OrderCard key={order._id} order={order} isActive={false} updateStatus={updateStatus} now={now} socket={socket} printerOnline={printerOnline} />
+                <OrderCard key={order._id} order={order} isActive={false} updateStatus={updateStatus} now={now} socket={socket} />
               ))}
             </div>
           </div>

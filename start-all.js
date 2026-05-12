@@ -25,35 +25,15 @@ const server = spawn('node', ['index.js'], {
 
 console.log('🚀 Starting backend server …');
 
-// ── Give server 3s to boot, then start the print client ──────────────────────
-setTimeout(() => {
-  console.log('\n🖨️  Starting Kitchen Bridge print client …\n');
+// Clean up server on exit
+const cleanup = () => {
+  console.log('\n🛑 Shutting down server …');
+  if (!server.killed) server.kill('SIGINT');
+  setTimeout(() => process.exit(0), 1000);
+};
 
-  const printDir = path.join(__dirname, 'print-client');
-  const printClient = spawn('node', ['index.js'], {
-    cwd: printDir,
-    stdio: 'inherit',
-    shell: isWin,
-  });
-
-  printClient.on('exit', (code) => {
-    if (code !== 0 && code !== null) {
-      console.error(`Print client exited with code ${code}`);
-    }
-  });
-
-  // Clean up both on exit
-  const cleanup = () => {
-    console.log('\n🛑 Shutting down all processes …');
-    if (!server.killed) server.kill('SIGINT');
-    if (!printClient.killed) printClient.kill('SIGINT');
-    setTimeout(() => process.exit(0), 1000);
-  };
-
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
-
-}, 3000);
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
 
 server.on('exit', (code) => {
   if (code !== 0 && code !== null) {
