@@ -25,7 +25,10 @@ const orderSchema = new mongoose.Schema({
   customerPhone: { type: String },
   billNumber: { type: String },
   stripeSessionId: { type: String },
+  razorpayOrderId: { type: String },
+  razorpayPaymentId: { type: String },
   timestamp: { type: Date, default: Date.now }
+
 });
 
 // Indices for production performance

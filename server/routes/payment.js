@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Coupon = require('../models/Coupon');
 const DailyCounter = require('../models/DailyCounter');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
 
 // ─── HELPER: Calculate billing fees ───────────────────────────────────────────
 // Returns the fee amount and a descriptor for Stripe line items
@@ -290,4 +298,168 @@ router.post('/webhook', async (req, res) => {
   res.status(200).end();
 });
 
+// ─── RAZORPAY: CREATE ORDER ───────────────────────────────────────────────────
+router.post('/razorpay/create-order', async (req, res) => {
+  try {
+    const { items, table, orderType, customerName, customerPhone, arrivalTime, couponCode } = req.body;
+    let targetOrder;
+    let discountAmount = 0;
+    let appliedCoupon = null;
+
+    if (couponCode) {
+      appliedCoupon = await Coupon.findOne({ code: couponCode.toUpperCase(), active: true });
+    }
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'No items in order' });
+    }
+
+    // Parse arrival time
+    let parsedArrivalTime;
+    if (arrivalTime) {
+      const mins = parseInt(arrivalTime, 10);
+      if (!isNaN(mins) && mins > 0) {
+        parsedArrivalTime = new Date(Date.now() + mins * 60000);
+      }
+    }
+
+    // Generate Daily Sequential Bill Number
+    const dateStr = new Date().toISOString().split('T')[0];
+    const counter = await DailyCounter.findOneAndUpdate(
+      { date: dateStr },
+      { $inc: { count: 1 } },
+      { new: true, upsert: true }
+    );
+    const billNumber = `B-${counter.count}`;
+
+    // Calculate fees
+    const resolvedOrderType = orderType || 'dinein-web';
+    const { feeAmount, subtotal } = calculateFees(items, resolvedOrderType);
+    let grandTotal = subtotal + feeAmount;
+
+    // Apply coupon
+    if (appliedCoupon) {
+      if (appliedCoupon.type === 'percent') {
+        discountAmount = grandTotal * (Number(appliedCoupon.value) / 100);
+      } else if (appliedCoupon.type === 'flat') {
+        discountAmount = Math.min(Number(appliedCoupon.value), grandTotal);
+      }
+      grandTotal = Math.max(0, grandTotal - discountAmount);
+    }
+
+    // Save new order to DB
+    const arrivalMins = arrivalTime ? parseInt(arrivalTime, 10) : null;
+    targetOrder = new Order({
+      table,
+      user: req.session?.userId,
+      orderType: resolvedOrderType,
+      customerName,
+      customerPhone,
+      billNumber,
+      arrivalTime: parsedArrivalTime,
+      arrivalMinutes: arrivalMins && !isNaN(arrivalMins) ? arrivalMins : undefined,
+      items: items.map(i => ({
+        menuItemId: i._id || i.menuItemId,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity
+      })),
+      total: grandTotal,
+      paymentStatus: 'pending',
+      orderStatus: 'placed'
+    });
+
+    if (appliedCoupon && discountAmount > 0) {
+      targetOrder.discountAmount = discountAmount;
+      targetOrder.appliedCouponCode = appliedCoupon.code;
+    }
+
+    await targetOrder.save();
+
+    // Create Razorpay order
+    const options = {
+      amount: Math.round(grandTotal * 100), // amount in paise
+      currency: "INR",
+      receipt: targetOrder._id.toString(),
+    };
+
+    const rzpOrder = await razorpay.orders.create(options);
+
+    targetOrder.razorpayOrderId = rzpOrder.id;
+    await targetOrder.save();
+
+    // Clear user cart
+    if (req.session?.userId) {
+      await User.findByIdAndUpdate(req.session.userId, { $set: { cart: [] } });
+    }
+
+    res.json({
+      orderId: targetOrder._id,
+      razorpayOrderId: rzpOrder.id,
+      amount: options.amount,
+      currency: options.currency,
+      key: process.env.RAZORPAY_KEY_ID
+    });
+
+  } catch (error) {
+    console.error('🔥 RAZORPAY ORDER ERROR:', error);
+    res.status(500).json({ error: 'Failed to create Razorpay order', details: error.message });
+  }
+});
+
+// ─── RAZORPAY: VERIFY PAYMENT ─────────────────────────────────────────────────
+router.post('/razorpay/verify', async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature === razorpay_signature) {
+      const order = await Order.findById(orderId);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+
+      if (order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        order.razorpayPaymentId = razorpay_payment_id;
+        await order.save();
+
+        // Socket notifications
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('order:new', order);
+          io.emit('order:update', order);
+          io.emit('new_kitchen_order', order);
+        }
+
+        try {
+          await new Notification({
+            type: 'payment',
+            title: 'Payment Received (Razorpay)',
+            body: `Online payment of ₹${order.total} verified for order #${order._id.toString().slice(-6)}.`,
+          }).save();
+        } catch (nErr) {
+          console.warn('Notification failed:', nErr.message);
+        }
+
+        // Update coupon uses if applicable
+        if (order.appliedCouponCode) {
+          await Coupon.findOneAndUpdate({ code: order.appliedCouponCode }, { $inc: { uses: 1 } });
+        }
+      }
+
+      res.json({ success: true, order });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid signature' });
+    }
+  } catch (error) {
+    console.error('🔥 RAZORPAY VERIFY ERROR:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
 module.exports = router;
+

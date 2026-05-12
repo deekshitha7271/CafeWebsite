@@ -91,24 +91,78 @@ const CartDrawer = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/checkout`, {
+      // 1. Create Razorpay order on backend
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/payment/razorpay/create-order`, {
         items: state.items,
-        total: grandTotal, // Send the computed total WITH fees
+        total: grandTotal,
         orderType: state.orderType,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        arrivalTime: selectedArrival || null, // "10", "20", or "30" (minutes string)
+        arrivalTime: selectedArrival || null,
         couponCode: state.coupon?.code,
       });
-      window.location.href = res.data.url;
+
+      const { razorpayOrderId, amount, currency, key, orderId } = res.data;
+
+      // 2. Configure Razorpay options
+      const options = {
+        key: key,
+        amount: amount,
+        currency: currency,
+        name: "Cá Phê Bistro",
+        description: "Order Payment",
+        order_id: razorpayOrderId,
+        handler: async function (response) {
+          // 3. Verify payment on backend
+          try {
+            setLoading(true);
+            const verifyRes = await axios.post(`${import.meta.env.VITE_API_URL}/payment/razorpay/verify`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: orderId
+            });
+
+            if (verifyRes.data.success) {
+              playOrderSuccessSound();
+              dispatch({ type: 'CLEAR_CART' });
+              window.location.href = `/payment/success?orderId=${orderId}`;
+            } else {
+              alert("❌ Payment verification failed.");
+            }
+          } catch (err) {
+            console.error("Verification error:", err);
+            alert("❌ Something went wrong while verifying payment.");
+          } finally {
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: customerName.trim(),
+          contact: customerPhone.trim(),
+        },
+        theme: {
+          color: "#f59e0b", // Primary gold color
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          }
+        }
+      };
+
+      // 4. Open Razorpay modal
+      const rzp1 = new window.Razorpay(options);
+      rzp1.open();
+
     } catch (error) {
       console.error('Checkout error:', error);
       const errorMsg = error.response?.data?.details || error.response?.data?.error || error.message;
       alert(`❌ Checkout failed: ${errorMsg}`);
-    } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <AnimatePresence>
