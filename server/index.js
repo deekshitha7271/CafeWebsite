@@ -30,6 +30,7 @@ const allowedOrigins = [
   clientUrl,
   "https://caphebistro.in",
   "https://www.caphebistro.in",
+  "https://caphebistro-nine.vercel.app",
   "https://cafe-website-psi-bice.vercel.app",
   "http://localhost:5173",
   "http://localhost:5174",
@@ -250,7 +251,7 @@ const Review = require('./models/Review');
 app.post('/api/reviews/public', async (req, res) => {
   try {
     const { orderId, customerName, rating, comment } = req.body;
-    
+
     // Create the review
     const newReview = new Review({
       customerName: customerName || 'Guest',
@@ -266,7 +267,7 @@ app.post('/api/reviews/public', async (req, res) => {
       if (order) {
         order.feedbackSubmitted = true;
         await order.save();
-        
+
         // Broadcast update to update UI if needed
         const io = req.app.get('io');
         if (io) {
