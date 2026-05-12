@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
-import { X, Minus, Plus, Loader2, Sparkles, Activity, Clock, ShoppingBag, Check } from 'lucide-react';
+import { X, Minus, Plus, Loader2, Sparkles, Activity, Clock, ShoppingBag, Check, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playOrderSuccessSound } from '../../lib/utils';
 
@@ -210,28 +210,17 @@ const CartDrawer = () => {
               className="flex-1 overflow-y-auto px-6 py-4 space-y-10 custom-scrollbar relative"
               data-lenis-prevent
             >
-              {/* Summary Stats (Simplified) */}
-              <div className="bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 rounded-[32px] p-6 mt-4">
-                <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Selection Count</p>
-                    <p className="text-2xl font-serif font-black text-white">{totalItemCount} <span className="text-xs text-text-muted">Items</span></p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest">Total Amount</p>
-                    <p className="text-2xl font-serif font-black text-primary">₹{grandTotal.toFixed(0)}</p>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Active Selection Section */}
               <div className="space-y-6">
-                <div className="flex items-center justify-between sticky top-[-16px] bg-surface-dark/95 backdrop-blur-md py-4 z-10 -mx-6 px-6 border-b border-white/5 shadow-xl shadow-black/20">
-                  <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
-                    Active Selection
+                {/* Active Selection Header - Clean & Non-Sticky */}
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-amber-400"></div>
+                    Your Selection
                   </h3>
-                  <span className="text-[10px] font-bold text-text-muted bg-white/5 px-3 py-1 rounded-full">{state.items.length} items</span>
+                  <span className="text-[9px] font-bold text-text-muted">{state.items.length} items</span>
                 </div>
 
                 {state.items.length === 0 ? (
@@ -316,148 +305,137 @@ const CartDrawer = () => {
                     </div>
                   )}
                   {couponError && <p className="text-[10px] text-red-400 font-bold ml-2 flex items-center gap-1"><X size={10} /> {couponError}</p>}
-                </div>
-              )}
+                  {/* ── Summary & Fees: In Scroll View to clear space for items ─────── */}
+                  <div className="space-y-4 pt-6 border-t border-white/5">
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/50 flex items-center gap-2">
+                      Order Summary
+                    </h3>
 
-              {/* ── Arrival Time: 3-Button Picker ─────────────────────────────── */}
-              {state.items.length > 0 && (
-                <div className="space-y-4 pt-4 border-t border-white/5">
-                  <h3 className={`text-[11px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-colors ${inputErrors.arrival ? 'text-red-500' : 'text-white/50'}`}>
-                    <Clock size={14} className={inputErrors.arrival ? 'animate-bounce' : ''} />
-                    When are you arriving? <span className="text-red-500 text-xs font-black animate-pulse">*</span>
-                  </h3>
-                  <motion.div
-                    animate={shakeFields && inputErrors.arrival ? { x: [-10, 10, -10, 10, 0] } : {}}
-                    transition={{ duration: 0.4 }}
-                    className="grid grid-cols-3 gap-3 relative"
-                  >
-                    {ARRIVAL_OPTIONS.map((mins) => (
-                      <motion.button
-                        key={mins}
-                        whileHover={{ scale: 1.04 }}
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => handleArrivalSelect(mins)}
-                        className={`py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${selectedArrival === mins
-                          ? 'bg-primary text-background border-primary shadow-[0_8px_24px_rgba(245,158,11,0.35)]'
-                          : inputErrors.arrival
-                            ? 'bg-red-500/10 text-red-100 border-red-500/40'
-                            : 'bg-white/5 text-white/50 border-white/10 hover:border-primary/50 hover:text-white'
-                          }`}
-                      >
-                        {mins} mins
-                      </motion.button>
-                    ))}
-                    {inputErrors.arrival && (
-                      <span className="absolute -bottom-6 left-0 text-[8px] font-black uppercase tracking-widest text-red-500 animate-pulse">Required: Select an arrival window</span>
-                    )}
-                  </motion.div>
-                </div>
-              )}
+                    <div className="space-y-3 px-1 bg-white/[0.02] p-4 rounded-3xl border border-white/5 shadow-inner">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-muted">Subtotal ({totalItemCount} items)</span>
+                        <span className="text-white font-bold">₹{cartTotal.toFixed(0)}</span>
+                      </div>
 
-              {/* Bottom Padding */}
-              <div className="h-40"></div>
-            </div>
-
-            {/* Sticky Footer Summary */}
-            <div className="p-6 md:p-8 bg-surface-dark/98 backdrop-blur-3xl border-t border-white/10 shadow-[0_-30px_60px_rgba(0,0,0,0.8)] z-30">
-              <div className="space-y-4">
-                {discount > 0 && (
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/10">
-                    <span className="flex items-center gap-2"><Sparkles size={12} /> Saving ({state.coupon?.code})</span>
-                    <span>-₹{discount.toFixed(0)}</span>
-                  </div>
-                )}
-
-                {/* Conditional fee display */}
-                {state.items.length > 0 && extraFee > 0 && (
-                  <div className="space-y-2 px-1 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
-                    <div className="flex justify-between text-[11px] text-white/60">
-                      <span className="font-black uppercase tracking-widest">Subtotal</span>
-                      <span className="font-black text-white">₹{cartTotal.toFixed(0)}</span>
-                    </div>
-                    <div className="flex justify-between text-[11px] text-primary-light">
-                      <span className="font-black uppercase tracking-widest">
-                        {isDineIn ? 'Service Charge (5%)' : `Takeaway Fee (₹10 × ${totalItemCount})`}
-                      </span>
-                      <span className="font-black text-primary-light">+ ₹{extraFee.toFixed(0)}</span>
-                    </div>
-                  </div>
-                )}
-
-                {state.items.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3 pb-3">
-                    <motion.div
-                      animate={shakeFields && inputErrors.name ? { x: [-10, 10, -10, 10, 0] } : {}}
-                      transition={{ duration: 0.4 }}
-                      className="relative"
-                    >
-                      <label className="text-[9px] font-black text-primary uppercase tracking-[0.15em] ml-1 mb-1.5 flex items-center gap-1">
-                        NAME <span className="text-red-500 text-xs">*</span>
-                      </label>
-                      <input
-                        id="guest-name"
-                        type="text"
-                        placeholder="e.g. John Doe"
-                        value={customerName}
-                        onChange={(e) => {
-                          setCustomerName(e.target.value);
-                          if (inputErrors.name) setInputErrors(prev => ({ ...prev, name: false }));
-                        }}
-                        className={`w-full bg-white/5 border ${inputErrors.name ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 hover:border-primary/50 focus:border-primary'} rounded-xl px-4 py-4 text-xs font-black tracking-widest text-white outline-none transition-all placeholder:text-primary/30`}
-                      />
-                      {inputErrors.name && <span className="absolute -bottom-2 right-2 bg-red-500 text-[7px] px-1.5 py-0.5 rounded text-white font-bold uppercase z-10 shadow-lg">Required</span>}
-                    </motion.div>
-                    <motion.div
-                      animate={shakeFields && inputErrors.phone ? { x: [-10, 10, -10, 10, 0] } : {}}
-                      transition={{ duration: 0.4 }}
-                      className="relative"
-                    >
-                      <label className="text-[9px] font-black text-primary uppercase tracking-[0.15em] ml-1 mb-1.5 flex items-center gap-1">
-                        PHONE <span className="text-red-500 text-xs">*</span>
-                      </label>
-                      <input
-                        id="guest-phone"
-                        type="tel"
-                        placeholder="e.g. 98765 43210"
-                        value={customerPhone}
-                        onChange={(e) => {
-                          setCustomerPhone(e.target.value.replace(/\D/g, ''));
-                          if (inputErrors.phone) setInputErrors(prev => ({ ...prev, phone: false }));
-                        }}
-                        maxLength={15}
-                        className={`w-full bg-white/5 border ${inputErrors.phone ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'border-white/20 hover:border-primary/50 focus:border-primary'} rounded-xl px-4 py-4 text-xs font-black tracking-widest text-white outline-none transition-all placeholder:text-primary/30`}
-                      />
-                      {inputErrors.phone && <span className="absolute -bottom-2 right-2 bg-red-500 text-[7px] px-1.5 py-0.5 rounded text-white font-bold uppercase z-10 shadow-lg">Required</span>}
-                    </motion.div>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-end gap-6 pt-2">
-                  <div className="flex-shrink-0">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary block mb-1">Pay Total</span>
-                    <p className="text-4xl md:text-5xl font-serif font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">₹{grandTotal.toFixed(0)}</p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.02, brightness: 1.1 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleCheckout}
-                    disabled={state.items.length === 0 || loading}
-                    className="flex-1 relative group disabled:opacity-50 h-[76px]"
-                  >
-                    <div className="absolute inset-0 bg-primary/60 rounded-[28px] blur-3xl group-hover:bg-primary/80 transition-all animate-pulse"></div>
-                    <div className="relative h-full bg-gradient-to-br from-amber-300 via-primary-light to-primary-dark text-background rounded-[24px] font-black uppercase tracking-[0.2em] text-[13px] flex items-center justify-center gap-3 border border-white/40 shadow-[0_0_40px_rgba(245,158,11,0.5)] overflow-hidden scale-[1.02]">
-                      <div className="absolute inset-0 bg-white/40 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-500"></div>
-                      {loading ? <Loader2 className="animate-spin w-6 h-6" /> : (
-                        <div className="relative flex items-center gap-3">
-                          Complete Order
-                          <div className="bg-background/40 p-2 rounded-xl border border-white/30 backdrop-blur-sm">
-                            <Sparkles size={18} className="text-white" />
-                          </div>
+                      {isDineIn && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-text-muted">Service Charge (5%)</span>
+                          <span className="text-primary-light font-bold">+ ₹{serviceCharge.toFixed(0)}</span>
                         </div>
                       )}
+
+                      {isTakeaway && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-text-muted">Handling Fee (₹10/item)</span>
+                          <span className="text-primary-light font-bold">+ ₹{takeawayFee.toFixed(0)}</span>
+                        </div>
+                      )}
+
+                      {discount > 0 && (
+                        <div className="flex justify-between text-sm text-emerald-400">
+                          <span className="flex items-center gap-2 font-bold tracking-tight">
+                            <Sparkles size={14} /> Discount ({state.coupon?.code})
+                          </span>
+                          <span className="font-bold">-₹{discount.toFixed(0)}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-3 border-t border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-black uppercase tracking-widest text-white">Grand Total</span>
+                        <span className="text-xl font-serif font-black text-primary">₹{grandTotal.toFixed(0)}</span>
+                      </div>
                     </div>
-                  </motion.button>
+                  </div>
                 </div>
+              )}
+
+              {/* Large Spacer to ensure Order Summary scrolls ABOVE the sticky footer */}
+              <div className="h-[280px]"></div>
+            </div>
+
+            {/* Ultra-Compact Sticky Footer */}
+            <div className="p-4 md:p-6 bg-surface-dark/98 backdrop-blur-3xl border-t border-white/10 shadow-[0_-30px_60px_rgba(0,0,0,0.8)] z-30">
+              <div className="space-y-5">
+                {/* ── Arrival Time + Guest Info: Compressed Footer Group ──────────── */}
+                {state.items.length > 0 && (
+                  <div className="space-y-4">
+                    {/* Arrival Picker - Small Row */}
+                    <div className="flex items-center justify-between gap-4">
+                      <h3 className={`text-[9px] font-black uppercase tracking-[0.15em] flex-shrink-0 flex items-center gap-1.5 transition-colors ${inputErrors.arrival ? 'text-red-500' : 'text-primary'}`}>
+                        <Clock size={12} /> ARRIVAL:
+                      </h3>
+                      <div className="flex-1 grid grid-cols-3 gap-1.5">
+                        {ARRIVAL_OPTIONS.map((mins) => (
+                          <button
+                            key={mins}
+                            onClick={() => handleArrivalSelect(mins)}
+                            className={`py-2 px-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${selectedArrival === mins
+                              ? 'bg-primary text-background border-primary shadow-sm'
+                              : inputErrors.arrival
+                                ? 'bg-red-500/5 text-red-400 border-red-500/20'
+                                : 'bg-white/5 text-white/40 border-white/10'
+                              }`}
+                          >
+                            {mins}m
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Guest Inputs - Compact Duo */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <input
+                          id="guest-name"
+                          type="text"
+                          placeholder="NAME"
+                          value={customerName}
+                          onChange={(e) => {
+                            setCustomerName(e.target.value);
+                            if (inputErrors.name) setInputErrors(prev => ({ ...prev, name: false }));
+                          }}
+                          className={`w-full bg-white/5 border ${inputErrors.name ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
+                        />
+                      </div>
+                      <div className="relative">
+                        <input
+                          id="guest-phone"
+                          type="tel"
+                          placeholder="PHONE"
+                          value={customerPhone}
+                          onChange={(e) => {
+                            setCustomerPhone(e.target.value.replace(/\D/g, ''));
+                            if (inputErrors.phone) setInputErrors(prev => ({ ...prev, phone: false }));
+                          }}
+                          maxLength={15}
+                          className={`w-full bg-white/5 border ${inputErrors.phone ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleCheckout}
+                  disabled={state.items.length === 0 || loading}
+                  className="w-full relative group disabled:opacity-50 h-[64px]"
+                >
+                  <div className="absolute inset-0 bg-primary/40 rounded-[20px] blur-2xl group-hover:bg-primary/60 transition-all"></div>
+                  <div className="relative h-full bg-gradient-to-br from-amber-400 to-primary text-background rounded-2xl font-black uppercase tracking-[0.2em] text-[12px] flex items-center justify-between px-6 border border-white/20 shadow-xl overflow-hidden">
+                    <div className="flex flex-col items-start leading-tight">
+                      <span className="text-[10px] opacity-70">Complete Order</span>
+                      <span className="text-xl">₹{grandTotal.toFixed(0)}</span>
+                    </div>
+
+                    {loading ? <Loader2 className="animate-spin w-5 h-5" /> : (
+                      <div className="bg-background/20 p-2 rounded-xl border border-white/20 backdrop-blur-sm">
+                        <ArrowRight size={18} className="text-white" />
+                      </div>
+                    )}
+                  </div>
+                </motion.button>
               </div>
             </div>
           </motion.div>

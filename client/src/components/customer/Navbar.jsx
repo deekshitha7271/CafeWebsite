@@ -40,7 +40,14 @@ const Navbar = () => {
 
         {/* Brand / Logo */}
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            if (location.pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+              navigate('/');
+              setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+            }
+          }}
           className="flex items-center gap-2 md:gap-4 group shrink-0"
           aria-label="Cá Phê Bistro Home"
         >

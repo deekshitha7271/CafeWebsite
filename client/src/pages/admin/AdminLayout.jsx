@@ -5,7 +5,8 @@ import {
   Crown, LogOut, User as UserIcon, Activity, ChevronDown, X, Menu, Coffee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 
 const allLinks = [
@@ -19,7 +20,7 @@ const allLinks = [
   { to: '/admin/staff', icon: UserCog, label: 'Staff Management', roles: ['admin'] },
   { to: '/admin/payments', icon: CreditCard, label: 'Payments & Billing', roles: ['admin'] },
   { to: '/admin/offers', icon: Tag, label: 'Offers & Coupons', roles: ['admin'] },
-  { to: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['admin'], badge: 3 },
+  { to: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['admin'] },
   { to: '/admin/settings', icon: Settings, label: 'Settings', roles: ['admin'] },
 ];
 
@@ -29,8 +30,32 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
-  const allowedLinks = allLinks.filter(link => link.roles.includes(user?.role));
+  useEffect(() => {
+    if (isAdmin) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/admin/notifications`, { withCredentials: true });
+          const unread = res.data.filter(n => !n.read).length;
+          setUnreadNotifications(unread);
+        } catch (error) {
+          console.error("Failed to fetch notifications", error);
+        }
+      };
+
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin]);
+
+  const allowedLinks = allLinks.filter(link => link.roles.includes(user?.role)).map(link => {
+    if (link.label === 'Notifications' && unreadNotifications > 0) {
+      return { ...link, badge: unreadNotifications };
+    }
+    return link;
+  });
 
   if (user?.role === 'worker' && location.pathname === '/admin') {
     return <Navigate to="/admin/orders" replace />;
