@@ -63,7 +63,7 @@ const AdminLayout = () => {
       </div>
 
       {/* Nav Links */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent min-h-0">
+      <nav data-lenis-prevent="true" className="flex-1 overflow-y-auto p-4 space-y-1 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent min-h-0">
         {allowedLinks.map((link) => {
           const Icon = link.icon;
           return (
@@ -125,7 +125,7 @@ const AdminLayout = () => {
   );
 
   return (
-    <div className="h-screen bg-background flex text-text font-sans selection:bg-primary/20 overflow-hidden">
+    <div className={`${location.pathname.includes('/kds') ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-background flex text-text font-sans selection:bg-primary/20`}>
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-72 bg-surface border-r border-white/5 fixed top-0 bottom-0 left-0 z-20 shadow-2xl overflow-hidden">
         <SidebarContent />
@@ -155,7 +155,7 @@ const AdminLayout = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
+      <main className="flex-1 min-w-0 flex flex-col overflow-x-hidden">
         {/* Mobile Topbar */}
         <div className="md:hidden bg-surface/90 backdrop-blur border-b border-white/5 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shrink-0">
           <button onClick={() => setMobileSidebarOpen(true)} className="p-2 text-white/60 hover:text-white">

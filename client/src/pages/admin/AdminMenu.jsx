@@ -233,7 +233,7 @@ const AdminMenu = () => {
                 <label className="block text-[10px] uppercase font-black text-primary mb-2">Icon (Emoji or URL)</label>
                 <input required value={categoryForm.icon} onChange={e => setCategoryForm({ ...categoryForm, icon: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm outline-none focus:border-primary" placeholder="☕" />
               </div>
-               <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button type="button" onClick={() => { setCategoryModalOpen(false); setEditingCategory(null); setCategoryForm({ name: '', icon: '☕' }); }} className="px-6 py-2.5 rounded-xl text-[10px] font-black uppercase bg-white/5 hover:bg-white/10 transition-colors">Cancel</button>
                 <button type="submit" className="px-8 py-2.5 rounded-xl text-[10px] font-black uppercase bg-primary text-black shadow-lg">Save</button>
               </div>
@@ -249,7 +249,7 @@ const AdminMenu = () => {
             <div className="p-8 pb-4 border-b border-white/10">
               <h2 className="text-3xl font-serif font-bold text-white">{editingItem ? 'Edit Item' : 'New Menu Item'}</h2>
             </div>
-            <form onSubmit={handleItemSubmit} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <form data-lenis-prevent="true" onSubmit={handleItemSubmit} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] uppercase font-black text-primary mb-2">Item Name</label>
@@ -501,9 +501,9 @@ const AdminMenu = () => {
                       <td className="p-4">
                         <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
                           {item.image ? (
-                            <img 
-                              src={formatImageUrl(item.image)} 
-                              alt={item.itemName} 
+                            <img
+                              src={formatImageUrl(item.image)}
+                              alt={item.itemName}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.onerror = null;
@@ -597,7 +597,7 @@ const AdminMenu = () => {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
-                          <button 
+                          <button
                             onClick={() => {
                               setEditingItem(item);
                               setItemForm({

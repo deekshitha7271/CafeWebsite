@@ -475,7 +475,7 @@ const AdminDashboard = () => {
               <span className="text-emerald-400 text-[9px] font-black uppercase tracking-widest">Live</span>
             </div>
           </div>
-          <div className="space-y-4 overflow-y-auto max-h-56 pr-1">
+          <div data-lenis-prevent="true" className="space-y-4 overflow-y-auto max-h-56 pr-1">
             {(data?.recentActivity || []).map((a, i) => (
               <div key={a._id} className="flex gap-3">
                 <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.orderStatus === 'completed' ? 'bg-emerald-400' : a.orderStatus === 'placed' ? 'bg-blue-400' : 'bg-primary'}`} />
