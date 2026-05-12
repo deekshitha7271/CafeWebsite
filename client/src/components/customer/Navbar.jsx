@@ -69,25 +69,25 @@ const Navbar = () => {
           <button
             onClick={() => handleOrderTypeChange('dinein-web')}
             aria-label="Select Dine In"
-            className={`flex items-center gap-1.5 px-3 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
-              ? 'bg-primary text-background shadow-lg'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'dinein-web'
+              ? 'bg-primary text-background shadow-lg shadow-primary/20'
               : 'text-text-muted hover:text-white'
               }`}
           >
             <ChefHat className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden md:block">Dine In</span>
+            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest block">Dine In</span>
           </button>
 
           <button
             onClick={() => handleOrderTypeChange('takeaway')}
             aria-label="Select Takeaway"
-            className={`flex items-center gap-1.5 px-3 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
-              ? 'bg-primary text-background shadow-lg'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 md:px-6 md:py-2.5 rounded-full transition-all duration-500 ${state.orderType === 'takeaway'
+              ? 'bg-primary text-background shadow-lg shadow-primary/20'
               : 'text-text-muted hover:text-white'
               }`}
           >
             <Package className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest hidden md:block">Takeaway</span>
+            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest block">Takeaway</span>
           </button>
         </div>
 
