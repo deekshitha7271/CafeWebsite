@@ -288,6 +288,7 @@ const MenuPage = () => {
               <p className="text-text-muted/70 mt-6 text-xs md:text-sm max-w-lg leading-relaxed border-l-[2px] border-primary/20 pl-4 tracking-wide font-light">
                 At Cá Phê Bistro, every cup tells a story.<br className="mb-2" />
                 From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space.
+                Order here before you arrive to have a quick coffee and food.
               </p>
 
               <div className="mt-10 flex flex-col gap-8">
