@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2, Power, Lock, X, Download, Printer } from 'lucide-react';
+import { TrendingUp, TrendingDown, ShoppingBag, Users, Clock, XCircle, IndianRupee, Activity, Loader2, Power, Lock, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 // xlsx is dynamically imported inside downloadReport() — not in the initial bundle
@@ -311,16 +311,6 @@ const AdminDashboard = () => {
               : <Power className={`w-4 h-4 ${isOrdering ? 'text-emerald-400' : 'text-red-400'}`} />}
             <span>{isOrdering ? 'Ordering: ON' : 'Ordering: OFF'}</span>
             <div className={`w-2 h-2 rounded-full ${isOrdering ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-          </motion.button>
-          {/* Kitchen Printer — opens in new tab */}
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => window.open('/kitchen', '_blank')}
-            className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border border-violet-500/30 bg-violet-500/10 text-violet-400 font-black text-[11px] uppercase tracking-widest hover:bg-violet-500 hover:text-white transition-all"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Kitchen Printer</span>
           </motion.button>
           {/* Download Report */}
           <motion.button

@@ -29,7 +29,6 @@ const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'));
 const AdminOffers = lazy(() => import('./pages/admin/AdminOffers'));
 const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
-const KitchenPrintPage = lazy(() => import('./pages/admin/KitchenPrintPage'));
 
 function App() {
   useLenis(); // smooth scroll — non-blocking (replaces CDN script in index.html)
@@ -58,8 +57,6 @@ function App() {
 
                   {/* ── Protected Admin / Worker Routes ───────────────────── */}
                   <Route element={<ProtectedRoute allowedRoles={['admin', 'worker']} />}>
-                    {/* Kitchen Print Page — full-screen, outside AdminLayout */}
-                    <Route path="/kitchen" element={<KitchenPrintPage />} />
 
                     <Route path="/admin" element={<AdminLayout />}>
                       <Route index element={<AdminDashboard />} />

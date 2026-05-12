@@ -202,7 +202,6 @@ router.post('/razorpay/verify', async (req, res) => {
         if (io) {
           io.emit('order:new', order);
           io.emit('order:update', order);
-          io.emit('new_kitchen_order', order);
         }
 
         try {

@@ -165,45 +165,12 @@ mongoose.connection.on('error', (err) => {
 // Pass io instance to app
 app.set('io', io);
 
-// ─── KOT Print Bridge — Track the local print client connection ──────────────
-let kitchenBridgeSocketId = null;
-
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  // ── Identify the Kitchen Print Bridge ──────────────────────────────────────
-  if (socket.handshake.query.clientType === 'kitchen_bridge') {
-    kitchenBridgeSocketId = socket.id;
-    console.log('🖨️  Kitchen Bridge connected:', socket.id);
-    // Broadcast to all admin clients that the printer is online
-    io.emit('printer_status', { online: true });
-
-    socket.on('disconnect', () => {
-      console.log('🖨️  Kitchen Bridge disconnected:', socket.id);
-      if (kitchenBridgeSocketId === socket.id) {
-        kitchenBridgeSocketId = null;
-      }
-      // Broadcast to all admin clients that the printer is offline
-      io.emit('printer_status', { online: false });
-    });
-
-    return; // Skip generic handlers for the bridge socket
-  }
-
-  // ── Generic client (admin dashboard, customer app) ────────────────────────
   socket.on('join:order', (orderId) => {
     socket.join(`order:${orderId}`);
     console.log(`Socket joined room order:${orderId}`);
-  });
-
-  // ── Admin requests a reprint — forward to the kitchen bridge ─────────────
-  socket.on('admin_reprint_order', (order) => {
-    if (kitchenBridgeSocketId) {
-      console.log(`🔁 Reprint forwarded to bridge ${kitchenBridgeSocketId} for order ${order._id || order.billNumber}`);
-      io.to(kitchenBridgeSocketId).emit('admin_reprint_order', order);
-    } else {
-      console.warn('⚠️  Reprint requested but Kitchen Bridge is not connected.');
-    }
   });
 
   socket.on('disconnect', () => {
