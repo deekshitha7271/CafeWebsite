@@ -11,7 +11,6 @@ import { useLenis } from './hooks/useLenis';
 
 // ─── Lazy-loaded Customer Pages ──────────────────────────────────────────────
 const MenuPage = lazy(() => import('./pages/customer/MenuPage'));
-const MenuItemDetailsPage = lazy(() => import('./pages/customer/MenuItemDetailsPage'));
 const PaymentSuccessPage = lazy(() => import('./pages/customer/PaymentSuccessPage'));
 const TrackingPage = lazy(() => import('./pages/customer/TrackingPage'));
 const LoginPage = lazy(() => import('./pages/customer/LoginPage'));
@@ -42,7 +41,6 @@ function App() {
                 <Routes>
                   {/* ── Public Customer Routes ───────────────────────────── */}
                   <Route path="/" element={<MenuPage />} />
-                  <Route path="/menu/item/:id" element={<MenuItemDetailsPage />} />
 
                   {/* ── PUBLIC payment & tracking (no auth required) ─────── */}
                   {/* TrackingPage must be public so guests can land after Stripe */}
