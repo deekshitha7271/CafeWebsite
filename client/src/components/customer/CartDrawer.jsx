@@ -53,14 +53,18 @@ const CartDrawer = () => {
   };
 
   // ── Calculate fees for display in the cart ─────────────────────────────────
-  const { totalItemCount, isDineIn, isTakeaway, serviceCharge, takeawayFee, extraFee, grandTotal } = useMemo(() => {
+  const { totalItemCount, isDineIn, isTakeaway, serviceCharge, takeawayFee, extraFee, grandTotal, gstAmount, gstRate } = useMemo(() => {
     const itemCount = state.items.reduce((s, i) => s + i.quantity, 0);
     const dineIn = state.orderType === 'dinein-web';
     const takeaway = state.orderType === 'takeaway';
     const sCharge = dineIn ? cartTotal * 0.05 : 0;
     const tFee = takeaway ? itemCount * 10 : 0;
     const fee = sCharge + tFee;
-    const total = cartTotal + fee;
+    let total = cartTotal + fee;
+
+    const rate = state.settings?.gstRate ?? 5;
+    const gst = (total * rate) / 100;
+    total += gst;
 
     return {
       totalItemCount: itemCount,
@@ -69,9 +73,11 @@ const CartDrawer = () => {
       serviceCharge: sCharge,
       takeawayFee: tFee,
       extraFee: fee,
-      grandTotal: total
+      grandTotal: total,
+      gstAmount: gst,
+      gstRate: rate
     };
-  }, [state.items, state.orderType, cartTotal]);
+  }, [state.items, state.orderType, cartTotal, state.settings?.gstRate]);
 
   const handleCheckout = async () => {
     if (state.items.length === 0) return;
@@ -339,6 +345,11 @@ const CartDrawer = () => {
                           <span className="font-bold">-₹{discount.toFixed(0)}</span>
                         </div>
                       )}
+
+                      <div className="flex justify-between text-sm">
+                        <span className="text-text-muted">GST ({gstRate}%)</span>
+                        <span className="text-white font-bold">+ ₹{gstAmount.toFixed(0)}</span>
+                      </div>
 
                       <div className="pt-3 border-t border-white/5 flex justify-between items-center">
                         <span className="text-xs font-black uppercase tracking-widest text-white">Grand Total</span>
