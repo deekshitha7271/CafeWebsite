@@ -14,6 +14,7 @@ const MenuPage = lazy(() => import('./pages/customer/MenuPage'));
 const PaymentSuccessPage = lazy(() => import('./pages/customer/PaymentSuccessPage'));
 const TrackingPage = lazy(() => import('./pages/customer/TrackingPage'));
 const LoginPage = lazy(() => import('./pages/customer/LoginPage'));
+const AdminRegister = lazy(() => import('./pages/auth/AdminRegister'));
 
 // ─── Lazy-loaded Admin Pages ──────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
@@ -52,6 +53,7 @@ function App() {
 
 
                   {/* ── Staff Login Routes ─────────────────────────────────── */}
+                  <Route path="/register" element={<GuestRoute><AdminRegister /></GuestRoute>} />
                   <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
 
                   {/* ── Protected Admin / Worker Routes ───────────────────── */}
