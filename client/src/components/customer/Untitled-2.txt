@@ -1,0 +1,22 @@
+# 
+
+[PageSpeed Insights](https://pagespeed.web.dev/analysis/https-cafe-website-psi-bice-vercel-app/)
+Enter a valid URL
+[does not have sufficient real-world speed data](https://developers.google.com/speed/docs/insights/v5/about#why-is-the-real-user-crux-data-not-available-for-a-url-or-origin)
+[does not have sufficient real-world speed data](https://developers.google.com/speed/docs/insights/v5/about#why-is-the-real-user-crux-data-not-available-for-a-url-or-origin)
+[What's new](https://developers.google.com/speed/docs/insights/release_notes)
+[Documentation](https://developers.google.com/speed/docs/insights/v5/about)
+[Learn about Web Performance](https://developers.google.com/speed)
+[Ask questions on Stack Overflow](https://stackoverflow.com/questions/tagged/pagespeed-insights)
+[Mailing list](https://groups.google.com/g/pagespeed-insights-discuss)
+[Updates](https://developer.chrome.com/blog)
+[Web Fundamentals](https://developers.google.com/focus/web-development)
+[Case Studies](https://web.dev/case-studies)
+[Podcasts](https://web.dev/shows)
+[Twitter](https://twitter.com/ChromiumDev)
+[Youtube](https://www.youtube.com/user/ChromeDevelopers)
+[Chrome](https://developer.chrome.com/)
+[Firebase](https://firebase.google.com/)
+[All products](https://developers.google.com/products/)
+[Terms and Privacy Policy](https://policies.google.com/)
+[Google Developers Site Policies](https://developers.google.com/terms/site-policies)
