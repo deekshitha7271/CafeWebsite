@@ -299,7 +299,7 @@ const MenuPage = () => {
                   className="bg-gradient-to-r from-primary to-primary-dark text-background px-12 py-5 rounded-full font-black uppercase tracking-[0.2em] text-sm transition-all relative overflow-hidden group border border-primary-light/30 w-fit"
                 >
                   <span className="relative z-10 flex items-center gap-3">
-                    {settings?.heroCta || 'Start Your Order'} <ArrowRight className="w-4 h-4" />
+                    {settings?.heroCta || 'Order Now'} <ArrowRight className="w-4 h-4" />
                   </span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                 </motion.button>
