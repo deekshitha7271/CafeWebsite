@@ -139,7 +139,7 @@ router.get('/dashboard', async (req, res) => {
         const recentActivity = await Order.find()
             .sort({ timestamp: -1 })
             .limit(20)
-            .select('customerName orderStatus paymentStatus total timestamp orderType');
+            .select('customerName orderStatus paymentStatus total timestamp orderType billNumber');
 
         // Inventory alerts
         const lowStockItems = await Inventory.find().then(items =>
@@ -370,7 +370,7 @@ router.get('/payments', async (req, res) => {
 
         const transactions = orders.map(o => ({
             _id: o._id,
-            orderId: `#${o._id.toString().slice(-4).toUpperCase()}`,
+            orderId: o.billNumber || `#${o._id.toString().slice(-4).toUpperCase()}`,
             customer: o.customerName || o.user?.name || 'Walk-in',
             phone: o.customerPhone || '',
             amount: o.total,
