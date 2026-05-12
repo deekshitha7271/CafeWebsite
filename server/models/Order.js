@@ -27,6 +27,7 @@ const orderSchema = new mongoose.Schema({
   stripeSessionId: { type: String },
   razorpayOrderId: { type: String },
   razorpayPaymentId: { type: String },
+  feedbackSubmitted: { type: Boolean, default: false },
   timestamp: { type: Date, default: Date.now }
 
 });
