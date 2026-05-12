@@ -1,14 +1,12 @@
 import React from 'react';
 import { useCart } from '../../context/CartContext';
 import { Plus, Minus, Coffee, Star } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import QuantitySelector from './QuantitySelector';
 import { formatImageUrl, getFallbackImage } from '../../lib/utils';
 
 const MenuItemCard = ({ item, variant = 'standard' }) => {
   const { state, dispatch } = useCart();
-  const navigate = useNavigate();
 
   const cartItem = state.items.find(i => i._id === item._id);
   const quantity = cartItem ? cartItem.quantity : 0;
@@ -17,11 +15,10 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
 
   return (
     <motion.div
-      onClick={() => navigate(`/menu/item/${item._id}`)}
       style={{ perspective: 1200 }}
       whileHover={{ y: -8, scale: 1.02 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`flex flex-col relative group h-full cursor-pointer bg-surface-dark/40 rounded-3xl overflow-hidden transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)] ${isCompact ? 'rounded-2xl' : ''}`}
+      className={`flex flex-col relative group h-full bg-surface-dark/40 rounded-3xl overflow-hidden transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.4)] ${isCompact ? 'rounded-2xl' : ''}`}
     >
       {item.isPopular && !isCompact && (
         <span className="absolute top-4 left-4 bg-primary text-background text-[9px] font-black tracking-widest px-3 py-1.5 rounded-full z-30 shadow-lg">
