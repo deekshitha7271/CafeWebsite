@@ -122,7 +122,8 @@ const AdminSettings = () => {
             setSaved(true);
             setTimeout(() => setSaved(false), 2500);
         } catch (err) {
-            alert('Failed to save settings');
+            const msg = err.response?.data?.error || err.message;
+            alert('Failed to save settings: ' + msg);
         } finally {
             setSaving(false);
         }
@@ -139,18 +140,18 @@ const AdminSettings = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="sticky top-0 z-[100] -mx-4 md:-mx-8 px-4 md:px-8 py-4 bg-background/80 backdrop-blur-xl border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
                 <div>
                     <h2 className="text-3xl font-serif font-black text-white">Settings</h2>
-                    <p className="text-text-muted text-sm mt-1">Saved to your database</p>
+                    <p className="text-text-muted text-[10px] uppercase font-bold tracking-widest mt-1">Direct Database Management</p>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all w-fit ${saved ? 'bg-emerald-500 text-background' : 'bg-primary text-background hover:bg-primary-light'} disabled:opacity-60`}
+                    className={`flex items-center gap-2 px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all w-fit shadow-2xl ${saved ? 'bg-emerald-500 text-background' : 'bg-primary text-background hover:bg-primary-light'} disabled:opacity-60`}
                 >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? 'Saving...' : saved ? 'Saved!' : 'Save All Settings'}
+                    {saving ? 'Saving Changes...' : saved ? 'Success! Settings Saved' : 'Save All Settings'}
                 </button>
             </div>
 

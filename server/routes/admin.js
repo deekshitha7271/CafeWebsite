@@ -583,11 +583,14 @@ router.put('/settings', async (req, res) => {
         if (!settings) {
             settings = new CafeSettings(req.body);
         } else {
-            Object.assign(settings, req.body);
+            // Remove _id and __v from body to prevent Mongoose modification errors
+            const { _id, __v, ...updateData } = req.body;
+            settings.set(updateData);
         }
         await settings.save();
         res.json(settings);
     } catch (err) {
+        console.error('Settings Update Error:', err);
         res.status(400).json({ error: err.message });
     }
 });

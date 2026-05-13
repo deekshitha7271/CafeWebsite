@@ -19,10 +19,10 @@ const cafeSettingsSchema = new mongoose.Schema({
     heroHeadline: { type: String, default: 'Cá Phê Bistro.' },
     heroSubheadline: { type: String, default: 'Signature Blends & Artisan Perfection' },
     heroCta: { type: String, default: 'Start Your Order' },
-    heroImage: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png' },
+    heroImage: { type: String, default: '' },
     aboutTitle: { type: String, default: 'Beyond The Daily Grind.' },
     aboutDescription: { type: String, default: "At Cá Phê Bistro, every cup tells a story. From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space." },
-    aboutImage: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777478641/11_2_f6clx1.png' },
+    aboutImage: { type: String, default: '' },
     offerBannerText: { type: String, default: '☕ Happy Hours: 15% off from 3PM – 6PM' },
     offerBannerActive: { type: Boolean, default: true },
     // Ordering & Timings Controls
@@ -38,13 +38,10 @@ const cafeSettingsSchema = new mongoose.Schema({
     // Gallery
     gallery: [
         {
-            url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg' },
-            caption: { type: String, default: 'The Golden Hour' },
+            url: { type: String, default: '' },
+            caption: { type: String, default: '' },
             category: { type: String, default: 'Ambience' }
-        },
-        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_2.avif' }, caption: { type: String, default: 'Brewing perfection' }, category: { type: String, default: 'Rituals' } },
-        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_3.webp' }, caption: { type: String, default: 'Freshly Baked' }, category: { type: String, default: 'Treats' } },
-        { url: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_4.jpeg' }, caption: { type: String, default: 'Cozy Corners' }, category: { type: String, default: 'Ambience' } }
+        }
     ]
 }, { timestamps: true });
 
