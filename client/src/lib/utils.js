@@ -46,19 +46,25 @@ export const formatImageUrl = (url, width) => {
     return trimmedUrl;
   }
 
-  // 2. If it's a local upload path, prepend the server URL
+  // 2. Local Proxy/Relative Uploads
   if (trimmedUrl.startsWith('/uploads/')) {
-    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
-    return `${apiUrl}${trimmedUrl}`;
-  }
-
-  // 3. If it's a relative path starting with /, assume it's from the public folder
-  if (trimmedUrl.startsWith('/')) {
+    const envApi = import.meta.env.VITE_API_URL || '';
+    // If we have an absolute API URL, extract the base (e.g., http://localhost:5000)
+    if (envApi.startsWith('http')) {
+      const baseUrl = envApi.split('/api')[0];
+      return `${baseUrl}${trimmedUrl}`;
+    }
+    // If API is relative or missing, return relative (works via Vite proxy)
     return trimmedUrl;
   }
 
-  // 3. If it's a relative path without /, add it
-  return `/${trimmedUrl}`;
+  // 3. Absolute URLs (http/https/data)
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') || trimmedUrl.startsWith('data:')) {
+    return trimmedUrl;
+  }
+
+  // 4. Fallback to / prefixed path (Public folder assets)
+  return trimmedUrl.startsWith('/') ? trimmedUrl : `/${trimmedUrl}`;
 };
 
 /**

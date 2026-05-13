@@ -12,17 +12,51 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configure multer for local storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dir = './uploads';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, `img-${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
+// ─── HYBRID STORAGE SYSTEM (Cloudinary + Local Fallback) ─────────────────────
+let cloudinary;
+let CloudinaryStorage;
+try {
+    cloudinary = require('cloudinary').v2;
+    CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
+} catch (e) {
+    console.log('💡 Cloudinary libs not installed, using local storage.');
+}
+
+const isCloudinaryConfigured = cloudinary && CloudinaryStorage && 
+    process.env.CLOUDINARY_CLOUD_NAME && 
+    process.env.CLOUDINARY_API_KEY && 
+    process.env.CLOUDINARY_API_SECRET;
+
+let storage;
+
+if (isCloudinaryConfigured) {
+    cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+
+    storage = new CloudinaryStorage({
+        cloudinary: cloudinary,
+        params: {
+            folder: 'cafe-website',
+            allowed_formats: ['jpg', 'png', 'webp', 'avif', 'jpeg'],
+        }
+    });
+    console.log('✅ Storage Mode: CLOUDINARY (Safe for Production)');
+} else {
+    storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            const dir = './uploads';
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+            cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+            cb(null, `img-${Date.now()}${path.extname(file.originalname)}`);
+        }
+    });
+    console.log('📂 Storage Mode: LOCAL (Warning: Images will be lost on Render/Vercel restarts)');
+}
 
 const upload = multer({
     storage,
@@ -31,7 +65,7 @@ const upload = multer({
         const filetypes = /jpeg|jpg|png|webp|avif/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        if (mimetype && extname) return cb(null, true);
+        if (mimetype || extname) return cb(null, true);
         cb(new Error('Only images are allowed'));
     }
 });
