@@ -55,6 +55,21 @@ router.post('/razorpay/create-order', async (req, res) => {
       return res.status(400).json({ error: 'No items in order' });
     }
 
+    // ─── VALIDATION: Ensure all items are in stock ───────────────────────────
+    const MenuItem = require('../models/MenuItem');
+    const dbItems = await MenuItem.find({ _id: { $in: items.map(i => i._id || i.menuItemId) } });
+
+    for (const item of items) {
+      const dbItem = dbItems.find(dbi => dbi._id.toString() === (item._id || item.menuItemId).toString());
+      if (!dbItem) {
+        return res.status(400).json({ error: `Item "${item.name}" not found in menu.` });
+      }
+      if (!dbItem.isAvailable) {
+        return res.status(400).json({ error: `"${item.name}" is currently out of stock. Please remove it from your bag.` });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Parse arrival time
     let parsedArrivalTime;
     if (arrivalTime) {

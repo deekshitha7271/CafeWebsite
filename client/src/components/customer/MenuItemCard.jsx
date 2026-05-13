@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCart } from '../../context/CartContext';
-import { Plus, Minus, Coffee, Star } from 'lucide-react';
+import { Plus, Minus, Coffee, Star, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import QuantitySelector from './QuantitySelector';
 import { formatImageUrl, getFallbackImage } from '../../lib/utils';
@@ -48,7 +48,7 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
             alt={`Delicious ${item.name}`}
             width={400}
             height={400}
-            className="w-full h-full object-cover relative z-0 group-hover:scale-110 transition-transform duration-1000 ease-out"
+            className={`w-full h-full object-cover relative z-0 group-hover:scale-110 transition-transform duration-1000 ease-out ${!item.isAvailable ? 'grayscale opacity-40' : ''}`}
             loading="lazy"
             decoding="async"
             onError={(e) => {
@@ -87,13 +87,19 @@ const MenuItemCard = ({ item, variant = 'standard' }) => {
 
         <div className={`mt-auto flex items-center justify-between gap-2 ${isCompact ? 'pt-3' : 'pt-4'}`}>
           <div className="flex flex-col shrink-0">
-            <span className={`font-sans font-black text-primary tracking-tight whitespace-nowrap ${isCompact ? 'text-lg' : 'text-base sm:text-xl'}`}>
+            <span className={`font-sans font-black text-primary tracking-tight whitespace-nowrap ${isCompact ? 'text-lg' : 'text-base sm:text-xl'} ${!item.isAvailable ? 'opacity-40' : ''}`}>
               ₹{item.price.toFixed(0)}
             </span>
           </div>
 
           {state.isOrderingActive ? (
-            <QuantitySelector item={item} variant={isCompact ? 'compact' : 'grid'} />
+            item.isAvailable ? (
+              <QuantitySelector item={item} variant={isCompact ? 'compact' : 'grid'} />
+            ) : (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-[8px] font-black uppercase px-2 py-1.5 rounded-lg tracking-widest whitespace-nowrap flex items-center gap-1 shadow-lg shadow-red-500/10">
+                <X className="w-2.5 h-2.5" /> Out of Stock
+              </div>
+            )
           ) : (
             <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-[8px] font-black uppercase px-2 py-1 rounded-full tracking-widest whitespace-nowrap">
               Closed
