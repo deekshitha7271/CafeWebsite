@@ -598,8 +598,8 @@ router.put('/settings', async (req, res) => {
 router.post('/upload', upload.single('image'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const url = `${baseUrl}/uploads/${req.file.filename}`;
+        // Return only the relative path for database portability
+        const url = `/uploads/${req.file.filename}`;
         res.json({ url });
     } catch (err) {
         res.status(500).json({ error: err.message });

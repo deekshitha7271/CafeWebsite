@@ -46,7 +46,13 @@ export const formatImageUrl = (url, width) => {
     return trimmedUrl;
   }
 
-  // 2. If it's a relative path starting with /, assume it's from the public folder
+  // 2. If it's a local upload path, prepend the server URL
+  if (trimmedUrl.startsWith('/uploads/')) {
+    const apiUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+    return `${apiUrl}${trimmedUrl}`;
+  }
+
+  // 3. If it's a relative path starting with /, assume it's from the public folder
   if (trimmedUrl.startsWith('/')) {
     return trimmedUrl;
   }

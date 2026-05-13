@@ -708,7 +708,7 @@ const MenuPage = () => {
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  className="md:col-span-7 h-[400px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
+                  className={`${(settings?.gallery?.filter(img => img.url).length || 0) === 1 ? 'md:col-span-12' : 'md:col-span-7'} h-[400px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl`}
                 >
                   <img
                     src={formatImageUrl(settings.gallery[0].url, 1600)}
@@ -727,13 +727,13 @@ const MenuPage = () => {
               )}
 
               {/* Right Stack */}
-              <div className={`${settings?.gallery?.[0]?.url ? 'md:col-span-5' : 'md:col-span-12'} grid grid-rows-1 md:grid-rows-2 gap-6 h-auto md:h-full`}>
+              <div className={`${(settings?.gallery?.filter(img => img.url).length || 0) > 1 ? 'md:col-span-5' : 'hidden'} grid grid-rows-2 gap-6 h-auto md:h-full`}>
                 {settings?.gallery?.[1]?.url && (
                   <motion.div
                     initial={{ opacity: 0, x: 30 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    className="h-[300px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10"
+                    className={`${(settings?.gallery?.filter(img => img.url).length || 0) === 2 ? 'row-span-2' : 'row-span-1'} h-[300px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10`}
                   >
                     <img
                       src={formatImageUrl(settings.gallery[1].url, 800)}
@@ -747,43 +747,45 @@ const MenuPage = () => {
                   </motion.div>
                 )}
 
-                <div className={`grid grid-cols-1 ${settings?.gallery?.[3]?.url ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-6 h-full font-serif`}>
-                  {settings?.gallery?.[2]?.url && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
-                    >
-                      <img
-                        src={formatImageUrl(settings.gallery[2].url, 800)}
-                        alt={settings.gallery[2].caption || "Signature Delicacy"}
-                        width={400}
-                        height={400}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]"
-                      />
-                    </motion.div>
-                  )}
-                  {settings?.gallery?.[3]?.url && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
-                      className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
-                    >
-                      <img
-                        src={formatImageUrl(settings.gallery[3].url, 800)}
-                        alt={settings.gallery[3].caption || "Artisan Presentation"}
-                        width={400}
-                        height={400}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
-                      />
-                    </motion.div>
-                  )}
-                </div>
+                {(settings?.gallery?.[2]?.url || settings?.gallery?.[3]?.url) && (
+                  <div className={`grid grid-cols-1 ${settings?.gallery?.[3]?.url ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-6 h-full font-serif`}>
+                    {settings?.gallery?.[2]?.url && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
+                      >
+                        <img
+                          src={formatImageUrl(settings.gallery[2].url, 800)}
+                          alt={settings.gallery[2].caption || "Signature Delicacy"}
+                          width={400}
+                          height={400}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]"
+                        />
+                      </motion.div>
+                    )}
+                    {settings?.gallery?.[3]?.url && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 }}
+                        className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
+                      >
+                        <img
+                          src={formatImageUrl(settings.gallery[3].url, 800)}
+                          alt={settings.gallery[3].caption || "Artisan Presentation"}
+                          width={400}
+                          height={400}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </section>
