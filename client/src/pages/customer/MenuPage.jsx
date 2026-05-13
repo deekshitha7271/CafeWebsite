@@ -708,13 +708,13 @@ const MenuPage = () => {
               </motion.p>
             </div>
 
-            <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 overflow-hidden min-h-[500px] md:h-[600px] lg:h-[800px]">
+            <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 overflow-hidden h-auto md:h-[600px] lg:h-[800px]">
               {/* Large Featured Image — image 1 (the cafe) */}
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="md:col-span-7 h-full rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
+                className="md:col-span-7 h-[450px] md:h-full rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
               >
                 <img
                   src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-1.jpg", 1600)}
@@ -732,12 +732,12 @@ const MenuPage = () => {
               </motion.div>
 
               {/* Right Stack */}
-              <div className="md:col-span-5 grid grid-rows-2 gap-6 lg:gap-8 transition-all h-full min-h-0">
+              <div className="md:col-span-5 grid md:grid-rows-2 gap-6 lg:gap-8 transition-all h-auto md:h-full min-h-0">
                 <motion.div
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  className="rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 flex-1"
+                  className="rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 h-[400px] md:flex-1"
                 >
                   <img
                     src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-2.jpg", 800)}
@@ -749,7 +749,7 @@ const MenuPage = () => {
                   />
                   <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 </motion.div>
-                <div className="grid grid-cols-2 gap-6 lg:gap-8 h-full min-h-0">
+                <div className="grid grid-cols-2 gap-6 lg:gap-8 h-[350px] md:h-full min-h-0">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
@@ -818,7 +818,7 @@ const MenuPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5, duration: 1 }}
-                className="absolute -bottom-10 -right-10 z-20 w-48 md:w-64 lg:w-80 aspect-[3/4] rounded-[30px] md:rounded-[50px] overflow-hidden border-4 border-background shadow-2xl hidden md:block"
+                className="absolute bottom-8 right-8 md:-bottom-10 md:-right-10 z-20 w-44 md:w-64 lg:w-80 aspect-square md:aspect-[3/4] rounded-[24px] md:rounded-[50px] overflow-hidden border-2 md:border-4 border-background shadow-2xl"
               >
                 <img
                   src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-6.jpg", 800)}
