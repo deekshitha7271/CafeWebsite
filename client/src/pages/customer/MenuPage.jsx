@@ -717,7 +717,7 @@ const MenuPage = () => {
                 className="md:col-span-7 h-full rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
               >
                 <img
-                  src={formatImageUrl(settings?.gallery?.[0]?.url || "/caphe-bistro-client-sent-gallery-images/gallery-1.jpg", 1600)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-1.jpg", 1600)}
                   alt={settings?.gallery?.[0]?.caption || "Cá Phê Bistro Interior Ambience"}
                   width={800}
                   height={600}
@@ -740,7 +740,7 @@ const MenuPage = () => {
                   className="rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 flex-1"
                 >
                   <img
-                    src={formatImageUrl(settings?.gallery?.[1]?.url || "/caphe-bistro-client-sent-gallery-images/gallery-2.jpg", 800)}
+                    src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-2.jpg", 800)}
                     alt="Crafted Coffee Moment"
                     width={600}
                     height={400}
@@ -757,7 +757,7 @@ const MenuPage = () => {
                     className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
                   >
                     <img
-                      src={formatImageUrl(settings?.gallery?.[2]?.url || "/caphe-bistro-client-sent-gallery-images/gallery-3.jpg", 800)}
+                      src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-3.jpg", 800)}
                       alt="Signature Delicacy"
                       width={400}
                       height={400}
@@ -773,7 +773,7 @@ const MenuPage = () => {
                     className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
                   >
                     <img
-                      src={formatImageUrl(settings?.gallery?.[3]?.url || "/caphe-bistro-client-sent-gallery-images/gallery-4.jpg", 800)}
+                      src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-4.jpg", 800)}
                       alt="Artisan Presentation"
                       width={400}
                       height={400}
