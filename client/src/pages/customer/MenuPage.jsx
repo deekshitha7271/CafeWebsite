@@ -324,15 +324,8 @@ const MenuPage = () => {
               />
 
               <motion.img
-                src={formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)}
-                srcSet={`
-                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 400)} 400w,
-                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 800)} 800w,
-                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1200)} 1200w,
-                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)} 1600w
-                `}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                alt="Artisan coffee topped with whipped cream and coffee seeds - Cá Phê Bistro Signature"
+                src={formatImageUrl(settings?.heroImage || "https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)}
+                alt="Signature delicacy - Cá Phê Bistro"
                 width={600}
                 height={600}
                 loading="eager"
@@ -803,7 +796,7 @@ const MenuPage = () => {
                 className="absolute inset-0 z-10 rounded-[60px] overflow-hidden border-2 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
               >
                 <img
-                  src={formatImageUrl("https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=2074", 1600)}
+                  src={formatImageUrl(settings?.aboutImage || "https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777478641/11_2_f6clx1.png", 1600)}
                   alt="Our Story - Crafting Perfection"
                   width={800}
                   height={600}
@@ -821,7 +814,7 @@ const MenuPage = () => {
                 className="absolute -bottom-20 -right-10 z-20 w-80 h-96 rounded-[50px] overflow-hidden border-4 border-background shadow-2xl hidden md:block"
               >
                 <img
-                  src={formatImageUrl("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2070", 800)}
+                  src={formatImageUrl(settings?.gallery?.[2]?.url || "https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/image_3.webp", 800)}
                   alt="Artisan Detail"
                   width={400}
                   height={500}
@@ -895,8 +888,8 @@ const MenuPage = () => {
         <div className="max-w-[1600px] mx-auto px-8 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-20 relative z-10 mb-40">
           <div className="md:col-span-4 space-y-12">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-primary rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.2)]">
-                <span className="text-background font-serif font-black text-3xl">C.</span>
+              <div className="w-16 h-16 bg-surface-dark border border-white/10 rounded-3xl flex items-center justify-center shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+                <Crown className="w-8 h-8 text-primary" />
               </div>
               <div>
                 <h2 className="text-4xl font-serif font-black text-white tracking-tight">Cá Phê</h2>

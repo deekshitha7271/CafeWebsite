@@ -19,8 +19,10 @@ const cafeSettingsSchema = new mongoose.Schema({
     heroHeadline: { type: String, default: 'Cá Phê Bistro.' },
     heroSubheadline: { type: String, default: 'Signature Blends & Artisan Perfection' },
     heroCta: { type: String, default: 'Start Your Order' },
+    heroImage: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png' },
     aboutTitle: { type: String, default: 'Beyond The Daily Grind.' },
     aboutDescription: { type: String, default: "At Cá Phê Bistro, every cup tells a story. From bold Vietnamese phin coffee to refreshing cold brews and handcrafted classics, we serve rich flavors in a calm, welcoming space." },
+    aboutImage: { type: String, default: 'https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777478641/11_2_f6clx1.png' },
     offerBannerText: { type: String, default: '☕ Happy Hours: 15% off from 3PM – 6PM' },
     offerBannerActive: { type: Boolean, default: true },
     // Ordering & Timings Controls

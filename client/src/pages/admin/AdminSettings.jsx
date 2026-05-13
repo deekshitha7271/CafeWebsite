@@ -36,6 +36,53 @@ const Field = ({ label, field, type = 'text', settings, update }) => (
     </div>
 );
 
+const ImageField = ({ label, field, settings, update }) => {
+    const [uploading, setUploading] = useState(false);
+    return (
+        <div className="space-y-4">
+            <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block">{label}</label>
+            <div className="flex items-center gap-6">
+                <div className="w-24 h-24 bg-surface-dark border border-white/10 rounded-2xl overflow-hidden shadow-inner flex-shrink-0">
+                    {settings?.[field] ? (
+                        <img src={settings[field]} className="w-full h-full object-cover" alt={label} />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/10 italic text-[10px]">No Image</div>
+                    )}
+                </div>
+                <div className="flex-1">
+                    <label className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-white cursor-pointer hover:bg-white/10 transition-all">
+                        {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Camera className="w-3 h-3" />}
+                        {uploading ? 'Uploading...' : 'Change Image'}
+                        <input
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                setUploading(true);
+                                const formData = new FormData();
+                                formData.append('image', file);
+                                try {
+                                    const res = await axios.post(`${import.meta.env.VITE_API_URL}/admin/upload`, formData, {
+                                        headers: { 'Content-Type': 'multipart/form-data' }
+                                    });
+                                    update(field, res.data.url);
+                                } catch (err) {
+                                    alert('Upload failed');
+                                } finally {
+                                    setUploading(false);
+                                }
+                            }}
+                        />
+                    </label>
+                    <p className="text-[10px] text-white/20 mt-2 font-medium">Recommended: High quality PNG/WebP (Transparent preferred for Hero)</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Toggle: same pattern — outside the parent component
 const Toggle = ({ label, field, settings, update }) => (
     <div className="flex items-center justify-between py-1">
@@ -115,9 +162,14 @@ const AdminSettings = () => {
                 </SettingsSection>
 
                 <SettingsSection title="Portal Hero Section" icon={Globe}>
-                    <Field label="Hero Headline" field="heroHeadline" {...fp} />
-                    <Field label="Hero Subheadline" field="heroSubheadline" {...fp} />
-                    <Field label="Hero CTA Button" field="heroCta" {...fp} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <Field label="Hero Headline" field="heroHeadline" {...fp} />
+                            <Field label="Hero Subheadline" field="heroSubheadline" {...fp} />
+                            <Field label="Hero CTA Button" field="heroCta" {...fp} />
+                        </div>
+                        <ImageField label="Main Hero Image (Floating)" field="heroImage" {...fp} />
+                    </div>
                 </SettingsSection>
 
                 <SettingsSection title="Contact & Socio" icon={Phone}>
@@ -127,15 +179,20 @@ const AdminSettings = () => {
                 </SettingsSection>
 
                 <SettingsSection title="About Sanctuary" icon={AlignLeft}>
-                    <Field label="About Title" field="aboutTitle" {...fp} />
-                    <div>
-                        <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">About Description</label>
-                        <textarea
-                            value={settings?.aboutDescription || ''}
-                            onChange={e => update('aboutDescription', e.target.value)}
-                            className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white resize-none"
-                            rows={4}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <Field label="About Title" field="aboutTitle" {...fp} />
+                            <div>
+                                <label className="text-[10px] text-white/40 uppercase font-black tracking-widest block mb-2">About Description</label>
+                                <textarea
+                                    value={settings?.aboutDescription || ''}
+                                    onChange={e => update('aboutDescription', e.target.value)}
+                                    className="w-full bg-surface-dark border border-white/10 rounded-xl py-3 px-4 text-sm outline-none focus:border-primary/40 text-white resize-none"
+                                    rows={4}
+                                />
+                            </div>
+                        </div>
+                        <ImageField label="Story Image (Featured)" field="aboutImage" {...fp} />
                     </div>
                 </SettingsSection>
 
