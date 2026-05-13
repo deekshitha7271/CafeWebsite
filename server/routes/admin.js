@@ -12,51 +12,17 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// ─── HYBRID STORAGE SYSTEM (Cloudinary + Local Fallback) ─────────────────────
-let cloudinary;
-let CloudinaryStorage;
-try {
-    cloudinary = require('cloudinary').v2;
-    CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage;
-} catch (e) {
-    console.log('💡 Cloudinary libs not installed, using local storage.');
-}
-
-const isCloudinaryConfigured = cloudinary && CloudinaryStorage && 
-    process.env.CLOUDINARY_CLOUD_NAME && 
-    process.env.CLOUDINARY_API_KEY && 
-    process.env.CLOUDINARY_API_SECRET;
-
-let storage;
-
-if (isCloudinaryConfigured) {
-    cloudinary.config({
-        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-    });
-
-    storage = new CloudinaryStorage({
-        cloudinary: cloudinary,
-        params: {
-            folder: 'cafe-website',
-            allowed_formats: ['jpg', 'png', 'webp', 'avif', 'jpeg'],
-        }
-    });
-    console.log('✅ Storage Mode: CLOUDINARY (Safe for Production)');
-} else {
-    storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-            const dir = './uploads';
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-            cb(null, dir);
-        },
-        filename: (req, file, cb) => {
-            cb(null, `img-${Date.now()}${path.extname(file.originalname)}`);
-        }
-    });
-    console.log('📂 Storage Mode: LOCAL (Warning: Images will be lost on Render/Vercel restarts)');
-}
+// Configure multer for local storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = './uploads';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, `img-${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
 
 const upload = multer({
     storage,
@@ -65,7 +31,7 @@ const upload = multer({
         const filetypes = /jpeg|jpg|png|webp|avif/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        if (mimetype || extname) return cb(null, true);
+        if (mimetype && extname) return cb(null, true);
         cb(new Error('Only images are allowed'));
     }
 });
@@ -617,14 +583,11 @@ router.put('/settings', async (req, res) => {
         if (!settings) {
             settings = new CafeSettings(req.body);
         } else {
-            // Remove _id and __v from body to prevent Mongoose modification errors
-            const { _id, __v, ...updateData } = req.body;
-            settings.set(updateData);
+            Object.assign(settings, req.body);
         }
         await settings.save();
         res.json(settings);
     } catch (err) {
-        console.error('Settings Update Error:', err);
         res.status(400).json({ error: err.message });
     }
 });
@@ -632,8 +595,8 @@ router.put('/settings', async (req, res) => {
 router.post('/upload', upload.single('image'), (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-        // Return only the relative path for database portability
-        const url = `/uploads/${req.file.filename}`;
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const url = `${baseUrl}/uploads/${req.file.filename}`;
         res.json({ url });
     } catch (err) {
         res.status(500).json({ error: err.message });

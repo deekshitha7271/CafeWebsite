@@ -324,8 +324,15 @@ const MenuPage = () => {
               />
 
               <motion.img
-                src={formatImageUrl(settings?.heroImage, 1600)}
-                alt="Signature delicacy - Cá Phê Bistro"
+                src={formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)}
+                srcSet={`
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 400)} 400w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 800)} 800w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1200)} 1200w,
+                  ${formatImageUrl("https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777180127/coffee-topped-with-whipped-cream-coffee-seeds_ttwybl.png", 1600)} 1600w
+                `}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                alt="Artisan coffee topped with whipped cream and coffee seeds - Cá Phê Bistro Signature"
                 width={600}
                 height={600}
                 loading="eager"
@@ -701,100 +708,89 @@ const MenuPage = () => {
               </motion.p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[800px]">
+            <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 overflow-hidden min-h-[500px] md:h-[600px] lg:h-[800px]">
               {/* Large Featured Image — image 1 (the cafe) */}
-              {settings?.gallery?.[0]?.url && (
-                <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className={`${(settings?.gallery?.filter(img => img.url).length || 0) === 1 ? 'md:col-span-12' : 'md:col-span-7'} h-[400px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl`}
-                >
-                  <img
-                    src={formatImageUrl(settings.gallery[0].url, 1600)}
-                    alt={settings.gallery[0].caption || "Cá Phê Bistro Interior Ambience"}
-                    width={800}
-                    height={600}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
-                  <div className="absolute bottom-12 left-12">
-                    <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">{settings.gallery[0].category || "Ambience"}</span>
-                    <h4 className="text-3xl font-serif text-white mt-2">{settings.gallery[0].caption || "The Golden Hour"}</h4>
-                  </div>
-                </motion.div>
-              )}
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="md:col-span-7 h-full rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
+              >
+                <img
+                  src={formatImageUrl(settings?.gallery?.[0]?.url || "/caphe-bistro-client-sent-gallery-images/caphe-1.jpeg", 1600)}
+                  alt={settings?.gallery?.[0]?.caption || "Cá Phê Bistro Interior Ambience"}
+                  width={800}
+                  height={600}
+                  loading="lazy"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-[2000ms] ease-out"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                <div className="absolute bottom-12 left-12">
+                  <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">{settings?.gallery?.[0]?.category || "Ambience"}</span>
+                  <h4 className="text-3xl font-serif text-white mt-2">{settings?.gallery?.[0]?.caption || "The Golden Hour"}</h4>
+                </div>
+              </motion.div>
 
               {/* Right Stack */}
-              <div className={`${(settings?.gallery?.filter(img => img.url).length || 0) > 1 ? 'md:col-span-5' : 'hidden'} grid grid-rows-2 gap-6 h-auto md:h-full`}>
-                {settings?.gallery?.[1]?.url && (
+              <div className="md:col-span-5 grid grid-rows-2 gap-6 lg:gap-8 transition-all h-full min-h-0">
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 flex-1"
+                >
+                  <img
+                    src={formatImageUrl(settings?.gallery?.[1]?.url || "/caphe-bistro-client-sent-gallery-images/WhatsApp Image 2026-05-13 at 7.39.03 AM 2.jpeg", 800)}
+                    alt="Crafted Coffee Moment"
+                    width={600}
+                    height={400}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]"
+                  />
+                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                </motion.div>
+                <div className="grid grid-cols-2 gap-6 lg:gap-8 h-full min-h-0">
                   <motion.div
-                    initial={{ opacity: 0, x: 30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className={`${(settings?.gallery?.filter(img => img.url).length || 0) === 2 ? 'row-span-2' : 'row-span-1'} h-[300px] md:h-full rounded-[60px] overflow-hidden group relative border border-white/10`}
+                    className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
                   >
                     <img
-                      src={formatImageUrl(settings.gallery[1].url, 800)}
-                      alt={settings.gallery[1].caption || "Crafted Coffee Moment"}
-                      width={600}
+                      src={formatImageUrl(settings?.gallery?.[2]?.url || "/caphe-bistro-client-sent-gallery-images/WhatsApp Image 2026-05-13 at 7.39.04 AM 3.jpeg", 800)}
+                      alt="Signature Delicacy"
+                      width={400}
                       height={400}
                       loading="lazy"
-                      className="w-full h-full object-cover group-hover:rotate-1 transition-transform duration-[1500ms]"
+                      className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]"
                     />
-                    <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                   </motion.div>
-                )}
-
-                {(settings?.gallery?.[2]?.url || settings?.gallery?.[3]?.url) && (
-                  <div className={`grid grid-cols-1 ${settings?.gallery?.[3]?.url ? 'sm:grid-cols-2' : 'sm:grid-cols-1'} gap-6 h-full font-serif`}>
-                    {settings?.gallery?.[2]?.url && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
-                      >
-                        <img
-                          src={formatImageUrl(settings.gallery[2].url, 800)}
-                          alt={settings.gallery[2].caption || "Signature Delicacy"}
-                          width={400}
-                          height={400}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-[3000ms]"
-                        />
-                      </motion.div>
-                    )}
-                    {settings?.gallery?.[3]?.url && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                        className="h-[300px] md:h-full rounded-[40px] overflow-hidden border border-white/10 relative group"
-                      >
-                        <img
-                          src={formatImageUrl(settings.gallery[3].url, 800)}
-                          alt={settings.gallery[3].caption || "Artisan Presentation"}
-                          width={400}
-                          height={400}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
-                        />
-                      </motion.div>
-                    )}
-                  </div>
-                )}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
+                  >
+                    <img
+                      src={formatImageUrl(settings?.gallery?.[3]?.url || "/caphe-bistro-client-sent-gallery-images/WhatsApp Image 2026-05-13 at 7.39.04 AM 4.jpeg", 800)}
+                      alt="Artisan Presentation"
+                      width={400}
+                      height={400}
+                      loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[2000ms]"
+                    />
+                  </motion.div>
+                </div>
               </div>
             </div>
           </section>
 
 
           {/* INNOVATIVE "ABOUT US" STORY SECTION (Image Left, Text Right) */}
-          <section className="mt-72 px-8 lg:px-20 mb-72 flex flex-col lg:flex-row items-center gap-32">
+          <section className="mt-40 px-8 lg:px-20 mb-40 flex flex-col lg:flex-row items-center gap-32">
             {/* Innovative Image Overlay Layout */}
-            <div className="flex-1 relative w-full h-[600px]">
+            <div className="flex-1 relative w-full h-auto min-h-[400px] md:min-h-[600px]">
               {/* Background Blobs for depth */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
 
@@ -804,10 +800,10 @@ const MenuPage = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.2 }}
-                className="absolute inset-0 z-10 rounded-[60px] overflow-hidden border-2 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
+                className="relative z-10 w-full aspect-[4/3] md:aspect-video lg:aspect-square rounded-[30px] md:rounded-[60px] overflow-hidden border-2 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
               >
                 <img
-                  src={formatImageUrl(settings?.aboutImage, 1600)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/WhatsApp Image 2026-05-13 at 7.39.05 AM 5.jpeg", 1600)}
                   alt="Our Story - Crafting Perfection"
                   width={800}
                   height={600}
@@ -822,10 +818,10 @@ const MenuPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5, duration: 1 }}
-                className="absolute -bottom-20 -right-10 z-20 w-80 h-96 rounded-[50px] overflow-hidden border-4 border-background shadow-2xl hidden md:block"
+                className="absolute -bottom-10 -right-10 z-20 w-48 md:w-64 lg:w-80 aspect-[3/4] rounded-[30px] md:rounded-[50px] overflow-hidden border-4 border-background shadow-2xl hidden md:block"
               >
                 <img
-                  src={formatImageUrl(settings?.gallery?.[2]?.url, 800)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/WhatsApp Image 2026-05-13 at 7.39.05 AM 6.jpeg", 800)}
                   alt="Artisan Detail"
                   width={400}
                   height={500}
