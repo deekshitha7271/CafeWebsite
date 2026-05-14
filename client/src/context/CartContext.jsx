@@ -115,13 +115,22 @@ const cartReducer = (state, action) => {
           const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
           const currentHours = istTime.getHours();
           const currentMinutes = istTime.getMinutes();
-          const currentTimeStr = `${currentHours.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
 
-          if (settings.openingTime <= settings.closingTime) {
-            isOrderingActive = currentTimeStr >= settings.openingTime && currentTimeStr <= settings.closingTime;
+          // Convert "HH:mm" strings to minutes since midnight for robust comparison
+          const toMin = (str) => {
+            const [h, m] = str.split(':').map(Number);
+            return h * 60 + m;
+          };
+
+          const openMin = toMin(settings.openingTime);
+          const closeMin = toMin(settings.closingTime);
+          const currentMin = currentHours * 60 + currentMinutes;
+
+          if (openMin <= closeMin) {
+            isOrderingActive = currentMin >= openMin && currentMin <= closeMin;
           } else {
-            // Closes past midnight
-            isOrderingActive = currentTimeStr >= settings.openingTime || currentTimeStr <= settings.closingTime;
+            // Closes past midnight (e.g. 08:00 to 02:00)
+            isOrderingActive = currentMin >= openMin || currentMin <= closeMin;
           }
         }
       }
@@ -201,9 +210,13 @@ export const CartProvider = ({ children }) => {
 
     fetchSessionData();
 
+    const refreshInterval = setInterval(fetchSessionData, 60000); // 1 minute auto-refresh
+
     setTimeout(() => {
       initialLoadDone.current = true;
     }, 500);
+
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // 2. Save Sync (localStorage only)
