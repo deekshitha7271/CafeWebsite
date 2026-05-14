@@ -1,8 +1,4 @@
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config({ override: true });
-} else {
-  console.log('🌍 Production Mode: Using Render Dashboard environment variables.');
-}
+require('dotenv').config({ override: true });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -15,6 +11,7 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const { protect, authorize } = require('./middleware/auth');
+require('./config/razorpay'); // Initialize Razorpay and log status
 
 const app = express();
 const server = http.createServer(app);

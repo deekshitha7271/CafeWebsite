@@ -9,29 +9,7 @@ const Coupon = require('../models/Coupon');
 const DailyCounter = require('../models/DailyCounter');
 const CafeSettings = require('../models/CafeSettings');
 
-// Lazy Razorpay initializer — avoids crash on startup when env vars are not yet set
-let _razorpay = null;
-const getRazorpay = () => {
-  if (!_razorpay) {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new Error('Razorpay credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured in .env');
-    }
-    _razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID?.trim(),
-      key_secret: process.env.RAZORPAY_KEY_SECRET?.trim(),
-    });
-
-    const kid = process.env.RAZORPAY_KEY_ID?.trim() || '';
-    const ksec = process.env.RAZORPAY_KEY_SECRET?.trim() || '';
-    const isTest = kid.startsWith('rzp_test_');
-
-    console.log(`💳 Razorpay: ${isTest ? 'TEST' : 'LIVE'} mode | ID Len: ${kid.length} | Secret Len: ${ksec.length}`);
-    if (kid.length > 0) {
-      console.log(`   - ID Prefix: ${kid.slice(0, 12)}...`);
-    }
-  }
-  return _razorpay;
-};
+const { razorpay, RZP_KEY_ID } = require('../config/razorpay');
 
 // ─── HELPER: Calculate billing fees ───────────────────────────────────────────
 const calculateFees = (items, orderType) => {
@@ -157,8 +135,8 @@ router.post('/razorpay/create-order', async (req, res) => {
     const options = {
       amount: Math.round(grandTotal * 100), // amount in paise
       currency: 'INR',
-      receipt: targetOrder._id.toString(),
-      payment_capture: 1, // auto-capture on payment success
+      receipt: `rcpt_${targetOrder._id.toString().slice(-6)}_${Date.now()}`,
+      payment_capture: 1,
     };
 
     if (options.amount < 100) {
@@ -166,7 +144,7 @@ router.post('/razorpay/create-order', async (req, res) => {
     }
 
     console.log('📦 Creating Razorpay order:', options);
-    const rzpOrder = await getRazorpay().orders.create(options);
+    const rzpOrder = await razorpay.orders.create(options);
     console.log('✅ Razorpay order created:', rzpOrder.id, '| status:', rzpOrder.status);
 
     targetOrder.razorpayOrderId = rzpOrder.id;
@@ -177,13 +155,14 @@ router.post('/razorpay/create-order', async (req, res) => {
       await User.findByIdAndUpdate(req.session.userId, { $set: { cart: [] } });
     }
 
-    console.log('🔑 Sending key to client:', process.env.RAZORPAY_KEY_ID?.slice(0, 12) + '...');
+    console.log('🔑 Sending key to client:', RZP_KEY_ID?.slice(0, 12) + '...');
+    res.setHeader('X-Debug-Razorpay-Key', RZP_KEY_ID || 'MISSING');
     res.json({
       orderId: targetOrder._id,
       razorpayOrderId: rzpOrder.id,
       amount: options.amount,
       currency: options.currency,
-      key: process.env.RAZORPAY_KEY_ID?.trim()
+      key: RZP_KEY_ID
     });
 
   } catch (error) {

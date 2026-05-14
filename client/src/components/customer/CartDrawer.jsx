@@ -109,15 +109,16 @@ const CartDrawer = () => {
       });
 
       const { razorpayOrderId, amount, currency, key, orderId } = res.data;
+      console.log(`🔧 Frontend using Backend: ${import.meta.env.VITE_API_URL} | Key: ${key}`);
 
       // 2. Configure Razorpay options
       const options = {
-        key: key,
-        amount: amount,
-        currency: currency,
+        key: String(key).trim(),
+        amount: Number(amount),
+        currency: String(currency),
         name: "Cá Phê Bistro",
         description: "Order Payment",
-        order_id: razorpayOrderId,
+        order_id: String(razorpayOrderId),
         handler: async function (response) {
           // 3. Verify payment on backend
           try {
@@ -144,18 +145,25 @@ const CartDrawer = () => {
           }
         },
         prefill: {
-          name: customerName.trim(),
-          contact: customerPhone.trim(),
+          name: customerName?.trim() || "Guest",
+          contact: customerPhone?.trim() || "",
         },
         theme: {
-          color: "#f59e0b", // Primary gold color
+          color: "#f59e0b",
         },
         modal: {
           ondismiss: function () {
+            console.log('👋 Razorpay modal closed');
             setLoading(false);
           }
         }
       };
+
+      console.log('🚀 RAZORPAY MODAL INITIALIZING:', {
+        key_start: options.key.slice(0, 8),
+        order_id: options.order_id,
+        amount: options.amount
+      });
 
       // 4. Open Razorpay modal
       const rzp1 = new window.Razorpay(options);
