@@ -20,9 +20,15 @@ const getRazorpay = () => {
       key_id: process.env.RAZORPAY_KEY_ID?.trim(),
       key_secret: process.env.RAZORPAY_KEY_SECRET?.trim(),
     });
-    console.log('💳 Razorpay Initialized with:');
-    console.log(`   - Key ID: ${process.env.RAZORPAY_KEY_ID?.slice(0, 8)}...${process.env.RAZORPAY_KEY_ID?.slice(-4)}`);
-    console.log(`   - Key Secret: ${process.env.RAZORPAY_KEY_SECRET?.slice(0, 4)}...${process.env.RAZORPAY_KEY_SECRET?.slice(-4)}`);
+
+    const kid = process.env.RAZORPAY_KEY_ID?.trim() || '';
+    const ksec = process.env.RAZORPAY_KEY_SECRET?.trim() || '';
+    const isTest = kid.startsWith('rzp_test_');
+
+    console.log(`💳 Razorpay: ${isTest ? 'TEST' : 'LIVE'} mode | ID Len: ${kid.length} | Secret Len: ${ksec.length}`);
+    if (kid.length > 0) {
+      console.log(`   - ID Prefix: ${kid.slice(0, 12)}...`);
+    }
   }
   return _razorpay;
 };
