@@ -713,21 +713,21 @@ const MenuPage = () => {
               </motion.p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[800px]">
+            <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 overflow-hidden h-auto md:h-[600px] lg:h-[800px]">
               {/* Large Featured Image — image 1 (the cafe) */}
               <motion.div
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="md:col-span-7 h-full rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
+                className="md:col-span-7 h-[450px] md:h-full rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 shadow-2xl"
               >
                 <img
-                  src={formatImageUrl(settings?.gallery?.[0]?.url || "https://res.cloudinary.com/dqxhjnhrt/image/upload/v1777901349/images_1_1.jpg_sit3hj.jpg", 1600)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-1.jpg", 1600)}
                   alt={settings?.gallery?.[0]?.caption || "Cá Phê Bistro Interior Ambience"}
                   width={800}
                   height={600}
                   loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2000ms] ease-out"
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-[2000ms] ease-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
                 <div className="absolute bottom-12 left-12">
@@ -737,15 +737,15 @@ const MenuPage = () => {
               </motion.div>
 
               {/* Right Stack */}
-              <div className="md:col-span-5 grid grid-rows-2 gap-6 h-full">
+              <div className="md:col-span-5 grid md:grid-rows-2 gap-6 lg:gap-8 transition-all h-auto md:h-full min-h-0">
                 <motion.div
                   initial={{ opacity: 0, x: 30 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  className="rounded-[60px] overflow-hidden group relative border border-white/10"
+                  className="rounded-[30px] md:rounded-[60px] overflow-hidden group relative border border-white/10 h-[400px] md:flex-1"
                 >
                   <img
-                    src={formatImageUrl(settings?.gallery?.[1]?.url || "/ca phe bistro website images/image 2.avif", 800)}
+                    src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-2.jpg", 800)}
                     alt="Crafted Coffee Moment"
                     width={600}
                     height={400}
@@ -754,15 +754,15 @@ const MenuPage = () => {
                   />
                   <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
                 </motion.div>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-6 lg:gap-8 h-[350px] md:h-full min-h-0">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="rounded-[40px] overflow-hidden border border-white/10 relative group"
+                    className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
                   >
                     <img
-                      src={formatImageUrl(settings?.gallery?.[2]?.url || "/ca phe bistro website images/image 3.webp", 800)}
+                      src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-3.jpg", 800)}
                       alt="Signature Delicacy"
                       width={400}
                       height={400}
@@ -775,10 +775,10 @@ const MenuPage = () => {
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.2 }}
-                    className="rounded-[40px] overflow-hidden border border-white/10 relative group"
+                    className="rounded-[24px] md:rounded-[40px] overflow-hidden border border-white/10 relative group h-full"
                   >
                     <img
-                      src={formatImageUrl(settings?.gallery?.[3]?.url || "/ca phe bistro website images/image 4.jpeg", 800)}
+                      src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-4.jpg", 800)}
                       alt="Artisan Presentation"
                       width={400}
                       height={400}
@@ -793,9 +793,9 @@ const MenuPage = () => {
 
 
           {/* INNOVATIVE "ABOUT US" STORY SECTION (Image Left, Text Right) */}
-          <section className="mt-72 px-8 lg:px-20 mb-72 flex flex-col lg:flex-row items-center gap-32">
+          <section className="mt-40 px-8 lg:px-20 mb-40 flex flex-col lg:flex-row items-center gap-32">
             {/* Innovative Image Overlay Layout */}
-            <div className="flex-1 relative w-full h-[600px]">
+            <div className="flex-1 relative w-full h-auto min-h-[400px] md:min-h-[600px]">
               {/* Background Blobs for depth */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
 
@@ -805,10 +805,10 @@ const MenuPage = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 1.2 }}
-                className="absolute inset-0 z-10 rounded-[60px] overflow-hidden border-2 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
+                className="relative z-10 w-full aspect-[4/3] md:aspect-video lg:aspect-square rounded-[30px] md:rounded-[60px] overflow-hidden border-2 border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)]"
               >
                 <img
-                  src={formatImageUrl("https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=2074", 1600)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-5.jpg", 1600)}
                   alt="Our Story - Crafting Perfection"
                   width={800}
                   height={600}
@@ -823,10 +823,10 @@ const MenuPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.5, duration: 1 }}
-                className="absolute -bottom-20 -right-10 z-20 w-80 h-96 rounded-[50px] overflow-hidden border-4 border-background shadow-2xl hidden md:block"
+                className="absolute bottom-8 right-8 md:-bottom-10 md:-right-10 z-20 w-44 md:w-64 lg:w-80 aspect-square md:aspect-[3/4] rounded-[24px] md:rounded-[50px] overflow-hidden border-2 md:border-4 border-background shadow-2xl"
               >
                 <img
-                  src={formatImageUrl("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2070", 800)}
+                  src={formatImageUrl("/caphe-bistro-client-sent-gallery-images/gallery-6.jpg", 800)}
                   alt="Artisan Detail"
                   width={400}
                   height={500}
@@ -900,8 +900,8 @@ const MenuPage = () => {
         <div className="max-w-[1600px] mx-auto px-8 lg:px-20 grid grid-cols-1 md:grid-cols-12 gap-20 relative z-10 mb-40">
           <div className="md:col-span-4 space-y-12">
             <div className="flex items-center gap-6">
-              <div className="w-16 h-16 bg-primary rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.2)]">
-                <span className="text-background font-serif font-black text-3xl">C.</span>
+              <div className="w-16 h-16 bg-surface-dark border border-white/10 rounded-3xl flex items-center justify-center shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+                <Crown className="w-8 h-8 text-primary" />
               </div>
               <div>
                 <h2 className="text-4xl font-serif font-black text-white tracking-tight">Cá Phê</h2>

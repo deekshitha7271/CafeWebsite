@@ -377,7 +377,7 @@ const CartDrawer = () => {
                     {/* Arrival Picker - Small Row */}
                     <div className="flex items-center justify-between gap-4">
                       <h3 className={`text-[9px] font-black uppercase tracking-[0.15em] flex-shrink-0 flex items-center gap-1.5 transition-colors ${inputErrors.arrival ? 'text-red-500' : 'text-primary'}`}>
-                        <Clock size={12} /> ARRIVAL:
+                        <Clock size={12} /> ARRIVAL <span className="text-red-500 font-bold">*</span>:
                       </h3>
                       <div className="flex-1 grid grid-cols-3 gap-1.5">
                         {ARRIVAL_OPTIONS.map((mins) => (
@@ -399,32 +399,42 @@ const CartDrawer = () => {
 
                     {/* Guest Inputs - Compact Duo */}
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="relative">
-                        <input
-                          id="guest-name"
-                          type="text"
-                          placeholder="NAME"
-                          value={customerName}
-                          onChange={(e) => {
-                            setCustomerName(e.target.value);
-                            if (inputErrors.name) setInputErrors(prev => ({ ...prev, name: false }));
-                          }}
-                          className={`w-full bg-white/5 border ${inputErrors.name ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
-                        />
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-white/40 tracking-widest uppercase flex items-center gap-1 ml-1">
+                          Name <span className="text-red-500 font-bold">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="guest-name"
+                            type="text"
+                            placeholder="Enter Name"
+                            value={customerName}
+                            onChange={(e) => {
+                              setCustomerName(e.target.value);
+                              if (inputErrors.name) setInputErrors(prev => ({ ...prev, name: false }));
+                            }}
+                            className={`w-full bg-white/5 border ${inputErrors.name ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <input
-                          id="guest-phone"
-                          type="tel"
-                          placeholder="PHONE"
-                          value={customerPhone}
-                          onChange={(e) => {
-                            setCustomerPhone(e.target.value.replace(/\D/g, ''));
-                            if (inputErrors.phone) setInputErrors(prev => ({ ...prev, phone: false }));
-                          }}
-                          maxLength={15}
-                          className={`w-full bg-white/5 border ${inputErrors.phone ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
-                        />
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-white/40 tracking-widest uppercase flex items-center gap-1 ml-1">
+                          Phone <span className="text-red-500 font-bold">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="guest-phone"
+                            type="tel"
+                            placeholder="Enter Phone"
+                            value={customerPhone}
+                            onChange={(e) => {
+                              setCustomerPhone(e.target.value.replace(/\D/g, ''));
+                              if (inputErrors.phone) setInputErrors(prev => ({ ...prev, phone: false }));
+                            }}
+                            maxLength={15}
+                            className={`w-full bg-white/5 border ${inputErrors.phone ? 'border-red-500' : 'border-white/10'} rounded-lg px-3 py-2.5 text-[10px] font-black tracking-widest text-white outline-none focus:border-primary placeholder:text-white/20`}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

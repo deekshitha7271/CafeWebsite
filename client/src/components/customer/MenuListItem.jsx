@@ -23,7 +23,7 @@ const MenuListItem = ({ item }) => {
                         height={64}
                         loading="lazy"
                         decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${!item.isAvailable ? 'grayscale opacity-40' : ''}`}
                         onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = getFallbackImage('coffee');
@@ -31,18 +31,19 @@ const MenuListItem = ({ item }) => {
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surface to-surface-dark relative">
-                        <Coffee className="w-6 h-6 text-primary opacity-20 group-hover:opacity-40 transition-all duration-500" />
+                        <Coffee className={`w-6 h-6 text-primary opacity-20 group-hover:opacity-40 transition-all duration-500 ${!item.isAvailable ? 'grayscale opacity-10' : ''}`} />
                     </div>
                 )}
             </div>
 
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-white font-serif font-bold text-lg truncate">{item.name}</h4>
+                    <h4 className={`text-white font-serif font-bold text-lg truncate ${!item.isAvailable ? 'opacity-40' : ''}`}>{item.name}</h4>
                     {item.dietaryTag === 'veg' && <Leaf className="w-3 h-3 text-green-400" />}
                     {item.isPopular && <Flame className="w-3 h-3 text-orange-400" />}
+                    {!item.isAvailable && <span className="bg-red-500/10 text-red-500 text-[8px] font-black uppercase px-2 py-0.5 rounded-md tracking-tighter">Out</span>}
                 </div>
-                <p className="text-text-muted text-[10px] line-clamp-1 opacity-60 leading-relaxed">
+                <p className="text-text-muted text-[10px] line-clamp-1 opacity-60 leading-relaxed font-light">
                     {item.description || 'Crafted with passion by Cá Phê Bistro.'}
                 </p>
             </div>

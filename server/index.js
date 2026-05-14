@@ -198,7 +198,7 @@ app.use('/api/auth', authRoutes);
 app.get('/api/menu', async (req, res) => {
   try {
     const categories = await Category.find();
-    const items = await MenuItem.find({ isAvailable: true });
+    const items = await MenuItem.find();
     res.json({ categories, items });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch menu' });
