@@ -8,6 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+
+// Standard loud notification sound (Digital Bell)
+const NOTIFICATION_SOUND = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 
 const allLinks = [
   { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin'], end: true },
@@ -27,11 +31,37 @@ const allLinks = [
 
 const AdminLayout = () => {
   const { user, logout } = useAuth();
+  const socket = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  // Sound logic
+  const playNotification = () => {
+    const playOnce = () => {
+      const audio = new Audio(NOTIFICATION_SOUND);
+      audio.volume = 1.0;
+      audio.play().catch(e => console.log("Audio play blocked: Interaction required"));
+    };
+
+    // Play twice as requested
+    playOnce();
+    setTimeout(playOnce, 1500);
+  };
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('order:new', (order) => {
+        console.log('🔔 New Order Notification Triggered:', order._id);
+        playNotification();
+        // Increment unread locally for immediate UI response
+        setUnreadNotifications(prev => prev + 1);
+      });
+      return () => socket.off('order:new');
+    }
+  }, [socket]);
 
   useEffect(() => {
     if (isAdmin) {
