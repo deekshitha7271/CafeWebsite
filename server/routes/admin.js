@@ -582,10 +582,15 @@ router.put('/settings', async (req, res) => {
         let settings = await CafeSettings.findOne();
         if (!settings) {
             settings = new CafeSettings(req.body);
+            await settings.save();
         } else {
-            Object.assign(settings, req.body);
+            // Exclude immutable fields from update
+            const updateData = { ...req.body };
+            delete updateData._id;
+            delete updateData.__v;
+            
+            settings = await CafeSettings.findOneAndUpdate({}, updateData, { new: true });
         }
-        await settings.save();
         res.json(settings);
     } catch (err) {
         res.status(400).json({ error: err.message });

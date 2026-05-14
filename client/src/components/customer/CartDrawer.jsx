@@ -53,13 +53,12 @@ const CartDrawer = () => {
   };
 
   // ── Calculate fees for display in the cart ─────────────────────────────────
-  const { totalItemCount, isDineIn, isTakeaway, serviceCharge, takeawayFee, extraFee, grandTotal, gstAmount, gstRate } = useMemo(() => {
+  const { totalItemCount, isDineIn, isTakeaway, takeawayFee, extraFee, grandTotal, gstAmount, gstRate } = useMemo(() => {
     const itemCount = state.items.reduce((s, i) => s + i.quantity, 0);
     const dineIn = state.orderType === 'dinein-web';
     const takeaway = state.orderType === 'takeaway';
-    const sCharge = dineIn ? cartTotal * 0.05 : 0;
     const tFee = takeaway ? itemCount * 10 : 0;
-    const fee = sCharge + tFee;
+    const fee = tFee;
     let total = cartTotal + fee;
 
     const rate = state.settings?.gstRate ?? 5;
@@ -70,7 +69,6 @@ const CartDrawer = () => {
       totalItemCount: itemCount,
       isDineIn: dineIn,
       isTakeaway: takeaway,
-      serviceCharge: sCharge,
       takeawayFee: tFee,
       extraFee: fee,
       grandTotal: total,
@@ -326,13 +324,6 @@ const CartDrawer = () => {
                         <span className="text-text-muted">Subtotal ({totalItemCount} items)</span>
                         <span className="text-white font-bold">₹{cartTotal.toFixed(0)}</span>
                       </div>
-
-                      {isDineIn && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-text-muted">Service Charge (5%)</span>
-                          <span className="text-primary-light font-bold">+ ₹{serviceCharge.toFixed(0)}</span>
-                        </div>
-                      )}
 
                       {isTakeaway && (
                         <div className="flex justify-between text-sm">

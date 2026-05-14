@@ -148,7 +148,6 @@ const AdminSettings = () => {
                 </SettingsSection>
 
                 <SettingsSection title="Pricing & Billing" icon={Percent}>
-                    <Field label="Service Charge (%)" field="serviceCharge" type="number" {...fp} />
                     <Field label="GST Rate (%)" field="gstRate" type="number" {...fp} />
                 </SettingsSection>
 
