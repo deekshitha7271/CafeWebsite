@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -39,7 +40,14 @@ router.get('/', async (req, res) => {
     }
 
     // Filters
-    if (category) query.categoryId = category;
+    // Robust Category Filter: Match by ID or Name
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.categoryId = category;
+      } else {
+        query.categoryName = { $regex: new RegExp(`^${category}$`, 'i') };
+      }
+    }
     if (dietary) query.dietaryTag = { $regex: new RegExp(`^${dietary}$`, 'i') };
 
     const options = {
@@ -201,11 +209,11 @@ router.post('/bulk-upload', protect, authorize('admin'), upload.single('file'), 
           // 1. Data Normalization & Validation
           const itemName = row.itemName?.trim();
           const categoryName = row.categoryName?.trim();
-          
+
           // Robust price parsing: Remove currency symbols and commas
           let priceRaw = String(row.itemOnlinePrice || '').replace(/[₹$,]/g, '').trim();
           const itemOnlinePrice = parseFloat(priceRaw);
-          
+
           const itemOnlineDisplayName = row.itemOnlineDisplayName?.trim() || itemName;
           const rankOrder = parseInt(row.rankOrder) || 0;
 

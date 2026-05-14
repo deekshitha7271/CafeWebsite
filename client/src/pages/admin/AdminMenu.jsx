@@ -406,7 +406,11 @@ const AdminMenu = () => {
                 }}
               >
                 <option value="">All Categories</option>
-                {allCategories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                {/* Deduplicate category names for clean filtering */}
+                {Array.from(new Set(allCategories.map(c => c.name))).sort().map(name => {
+                  const cat = allCategories.find(c => c.name === name);
+                  return <option key={cat._id} value={cat._id}>{name}</option>;
+                })}
               </select>
 
               <select
