@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -57,6 +57,12 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow resources to be loaded across origins
 }));
+
+// Fix Chrome Private Network Access warning
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'private-network-access=(self)');
+  next();
+});
 app.use(compression()); // Gzip compression for all responses
 
 // 3. Global Rate Limiting

@@ -17,9 +17,12 @@ const getRazorpay = () => {
       throw new Error('Razorpay credentials (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are not configured in .env');
     }
     _razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
+      key_id: process.env.RAZORPAY_KEY_ID?.trim(),
+      key_secret: process.env.RAZORPAY_KEY_SECRET?.trim(),
     });
+    console.log('💳 Razorpay Initialized with:');
+    console.log(`   - Key ID: ${process.env.RAZORPAY_KEY_ID?.slice(0, 8)}...${process.env.RAZORPAY_KEY_ID?.slice(-4)}`);
+    console.log(`   - Key Secret: ${process.env.RAZORPAY_KEY_SECRET?.slice(0, 4)}...${process.env.RAZORPAY_KEY_SECRET?.slice(-4)}`);
   }
   return _razorpay;
 };
@@ -178,9 +181,18 @@ router.post('/razorpay/create-order', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('🔥 RAZORPAY ORDER ERROR:', error);
+    console.error('🔥 RAZORPAY ORDER ERROR:', {
+      message: error.message,
+      statusCode: error.statusCode,
+      description: error.description,
+      metadata: error.metadata
+    });
+
     if (error.statusCode === 401 || error.description?.includes('authenticat')) {
-      return res.status(401).json({ error: 'Razorpay authentication failed' });
+      return res.status(401).json({
+        error: 'Razorpay authentication failed',
+        details: 'Invalid Razorpay Key ID or Secret. Please check your server .env file.'
+      });
     }
     res.status(500).json({ error: 'Failed to create Razorpay order', details: error.message });
   }

@@ -15,7 +15,8 @@ export const AuthProvider = ({ children }) => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response && error.response.status === 401) {
+        const isPaymentAuthError = error.config?.url?.includes('/payment/razorpay');
+        if (error.response && error.response.status === 401 && !isPaymentAuthError) {
           setUser(null);
         }
         return Promise.reject(error);
