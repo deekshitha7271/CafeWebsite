@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useSocket } from '../../context/SocketContext';
 import { useCart } from '../../context/CartContext';
-import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, History, PackageCheck, Utensils, AlertCircle, X, Star } from 'lucide-react';
+import { ChefHat, Coffee, Check, Loader2, CreditCard, Sparkles, Activity, ArrowRight, History, PackageCheck, Utensils, AlertCircle, X, Star, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/customer/Navbar';
 import { playOrderSuccessSound } from '../../lib/utils';
@@ -411,25 +411,53 @@ const TrackingPage = () => {
 // ─── Helper Components ─────────────────────────────────────────────────────────
 const LiveTracker = React.memo(({ order }) => {
   const [timeLeft, setTimeLeft] = useState(null);
+  const [alertTriggered, setAlertTriggered] = useState(false);
+  const [showAlertMessage, setShowAlertMessage] = useState(false);
   const currentStepIndex = STATUS_STEPS.findIndex(s => s.id === order.orderStatus);
 
   useEffect(() => {
-    if (!order?.estimatedReadyTime) return;
+    const targetTimeStr = order?.arrivalTime || order?.estimatedReadyTime;
+    if (!targetTimeStr) return;
+    
+    // Request notification permission if needed
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     const interval = setInterval(() => {
       const now = new Date();
-      const readyTime = new Date(order.estimatedReadyTime);
-      const diff = readyTime - now;
+      const targetTime = new Date(targetTimeStr);
+      const diff = targetTime - now;
+      
       if (diff <= 0) {
-        setTimeLeft('Ready!');
+        setTimeLeft('0:00');
         clearInterval(interval);
       } else {
-        const mins = Math.floor(diff / 1000 / 60);
-        const secs = Math.floor((diff / 1000) % 60);
+        const totalSecs = Math.floor(diff / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
         setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+
+        // Trigger alert at exactly 1 minute remaining
+        if (mins === 1 && secs === 0 && !alertTriggered) {
+          setAlertTriggered(true);
+          playOrderSuccessSound();
+          setShowAlertMessage(true);
+          
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('Order Almost Ready!', {
+              body: '1 minute remaining for your order!',
+              icon: '/vite.svg'
+            });
+          }
+          
+          // Hide UI alert after 10 seconds
+          setTimeout(() => setShowAlertMessage(false), 10000);
+        }
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [order?.estimatedReadyTime]);
+  }, [order?.arrivalTime, order?.estimatedReadyTime, alertTriggered]);
 
   return (
     <div className="glass-card p-6 md:p-10 relative overflow-hidden">
@@ -438,10 +466,34 @@ const LiveTracker = React.memo(({ order }) => {
         Live Tracker
       </h3>
 
-      {timeLeft && order.orderStatus === 'preparing' && (
-        <div className="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-[30px] text-center">
-          <p className="text-text-muted/60 text-[10px] font-black uppercase tracking-widest mb-1">Estimated Ready In</p>
-          <p className="text-4xl font-serif font-black text-primary tracking-tighter">{timeLeft}</p>
+      <AnimatePresence>
+        {showAlertMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-6 p-4 bg-amber-500/20 border border-amber-500 text-amber-400 rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+          >
+            <Sparkles className="w-6 h-6 animate-pulse" />
+            <div>
+              <p className="font-black uppercase tracking-widest text-xs">Almost Ready!</p>
+              <p className="text-[10px] opacity-80">1 minute remaining for your order to get ready.</p>
+            </div>
+            <button onClick={() => setShowAlertMessage(false)} className="ml-auto opacity-70 hover:opacity-100">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {timeLeft && order.orderStatus !== 'completed' && order.orderStatus !== 'ready' && (
+        <div className="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-[30px] text-center shadow-inner relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-shimmer" />
+          <p className="text-text-muted/60 text-[10px] font-black uppercase tracking-widest mb-1 relative z-10">Stopwatch Timer</p>
+          <div className="font-mono text-5xl font-black text-primary tracking-tighter relative z-10 flex items-center justify-center gap-2">
+            <Clock className="w-8 h-8 opacity-50 animate-pulse" />
+            {timeLeft}
+          </div>
         </div>
       )}
 

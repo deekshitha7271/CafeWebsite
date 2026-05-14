@@ -18,10 +18,8 @@ const calculateFees = (items, orderType) => {
 
   let feeAmount = 0;
 
-  if (orderType === 'dinein-web') {
-    feeAmount = Math.round(subtotal * 0.05 * 100) / 100; // 5% service charge
-  } else if (orderType === 'takeaway') {
-    feeAmount = totalItemCount * 10; // ₹10 per item
+  if (orderType === 'takeaway') {
+    feeAmount = totalItemCount * 10; // ₹10 per item handling fee
   }
 
   return { feeAmount, subtotal };

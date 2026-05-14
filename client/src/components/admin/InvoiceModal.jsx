@@ -22,9 +22,8 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
     const isDineIn = orderType === 'dinein-web';
     const isTakeaway = orderType === 'takeaway';
 
-    const serviceCharge = isDineIn ? Math.round(itemSubtotal * 0.05 * 100) / 100 : 0;
     const takeawayFee = isTakeaway ? totalItemCount * 10 : 0;
-    const extraFee = serviceCharge + takeawayFee;
+    const extraFee = takeawayFee;
     const grandTotal = transaction.amount || (itemSubtotal + extraFee);
 
     return (
@@ -138,12 +137,6 @@ const InvoiceModal = ({ isOpen, onClose, transaction }) => {
                                 </div>
 
                                 {/* GST or conditional fee */}
-                                {isDineIn && serviceCharge > 0 && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-slate-500">Service Charge (5%)</span>
-                                        <span className="font-medium text-slate-900">₹{serviceCharge.toFixed(2)}</span>
-                                    </div>
-                                )}
                                 {isTakeaway && takeawayFee > 0 && (
                                     <div className="flex justify-between text-sm">
                                         <span className="text-slate-500">Takeaway Handling (₹10 × {totalItemCount})</span>
