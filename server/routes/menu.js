@@ -40,10 +40,21 @@ router.get('/', async (req, res) => {
     }
 
     // Filters
-    // Robust Category Filter: Match by ID or Name
+    // Robust Category Filter: Match by ID, related IDs, or Name
     if (category) {
       if (mongoose.Types.ObjectId.isValid(category)) {
-        query.categoryId = category;
+        // Find the category name first to catch all duplicates
+        const cat = await Category.findById(category);
+        if (cat) {
+          const relatedCategories = await Category.find({ name: cat.name }).select('_id');
+          const relatedIds = relatedCategories.map(c => c._id);
+          query.$or = [
+            { categoryId: { $in: relatedIds } },
+            { categoryName: cat.name }
+          ];
+        } else {
+          query.categoryId = category;
+        }
       } else {
         query.categoryName = { $regex: new RegExp(`^${category}$`, 'i') };
       }
