@@ -266,7 +266,7 @@ const MenuPage = () => {
               <div className="flex items-center gap-2 mb-8">
                 <Crown className="w-5 h-5 text-primary" />
                 <span className="text-primary font-bold tracking-[0.2em] text-[10px] md:text-xs uppercase bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 backdrop-blur-md shadow-lg">
-                  {(settings?.cafeName || 'Cá Phê Bistro').replace('Ca Phe', 'Cá Phê')} • {settings?.tagline || 'Signature'}
+                  {(settings?.cafeName || 'Cá Phê Bistro').replace('Ca Phe', 'Cá Phê')} • {(settings?.tagline && settings.tagline !== 'Sip, Savour & Stay') ? settings.tagline : 'Your Everyday Escape'}
                 </span>
               </div>
               <h1 className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold font-serif leading-[0.95] mt-2 mb-8 tracking-[-0.02em] min-h-[1.1em] md:min-h-[1.5em]">
@@ -448,7 +448,7 @@ const MenuPage = () => {
                   <h3 className="font-serif text-5xl lg:text-7xl font-bold text-white mb-4">Cá Phê Bistro <span className="text-primary italic">Special.</span></h3>
                   <div className="flex items-center gap-4">
                     <div className="h-[2px] w-12 bg-primary"></div>
-                    <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Chef's Recommendations</p>
+                    <p className="text-primary text-[10px] uppercase font-black tracking-[0.4em]">Recommendations</p>
                   </div>
                 </div>
               </motion.div>

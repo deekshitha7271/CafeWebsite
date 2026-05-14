@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const cafeSettingsSchema = new mongoose.Schema({
     cafeName: { type: String, default: 'Cá Phê Bistro' },
-    tagline: { type: String, default: 'Sip, Savour & Stay' },
+    tagline: { type: String, default: 'Your Everyday Escape' },
     gstNumber: { type: String, default: '' },
     phone: { type: String, default: '+91 79811 44753' },
     email: { type: String, default: '' },

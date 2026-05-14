@@ -147,7 +147,19 @@ const MONGO_OPTS = {
 const connectWithRetry = (attempt = 1) => {
   const MAX_ATTEMPTS = 5;
   mongoose.connect(process.env.MONGODB_URI, MONGO_OPTS)
-    .then(() => console.log('✅ MongoDB connected'))
+    .then(async () => {
+      console.log('✅ MongoDB connected');
+      // Auto-migrate tagline if still on old value
+      try {
+        const CafeSettings = require('./models/CafeSettings');
+        await CafeSettings.updateOne(
+          { tagline: 'Sip, Savour & Stay' },
+          { tagline: 'Your Everyday Escape' }
+        );
+      } catch (e) {
+        console.error('Migration error:', e);
+      }
+    })
     .catch(err => {
       console.error(`❌ MongoDB connection failed (attempt ${attempt}):`, err.message);
       if (attempt < MAX_ATTEMPTS) {
