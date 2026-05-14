@@ -227,6 +227,25 @@ router.get('/customers', async (req, res) => {
     }
 });
 
+router.delete('/customers/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        // Verify user is a customer before deleting
+        const user = await User.findById(userId);
+        if (!user || user.role !== 'customer') {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        // Set user reference to null in all their orders to preserve history
+        await Order.updateMany({ user: userId }, { $set: { user: null } });
+
+        await User.findByIdAndDelete(userId);
+        res.json({ message: 'Customer deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ============================================================
 // INVENTORY
 // ============================================================
@@ -588,7 +607,7 @@ router.put('/settings', async (req, res) => {
             const updateData = { ...req.body };
             delete updateData._id;
             delete updateData.__v;
-            
+
             settings = await CafeSettings.findOneAndUpdate({}, updateData, { new: true });
         }
         res.json(settings);

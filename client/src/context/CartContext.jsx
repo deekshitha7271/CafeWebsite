@@ -105,24 +105,24 @@ const cartReducer = (state, action) => {
     case 'SET_SETTINGS': {
       const settings = action.payload;
       let isOrderingActive = true;
-      
+
       if (settings) {
         if (settings.isOrderingEnabled === false) {
-           isOrderingActive = false;
+          isOrderingActive = false;
         } else if (settings.openingTime && settings.closingTime) {
-           const now = new Date();
-           // Get current time in IST
-           const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-           const currentHours = istTime.getHours();
-           const currentMinutes = istTime.getMinutes();
-           const currentTimeStr = `${currentHours.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
-           
-           if (settings.openingTime <= settings.closingTime) {
-             isOrderingActive = currentTimeStr >= settings.openingTime && currentTimeStr <= settings.closingTime;
-           } else {
-             // Closes past midnight
-             isOrderingActive = currentTimeStr >= settings.openingTime || currentTimeStr <= settings.closingTime;
-           }
+          const now = new Date();
+          // Get current time in IST
+          const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+          const currentHours = istTime.getHours();
+          const currentMinutes = istTime.getMinutes();
+          const currentTimeStr = `${currentHours.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+
+          if (settings.openingTime <= settings.closingTime) {
+            isOrderingActive = currentTimeStr >= settings.openingTime && currentTimeStr <= settings.closingTime;
+          } else {
+            // Closes past midnight
+            isOrderingActive = currentTimeStr >= settings.openingTime || currentTimeStr <= settings.closingTime;
+          }
         }
       }
       return { ...state, settings, isOrderingActive };
@@ -228,7 +228,7 @@ export const CartProvider = ({ children }) => {
   }, [state.coupon, state.arrivalTime, state.orderType]);
 
   const rawCartTotal = useMemo(() => state.items.reduce((total, item) => total + (item.price * item.quantity), 0), [state.items]);
-  
+
   const discount = useMemo(() => {
     if (!state.coupon) return 0;
     const couponVal = Number(state.coupon.value);
@@ -250,8 +250,8 @@ export const CartProvider = ({ children }) => {
     totalSpend: cartTotal
   }), [cartCount, cartTotal]);
 
-  const value = useMemo(() => ({ 
-    state, dispatch, cartTotal, cartCount, sessionStats, discount, rawCartTotal 
+  const value = useMemo(() => ({
+    state, dispatch, cartTotal, cartCount, sessionStats, discount, rawCartTotal
   }), [state, cartTotal, cartCount, sessionStats, discount, rawCartTotal]);
 
   return (

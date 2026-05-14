@@ -400,13 +400,23 @@ const AdminMenu = () => {
               <select
                 className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#f59e0b] outline-none"
                 value={filters.category}
-                onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value, page: 1 }))}
+                onChange={(e) => {
+                  setFilters(prev => ({ ...prev, category: e.target.value }));
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
               >
                 <option value="">All Categories</option>
                 {allCategories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
 
-              <select className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#f59e0b] outline-none" value={filters.dietary} onChange={(e) => setFilters(prev => ({ ...prev, dietary: e.target.value, page: 1 }))}>
+              <select
+                className="bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#f59e0b] outline-none"
+                value={filters.dietary}
+                onChange={(e) => {
+                  setFilters(prev => ({ ...prev, dietary: e.target.value }));
+                  setPagination(prev => ({ ...prev, page: 1 }));
+                }}
+              >
                 <option value="">Any Dietary</option>
                 {dietaryTags.map(tag => <option key={tag} value={tag}>{tag.toUpperCase()}</option>)}
               </select>

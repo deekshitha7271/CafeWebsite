@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Star, Phone, Mail, Award, TrendingUp, User, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, Filter, Star, Phone, Mail, Award, TrendingUp, User, Loader2, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
 const tagColors = {
@@ -14,13 +14,33 @@ const AdminCustomers = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [deletingId, setDeletingId] = useState(null);
 
-    useEffect(() => {
+    const fetchCustomers = () => {
         axios.get(`${import.meta.env.VITE_API_URL}/admin/customers`)
             .then(res => setCustomers(res.data))
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchCustomers();
     }, []);
+
+    const handleDelete = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete ${name}? This will remove their loyalty points and account, but preserve their order history for reports.`)) return;
+
+        try {
+            setDeletingId(id);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/admin/customers/${id}`);
+            setCustomers(prev => prev.filter(c => c._id !== id));
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete customer.');
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     const filtered = customers.filter(c =>
         c.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -71,34 +91,51 @@ const AdminCustomers = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead><tr className="border-b border-white/5">
-                            {['Customer', 'Contact', 'Orders', 'Total Spent', 'Points', 'Last Visit', 'Tag'].map(h => (
+                            {['Customer', 'Contact', 'Orders', 'Total Spent', 'Points', 'Last Visit', 'Tag', 'Actions'].map(h => (
                                 <th key={h} className="text-left text-[10px] font-black text-white/30 uppercase tracking-widest px-5 py-4">{h}</th>
                             ))}
                         </tr></thead>
                         <tbody>
-                            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-16 text-white/20">No registered customers yet.</td></tr>}
-                            {filtered.map((c, i) => (
-                                <motion.tr key={c._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
-                                    className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
-                                    <td className="px-5 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-black text-primary text-sm flex-shrink-0">
-                                                {(c.name || 'U')[0].toUpperCase()}
+                            <AnimatePresence>
+                                {filtered.length === 0 && (
+                                    <tr><td colSpan={8} className="text-center py-16 text-white/20">No registered customers yet.</td></tr>
+                                )}
+                                {filtered.map((c, i) => (
+                                    <motion.tr key={c._id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        layout
+                                        className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors">
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-black text-primary text-sm flex-shrink-0">
+                                                    {(c.name || 'U')[0].toUpperCase()}
+                                                </div>
+                                                <p className="font-bold text-white text-[13px]">{c.name}</p>
                                             </div>
-                                            <p className="font-bold text-white text-[13px]">{c.name}</p>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4">
-                                        {c.phone && <p className="text-white/60 text-[11px] flex items-center gap-1.5"><Phone className="w-3 h-3" />{c.phone}</p>}
-                                        <p className="text-white/30 text-[10px] mt-1 flex items-center gap-1.5"><Mail className="w-3 h-3" />{c.email}</p>
-                                    </td>
-                                    <td className="px-5 py-4 font-black text-white">{c.orders}</td>
-                                    <td className="px-5 py-4 font-black text-primary">₹{(c.spent || 0).toLocaleString('en-IN')}</td>
-                                    <td className="px-5 py-4"><div className="flex items-center gap-1.5"><Star className="w-3 h-3 text-primary" /><span className="font-black text-white text-[12px]">{c.points}</span></div></td>
-                                    <td className="px-5 py-4 text-white/40 text-[11px]">{c.last}</td>
-                                    <td className="px-5 py-4"><span className={`px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${tagColors[c.tag] || tagColors.New}`}>{c.tag}</span></td>
-                                </motion.tr>
-                            ))}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            {c.phone && <p className="text-white/60 text-[11px] flex items-center gap-1.5"><Phone className="w-3 h-3" />{c.phone}</p>}
+                                            <p className="text-white/30 text-[10px] mt-1 flex items-center gap-1.5"><Mail className="w-3 h-3" />{c.email}</p>
+                                        </td>
+                                        <td className="px-5 py-4 font-black text-white">{c.orders}</td>
+                                        <td className="px-5 py-4 font-black text-primary">₹{(c.spent || 0).toLocaleString('en-IN')}</td>
+                                        <td className="px-5 py-4"><div className="flex items-center gap-1.5"><Star className="w-3 h-3 text-primary" /><span className="font-black text-white text-[12px]">{c.points}</span></div></td>
+                                        <td className="px-5 py-4 text-white/40 text-[11px]">{c.last}</td>
+                                        <td className="px-5 py-4"><span className={`px-2.5 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${tagColors[c.tag] || tagColors.New}`}>{c.tag}</span></td>
+                                        <td className="px-5 py-4">
+                                            <button
+                                                onClick={() => handleDelete(c._id, c.name)}
+                                                disabled={deletingId === c._id}
+                                                className="p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                            >
+                                                {deletingId === c._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                            </button>
+                                        </td>
+                                    </motion.tr>
+                                ))}
+                            </AnimatePresence>
                         </tbody>
                     </table>
                 </div>
