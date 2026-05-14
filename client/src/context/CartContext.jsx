@@ -107,19 +107,33 @@ const cartReducer = (state, action) => {
       let isOrderingActive = true;
 
       if (settings) {
-        if (settings.isOrderingEnabled === false) {
+        // ENTERPRISE LOGIC: Manual Toggle takes priority over Schedule Override
+        if (settings.isOrderingEnabled === true) {
+          isOrderingActive = true;
+          console.log("✅ Cafe status: Manually FORCED OPEN by Admin");
+        } else if (settings.isOrderingEnabled === false && (!settings.openingTime || !settings.closingTime)) {
           isOrderingActive = false;
+          console.log("❌ Cafe status: Manually FORCED CLOSED by Admin");
         } else if (settings.openingTime && settings.closingTime) {
-          const now = new Date();
-          // Get current time in IST
-          const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-          const currentHours = istTime.getHours();
-          const currentMinutes = istTime.getMinutes();
+          // Automated Schedule Fallback
+          const options = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', hour12: false };
+          const istStr = new Intl.DateTimeFormat('en-GB', options).format(new Date());
+          const [h, m] = istStr.split(':').map(Number);
+          const currentHours = h;
+          const currentMinutes = m;
 
-          // Convert "HH:mm" strings to minutes since midnight for robust comparison
           const toMin = (str) => {
-            const [h, m] = str.split(':').map(Number);
-            return h * 60 + m;
+            if (!str) return 0;
+            const match = str.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+            if (!match) return 0;
+            let [_, hour, min, meridiem] = match;
+            hour = parseInt(hour);
+            min = parseInt(min);
+            if (meridiem) {
+              if (meridiem.toUpperCase() === 'PM' && hour < 12) hour += 12;
+              if (meridiem.toUpperCase() === 'AM' && hour === 12) hour = 0;
+            }
+            return hour * 60 + min;
           };
 
           const openMin = toMin(settings.openingTime);
@@ -129,9 +143,9 @@ const cartReducer = (state, action) => {
           if (openMin <= closeMin) {
             isOrderingActive = currentMin >= openMin && currentMin <= closeMin;
           } else {
-            // Closes past midnight (e.g. 08:00 to 02:00)
             isOrderingActive = currentMin >= openMin || currentMin <= closeMin;
           }
+          console.log(`🕒 Cafe status: Scheduled ${isOrderingActive ? 'OPEN' : 'CLOSED'} (${h}:${m})`);
         }
       }
       return { ...state, settings, isOrderingActive };
