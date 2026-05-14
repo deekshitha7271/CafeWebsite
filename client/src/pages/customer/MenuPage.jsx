@@ -159,6 +159,7 @@ const MenuPage = () => {
 
   // Refined filtering for 200+ items - Hard filtering for high-density focus
   const filteredItems = useMemo(() => {
+    if (!items) return [];
     return items.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -169,6 +170,7 @@ const MenuPage = () => {
 
   // Group items by category for sectioned rendering
   const itemsByCategory = useMemo(() => {
+    if (!categories) return [];
     return categories.reduce((acc, cat) => {
       const catItems = filteredItems.filter(item => String(item.categoryId?._id || item.categoryId) === String(cat._id));
       if (catItems.length > 0) acc.push({ ...cat, items: catItems });
@@ -176,8 +178,8 @@ const MenuPage = () => {
     }, []);
   }, [categories, filteredItems]);
 
-  const specialCategory = useMemo(() => categories.find(c => c.name.toLowerCase().includes('ca phe bistro special')), [categories]);
-  const specialItems = useMemo(() => specialCategory ? items.filter(i => String(i.categoryId?._id || i.categoryId) === String(specialCategory._id)) : [], [specialCategory, items]);
+  const specialCategory = useMemo(() => (categories || []).find(c => c.name.toLowerCase().includes('ca phe bistro special')), [categories]);
+  const specialItems = useMemo(() => specialCategory ? (items || []).filter(i => String(i.categoryId?._id || i.categoryId) === String(specialCategory._id)) : [], [specialCategory, items]);
 
   // Active Category State logic - REVERTED TO FILTERING
   const handleCategoryChange = (catId) => {
@@ -195,6 +197,7 @@ const MenuPage = () => {
 
   // REVERTED TO FILTERING: Show only the selected category or all
   const displayedCategories = useMemo(() => {
+    if (!itemsByCategory) return [];
     if (activeCategory === 'all') return itemsByCategory;
     return itemsByCategory.filter(cat => String(cat._id) === String(activeCategory));
   }, [itemsByCategory, activeCategory]);
@@ -392,7 +395,9 @@ const MenuPage = () => {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold text-white bg-white/5 px-4 py-2 rounded-full border border-white/8">
                   <Clock className="w-3 h-3 text-primary" /> {settings?.weekdayHours || '08:30 AM – 11:00 PM'}
-                  <span className="ml-1 text-green-400 font-black">(Open)</span>
+                  <span className={`ml-1 font-black ${cartState.isOrderingActive ? 'text-green-400' : 'text-red-500'}`}>
+                    ({cartState.isOrderingActive ? 'Open' : 'Closed'})
+                  </span>
                 </div>
                 <a
                   href={`https://wa.me/${(settings?.phone || '+91 79811 44753').replace(/\D/g, '')}?text=Hi%20C%C3%A1%20Ph%C3%AA%20Bistro`}

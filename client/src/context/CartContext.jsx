@@ -107,8 +107,23 @@ const cartReducer = (state, action) => {
       let isOrderingActive = true;
       
       if (settings) {
-        // The toggle acts as a master switch. If enabled, it's open irrespective of time.
-        isOrderingActive = settings.isOrderingEnabled !== false;
+        if (settings.isOrderingEnabled === false) {
+           isOrderingActive = false;
+        } else if (settings.openingTime && settings.closingTime) {
+           const now = new Date();
+           // Get current time in IST
+           const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+           const currentHours = istTime.getHours();
+           const currentMinutes = istTime.getMinutes();
+           const currentTimeStr = `${currentHours.toString().padStart(2, '0')}:${currentMinutes.toString().padStart(2, '0')}`;
+           
+           if (settings.openingTime <= settings.closingTime) {
+             isOrderingActive = currentTimeStr >= settings.openingTime && currentTimeStr <= settings.closingTime;
+           } else {
+             // Closes past midnight
+             isOrderingActive = currentTimeStr >= settings.openingTime || currentTimeStr <= settings.closingTime;
+           }
+        }
       }
       return { ...state, settings, isOrderingActive };
     }

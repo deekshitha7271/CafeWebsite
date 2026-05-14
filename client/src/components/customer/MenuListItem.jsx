@@ -6,7 +6,7 @@ import QuantitySelector from './QuantitySelector';
 import { formatImageUrl, getFallbackImage } from '../../lib/utils';
 
 const MenuListItem = ({ item }) => {
-    const { dispatch } = useCart();
+    const { state, dispatch } = useCart();
 
     return (
         <motion.div
@@ -49,11 +49,13 @@ const MenuListItem = ({ item }) => {
             </div>
 
             <div className="text-right flex flex-col items-end justify-center min-w-[100px] pr-2">
-                <span className={`text-white font-black text-sm mb-2 block ${!item.isAvailable ? 'opacity-40 line-through text-xs' : ''}`}>₹{item.price}</span>
-                {item.isAvailable ? (
+                <span className="text-white font-black text-sm mb-2 block">₹{item.price}</span>
+                {state.isOrderingActive ? (
                     <QuantitySelector item={item} variant="list" />
                 ) : (
-                    <div className="text-[9px] font-black uppercase text-red-500/40 tracking-wider">Unavailable</div>
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-[8px] font-black uppercase px-2 py-1 rounded-full tracking-widest whitespace-nowrap mt-1">
+                        Closed
+                    </div>
                 )}
             </div>
         </motion.div>
