@@ -1,4 +1,8 @@
-require('dotenv').config({ override: true });
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config({ override: true });
+} else {
+  console.log('🌍 Production Mode: Using Render Dashboard environment variables.');
+}
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
