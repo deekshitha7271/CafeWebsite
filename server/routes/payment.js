@@ -137,6 +137,10 @@ router.post('/razorpay/create-order', async (req, res) => {
       payment_capture: 1, // auto-capture on payment success
     };
 
+    if (options.amount < 100) {
+      return res.status(400).json({ error: 'Amount must be at least 100 paise' });
+    }
+
     console.log('📦 Creating Razorpay order:', options);
     const rzpOrder = await getRazorpay().orders.create(options);
     console.log('✅ Razorpay order created:', rzpOrder.id, '| status:', rzpOrder.status);
@@ -160,6 +164,9 @@ router.post('/razorpay/create-order', async (req, res) => {
 
   } catch (error) {
     console.error('🔥 RAZORPAY ORDER ERROR:', error);
+    if (error.statusCode === 401 || error.description?.includes('authenticat')) {
+      return res.status(401).json({ error: 'Razorpay authentication failed' });
+    }
     res.status(500).json({ error: 'Failed to create Razorpay order', details: error.message });
   }
 });
@@ -190,6 +197,10 @@ router.get('/verify-session/:orderId', async (req, res) => {
 router.post('/razorpay/verify', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderId } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !orderId) {
+      return res.status(400).json({ error: 'Missing required fields for verification' });
+    }
 
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
