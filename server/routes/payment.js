@@ -183,7 +183,7 @@ router.post('/razorpay/create-order', async (req, res) => {
       razorpayOrderId: rzpOrder.id,
       amount: options.amount,
       currency: options.currency,
-      key: process.env.RAZORPAY_KEY_ID
+      key: process.env.RAZORPAY_KEY_ID?.trim()
     });
 
   } catch (error) {
