@@ -126,9 +126,11 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   cookie: {
     httpOnly: true,
-    secure: true, // Required for SameSite: none
-    sameSite: 'none', // Required for cross-domain mobile Chromium (OnePlus, etc.)
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session persistence for mobile convenience
+    // In local dev (http), 'secure: true' prevents the cookie from being saved.
+    // We only force strict security in production/HTTPS environments.
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days session
   }
 }));
 

@@ -5,7 +5,7 @@ import {
   Crown, LogOut, User as UserIcon, Activity, ChevronDown, X, Menu, Coffee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -37,29 +37,62 @@ const AdminLayout = () => {
   const isAdmin = user?.role === 'admin';
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const alarmIntervalRef = useRef(null);
 
-  // Sound logic
-  const playNotification = () => {
+  // Persistent Alarm Logic
+  const startAlarm = () => {
+    if (alarmIntervalRef.current) return; // Already ringing
+
+    console.log("🚨 Kitchen Alarm STARTED");
     const playOnce = () => {
       const audio = new Audio(NOTIFICATION_SOUND);
       audio.volume = 1.0;
-      audio.play().catch(e => console.log("Audio play blocked: Interaction required"));
+      audio.play().catch(e => console.log("Audio blocked: interaction required"));
     };
 
-    // Play twice as requested
     playOnce();
-    setTimeout(playOnce, 1500);
+    alarmIntervalRef.current = setInterval(playOnce, 2000); // Ring every 2 seconds
+  };
+
+  const stopAlarm = () => {
+    if (alarmIntervalRef.current) {
+      console.log("🔇 Kitchen Alarm STOPPED");
+      clearInterval(alarmIntervalRef.current);
+      alarmIntervalRef.current = null;
+    }
   };
 
   useEffect(() => {
     if (socket) {
+      // Start alarm on NEW order
       socket.on('order:new', (order) => {
-        console.log('🔔 New Order Notification Triggered:', order._id);
-        playNotification();
-        // Increment unread locally for immediate UI response
+        console.log('🔔 New Order Alert:', order._id);
+        startAlarm();
         setUnreadNotifications(prev => prev + 1);
       });
-      return () => socket.off('order:new');
+
+      // Stop alarm when ANY order is acknowledged (preparing/ready)
+      socket.on('order:statusUpdate', (update) => {
+        if (update.status === 'preparing' || update.status === 'ready') {
+          stopAlarm();
+        }
+      });
+
+      // Initial check for 'placed' orders when admin joins/refreshes
+      const checkPendingOrders = async () => {
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/orders`, { withCredentials: true });
+          const hasPlaced = res.data.some(o => o.orderStatus === 'placed' && o.paymentStatus === 'paid');
+          if (hasPlaced) startAlarm();
+        } catch (err) { /* ignore */ }
+      };
+      checkPendingOrders();
+
+      return () => {
+        socket.off('order:new');
+        socket.off('order:statusUpdate');
+        stopAlarm();
+      };
     }
   }, [socket]);
 
